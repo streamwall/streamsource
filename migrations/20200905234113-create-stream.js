@@ -10,11 +10,9 @@ module.exports = {
       },
       source: {
         type: Sequelize.STRING,
-        allowNull: false,
       },
       platform: {
         type: Sequelize.ENUM('Facebook', 'Instagram', 'YouTube', 'Periscope', 'Twitch', 'Pig Observer'),
-        allowNull: false,
       },
       link: {
         type: Sequelize.STRING,
@@ -22,16 +20,14 @@ module.exports = {
       },
       status: {
         type: Sequelize.ENUM('Live', 'Offline', 'Unknown'),
-        allowNull: false,
+        defaultValue: 'Unknown',
+      },
+      isExpired: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
       },
       title: {
         type: Sequelize.STRING
-      },
-      checkedAt: {
-        type: Sequelize.DATE
-      },
-      liveAt: {
-        type: Sequelize.DATE
       },
       embedLink: {
         type: Sequelize.STRING
@@ -42,11 +38,14 @@ module.exports = {
       city: {
         type: Sequelize.STRING
       },
-      state: {
+      region: {
         type: Sequelize.STRING
       },
-      country: {
-        type: Sequelize.STRING
+      checkedAt: {
+        type: Sequelize.DATE
+      },
+      liveAt: {
+        type: Sequelize.DATE
       },
       createdAt: {
         allowNull: false,
