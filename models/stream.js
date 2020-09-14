@@ -13,34 +13,44 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
     }
   }
+
   Stream.init({
-    source: {
+    source:    {
       type: DataTypes.STRING,
     },
-    platform: {
+    platform:  {
       type: DataTypes.ENUM('Facebook', 'Instagram', 'YouTube', 'Periscope', 'Twitch', 'Pig Observer'),
     },
-    link: {
-      type: DataTypes.STRING,
+    link:      {
+      type:      DataTypes.STRING,
       allowNull: false,
     },
-    status: {
-      type: DataTypes.ENUM('Live', 'Offline', 'Unknown'),
+    status:    {
+      type:         DataTypes.ENUM('Live', 'Offline', 'Unknown'),
       defaultValue: 'Unknown',
     },
-    title: {
+    title:     {
       type: DataTypes.STRING,
     },
     isExpired: {
-      type: DataTypes.BOOLEAN,
+      type:         DataTypes.BOOLEAN,
       defaultValue: false,
     },
     checkedAt: DataTypes.DATE,
-    liveAt: DataTypes.DATE,
+    liveAt:    DataTypes.DATE,
     embedLink: DataTypes.STRING,
-    postedBy: DataTypes.STRING,
-    city: DataTypes.STRING,
-    region: DataTypes.STRING,
+    postedBy:  DataTypes.STRING,
+    city:      DataTypes.STRING,
+    region:    DataTypes.STRING,
+    state:     {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.region
+      },
+      set(_value) {
+        throw new Error('Stream.state is deprecated and read-only. Use Stream.region instead.')
+      }
+    }
   }, {
     sequelize,
     modelName: 'Stream',
