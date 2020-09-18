@@ -24,6 +24,9 @@ module.exports = (sequelize, DataTypes) => {
     link:      {
       type:      DataTypes.STRING,
       allowNull: false,
+      validate:  {
+        isUrl: true,
+      },
     },
     status:    {
       type:         DataTypes.ENUM('Live', 'Offline', 'Unknown'),
@@ -38,7 +41,12 @@ module.exports = (sequelize, DataTypes) => {
     },
     checkedAt: DataTypes.DATE,
     liveAt:    DataTypes.DATE,
-    embedLink: DataTypes.STRING,
+    embedLink: {
+      type:     DataTypes.STRING,
+      validate: {
+        isUrl: true,
+      }
+    },
     postedBy:  DataTypes.STRING,
     city:      DataTypes.STRING,
     region:    DataTypes.STRING,

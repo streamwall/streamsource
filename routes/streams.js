@@ -1,9 +1,10 @@
 const _ = require('lodash')
-const {Op, ValidationError} = require("sequelize");
+const { Op, ValidationError } = require("sequelize");
 const express = require('express');
+const passport = require("passport");
 const router = express.Router();
 
-const {Stream} = require('../models')
+const { Stream } = require('../models')
 
 const ACCEPT_PARAMS = [
   'source',
@@ -42,20 +43,20 @@ async function getStreams(req, res) {
   if (req.query) {
     // Non-date-related
     const filterRules = {
-      source:      {field: 'source', rule: {[Op.iLike]: `%${req.query.source}%`,}},
-      notSource:   {field: 'source', rule: {[Op.notILike]: `%${req.query.notSource}%`,}},
-      link:        {field: 'link', rule: {[Op.iLike]: `%${req.query.link}%`,}},
-      status:      {field: 'status', rule: {[Op.eq]: req.query.status}},
-      notStatus:   {field: 'status', rule: {[Op.notEq]: req.query.status}},
-      isExpired:   {field: 'isExpired', rule: {[req.query.isExpired ? Op.is : Op.not]: true,}},
-      title:       {field: 'title', rule: {[Op.iLike]: `%${req.query.title}%`}},
-      notTitle:    {field: 'title', rule: {[Op.notILike]: `%${req.query.notTitle}%`,}},
-      postedBy:    {field: 'postedBy', rule: {[Op.iLike]: `%${req.query.postedBy}%`}},
-      notPostedBy: {field: 'postedBy', rule: {[Op.notILike]: `%${req.query.notPostedBy}%`,}},
-      city:        {field: 'city', rule: {[Op.iLike]: `%${req.query.city}%`}},
-      notCity:     {field: 'city', rule: {[Op.notILike]: `%${req.query.notCity}%`,}},
-      region:      {field: 'region', rule: {[Op.iLike]: `%${req.query.region}%`}},
-      notRegion:   {field: 'region', rule: {[Op.notILike]: `%${req.query.notRegion}%`,}},
+      source:      { field: 'source', rule: { [Op.iLike]: `%${req.query.source}%`, } },
+      notSource:   { field: 'source', rule: { [Op.notILike]: `%${req.query.notSource}%`, } },
+      link:        { field: 'link', rule: { [Op.iLike]: `%${req.query.link}%`, } },
+      status:      { field: 'status', rule: { [Op.eq]: req.query.status } },
+      notStatus:   { field: 'status', rule: { [Op.notEq]: req.query.status } },
+      isExpired:   { field: 'isExpired', rule: { [req.query.isExpired ? Op.is : Op.not]: true, } },
+      title:       { field: 'title', rule: { [Op.iLike]: `%${req.query.title}%` } },
+      notTitle:    { field: 'title', rule: { [Op.notILike]: `%${req.query.notTitle}%`, } },
+      postedBy:    { field: 'postedBy', rule: { [Op.iLike]: `%${req.query.postedBy}%` } },
+      notPostedBy: { field: 'postedBy', rule: { [Op.notILike]: `%${req.query.notPostedBy}%`, } },
+      city:        { field: 'city', rule: { [Op.iLike]: `%${req.query.city}%` } },
+      notCity:     { field: 'city', rule: { [Op.notILike]: `%${req.query.notCity}%`, } },
+      region:      { field: 'region', rule: { [Op.iLike]: `%${req.query.region}%` } },
+      notRegion:   { field: 'region', rule: { [Op.notILike]: `%${req.query.notRegion}%`, } },
     }
     Object.entries(filterRules).forEach(([ruleName, filterRule]) => {
       if (!req.query[ruleName]) {
@@ -85,8 +86,8 @@ async function getStreams(req, res) {
     // Set order
     let orderFields
     let orderDirections
-    if(req.query.orderFields ^ req.query.orderDirections) {
-      const errorResponse = { error: `Ordering requires both orderFields and orderDirections params to be sent`}
+    if (req.query.orderFields ^ req.query.orderDirections) {
+      const errorResponse = { error: `Ordering requires both orderFields and orderDirections params to be sent` }
       res.status(400).json(errorResponse)
       return
     }
@@ -94,13 +95,13 @@ async function getStreams(req, res) {
       orderFields = req.query.orderFields.split(',')
       orderDirections = req.query.orderDirections.split(',')
       if (orderFields.length !== orderDirections.length) {
-        const errorResponse = {error: `orderFields and orderDirections must have the same length`}
+        const errorResponse = { error: `orderFields and orderDirections must have the same length` }
         res.status(400).json(errorResponse)
         return
       }
       const invalidOrderFields = orderFields.filter((fieldName) => !ORDERABLE_FIELDS.includes(fieldName))
       if (invalidOrderFields.length > 0) {
-        res.status(400).json({error: `Cannot order by fields: ${invalidOrderFields.join(', ')}`})
+        res.status(400).json({ error: `Cannot order by fields: ${invalidOrderFields.join(', ')}` })
         return
       }
       order = orderFields.map((fieldName, i) => {
@@ -119,8 +120,8 @@ async function getStreams(req, res) {
 }
 
 async function createStream(req, res) {
-  const {link, postedBy, city, region} = req.body
-  const stream = await Stream.create({link, postedBy, city, region})
+  const { link, postedBy, city, region } = req.body
+  const stream = await Stream.create({ link, postedBy, city, region })
   res.status(201).json(stream)
 }
 
@@ -142,7 +143,7 @@ async function patchStream(req, res) {
 async function getStream(req, res) {
   const id = req.params.id
   const stream = await Stream.findByPk(id)
-  if(!stream) {
+  if (!stream) {
     res.status(404).send()
     return
   }
@@ -152,19 +153,19 @@ async function getStream(req, res) {
 async function expireStream(req, res) {
   const id = req.params.id
   const stream = await Stream.findByPk(id)
-  if(!stream) {
+  if (!stream) {
     res.status(404).send()
     return
   }
-  await stream.update({isExpired: true})
+  await stream.update({ isExpired: true })
   res.status(204).send()
 }
 
 /* GET streams listing. */
 router.get('/', getStreams)
-router.post('/', createStream)
+router.post('/', passport.authenticate('jwt', { session: false }), createStream)
 router.get('/:id', getStream)
-router.patch('/:id', patchStream)
-router.delete('/:id', expireStream)
+router.patch('/:id', passport.authenticate('jwt', { session: false }), patchStream)
+router.delete('/:id', passport.authenticate('jwt', { session: false }), expireStream)
 
 module.exports = router;
