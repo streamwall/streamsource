@@ -4,6 +4,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const bodyParser = require('body-parser')
+const boolParser = require('express-query-boolean');
 
 const dotenv = require('dotenv')
 dotenv.config()
@@ -16,6 +17,7 @@ const app = express();
 require('./auth/authentication')
 
 app.use(bodyParser.urlencoded({ extended: false }))
+app.use(boolParser())
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

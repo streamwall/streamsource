@@ -38,7 +38,9 @@ const ORDERABLE_FIELDS = [
 ]
 
 async function getStreams(req, res) {
-  const filter = {}
+  const filter = {
+    isExpired: { [Op.not]: true }
+  }
   let order
 
   if (req.query) {
