@@ -36,7 +36,6 @@ async function login(req, res, next) {
   })(req, req, next)
 }
 
-/* GET streams listing. */
 router.post('/signup', passport.authenticate('signup', { session: false }), createUser)
 router.post('/login', login)
 

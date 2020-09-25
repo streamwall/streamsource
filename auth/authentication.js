@@ -8,13 +8,14 @@ const { User } = require('../models/');
 //This verifies that the token sent by the user is valid
 passport.use(new JWTstrategy({
   //secret we used to sign our JWT
-  secretOrKey:    process.env.JWT_SECRET,
+  secretOrKey: process.env.JWT_SECRET,
   //we expect the user to send the token as a query parameter with the name 'secret_token'
   jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
 }, async (token, done) => {
   try {
     //Pass the user details to the next middleware
-    return done(null, token.user);
+    const user = await User.findOne({ where: { email: token.user.email }})
+    return done(null, user);
   } catch (error) {
     done(error);
   }
@@ -27,7 +28,10 @@ passport.use('signup', new localStrategy({
 }, async (email, password, done) => {
   try {
     //Save the information provided by the user to the the database
-    const user = await User.create({ email, password });
+    const user = await User.create({
+      email,
+      password
+    });
     //Send the user information to the next middleware
     return done(null, user);
   } catch (error) {

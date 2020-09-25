@@ -37,6 +37,11 @@ module.exports = (sequelize, DataTypes) => {
         this.setDataValue('password', hsh)
       }
     },
+    role: {
+      allowNull: false,
+      type: DataTypes.STRING,
+      defaultValue: 'default'
+    }
   }, {
     sequelize,
     modelName: 'User',

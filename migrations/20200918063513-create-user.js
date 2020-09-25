@@ -23,6 +23,11 @@ module.exports = {
       updatedAt: {
         allowNull: false,
         type:      Sequelize.DATE
+      },
+      role: {
+        allowNull: false,
+        type: Sequelize.STRING,
+        defaultValue: 'default'
       }
     });
     await queryInterface.addIndex(

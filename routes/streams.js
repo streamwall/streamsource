@@ -2,6 +2,7 @@ const _ = require('lodash')
 const { Op, ValidationError } = require("sequelize");
 const express = require('express');
 const passport = require("passport");
+const { accessControl } = require("../auth/authorization");
 const router = express.Router();
 
 const { Stream } = require('../models')
@@ -43,21 +44,64 @@ async function getStreams(req, res) {
   if (req.query) {
     // Non-date-related
     const filterRules = {
-      source:      { field: 'source', rule: { [Op.iLike]: `%${req.query.source}%`, } },
-      notSource:   { field: 'source', rule: { [Op.notILike]: `%${req.query.notSource}%`, } },
-      link:        { field: 'link', rule: { [Op.iLike]: `%${req.query.link}%`, } },
-      status:      { field: 'status', rule: { [Op.eq]: req.query.status } },
-      notStatus:   { field: 'status', rule: { [Op.notEq]: req.query.status } },
-      isExpired:   { field: 'isExpired', rule: { [req.query.isExpired ? Op.is : Op.not]: true, } },
-      title:       { field: 'title', rule: { [Op.iLike]: `%${req.query.title}%` } },
-      notTitle:    { field: 'title', rule: { [Op.notILike]: `%${req.query.notTitle}%`, } },
-      postedBy:    { field: 'postedBy', rule: { [Op.iLike]: `%${req.query.postedBy}%` } },
-      notPostedBy: { field: 'postedBy', rule: { [Op.notILike]: `%${req.query.notPostedBy}%`, } },
-      city:        { field: 'city', rule: { [Op.iLike]: `%${req.query.city}%` } },
-      notCity:     { field: 'city', rule: { [Op.notILike]: `%${req.query.notCity}%`, } },
-      region:      { field: 'region', rule: { [Op.iLike]: `%${req.query.region}%` } },
-      notRegion:   { field: 'region', rule: { [Op.notILike]: `%${req.query.notRegion}%`, } },
+      source:      {
+        field: 'source',
+        rule:  { [Op.iLike]: `%${req.query.source}%`, }
+      },
+      notSource:   {
+        field: 'source',
+        rule:  { [Op.notILike]: `%${req.query.notSource}%`, }
+      },
+      link:        {
+        field: 'link',
+        rule:  { [Op.iLike]: `%${req.query.link}%`, }
+      },
+      status:      {
+        field: 'status',
+        rule:  { [Op.eq]: req.query.status }
+      },
+      notStatus:   {
+        field: 'status',
+        rule:  { [Op.notEq]: req.query.status }
+      },
+      isExpired:   {
+        field: 'isExpired',
+        rule:  { [req.query.isExpired ? Op.is : Op.not]: true, }
+      },
+      title:       {
+        field: 'title',
+        rule:  { [Op.iLike]: `%${req.query.title}%` }
+      },
+      notTitle:    {
+        field: 'title',
+        rule:  { [Op.notILike]: `%${req.query.notTitle}%`, }
+      },
+      postedBy:    {
+        field: 'postedBy',
+        rule:  { [Op.iLike]: `%${req.query.postedBy}%` }
+      },
+      notPostedBy: {
+        field: 'postedBy',
+        rule:  { [Op.notILike]: `%${req.query.notPostedBy}%`, }
+      },
+      city:        {
+        field: 'city',
+        rule:  { [Op.iLike]: `%${req.query.city}%` }
+      },
+      notCity:     {
+        field: 'city',
+        rule:  { [Op.notILike]: `%${req.query.notCity}%`, }
+      },
+      region:      {
+        field: 'region',
+        rule:  { [Op.iLike]: `%${req.query.region}%` }
+      },
+      notRegion:   {
+        field: 'region',
+        rule:  { [Op.notILike]: `%${req.query.notRegion}%`, }
+      },
     }
+
     Object.entries(filterRules).forEach(([ruleName, filterRule]) => {
       if (!req.query[ruleName]) {
         return
@@ -120,12 +164,27 @@ async function getStreams(req, res) {
 }
 
 async function createStream(req, res) {
+  if(!req.user || !accessControl.can(req.user.role).createAny('stream')) {
+    res.status(401)
+    return
+  }
+
   const { link, postedBy, city, region } = req.body
-  const stream = await Stream.create({ link, postedBy, city, region })
+  const stream = await Stream.create({
+    link,
+    postedBy,
+    city,
+    region
+  })
   res.status(201).json(stream)
 }
 
 async function patchStream(req, res) {
+  if(!req.user || !accessControl.can(req.user.role).updateAny('stream')) {
+    res.status(401)
+    return
+  }
+
   const id = req.params.id
   const stream = await Stream.findByPk(id)
   const permittedBody = _.pickBy(req.body, param => ACCEPT_PARAMS.includes(param))
@@ -151,6 +210,11 @@ async function getStream(req, res) {
 }
 
 async function expireStream(req, res) {
+  if(!req.user || !accessControl.can(req.user.role).deleteAny('stream')) {
+    res.status(401)
+    return
+  }
+
   const id = req.params.id
   const stream = await Stream.findByPk(id)
   if (!stream) {

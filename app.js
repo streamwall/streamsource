@@ -13,7 +13,7 @@ const streamsRouter = require('./routes/streams');
 const usersRouter = require('./routes/users');
 
 const app = express();
-require('./auth/auth')
+require('./auth/authentication')
 
 app.use(bodyParser.urlencoded({ extended: false }))
 
