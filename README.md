@@ -170,7 +170,7 @@ Expire a stream
 - **Requires authentication**
 - **Requires privileged role: Editor or Admin**
 ```
- curl -X DELETE http://localhost:3000/streams/1
+ curl -X DELETE http://localhost:3000/streams/1 --header 'Authorization: Bearer MYTOKEN'
 ```
 ```json
     {
