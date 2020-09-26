@@ -195,7 +195,9 @@ async function patchStream(req, res) {
 
   const id = req.params.id
   const stream = await Stream.findByPk(id)
-  const permittedBody = _.pickBy(req.body, param => ACCEPT_PARAMS.includes(param))
+  const permittedBody = _.pickBy(req.body, (value, key) => {
+    return ACCEPT_PARAMS.includes(key.toString())
+  })
   const updatedStream = await stream.update(permittedBody)
 
   if (updatedStream instanceof ValidationError) {
@@ -206,7 +208,6 @@ async function patchStream(req, res) {
     return
   }
 
-  await updatedStream.reload()
   const response = {
     data: updatedStream
   }
