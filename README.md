@@ -62,6 +62,8 @@ Note: All string searches are case-insensitive and queried based on `ILIKE '%YOU
 |-----|----|-----------|
 |source|String|The name of a stream or streamer|
 |notSource|String|The name of a stream or streamer to exclude|
+|platform|String|The name of a streaming platform (e.g., "Facebook", "Twitch")|
+|notPlatform|String|The name of a platform to exclude|
 |link|String|The URL of a stream|
 |status|String|One of: `['Live', 'Offline', 'Unknown']`|
 |notStatus|String|Exclude this status. One of: `['Live', 'Offline', 'Unknown']`|
@@ -74,6 +76,8 @@ Note: All string searches are case-insensitive and queried based on `ILIKE '%YOU
 |notCity|String|Name of a city to exclude|
 |region|String|Name of a region (e.g., state, country, province)|
 |notRegion|String|Name of a region (e.g., state, country, province) to exclude|
+|orderFields|String, CSV|CSV of fields to order by. Must be accompanied by an orderDirection for each field|
+|orderDirections|String, CSV|CSV of directions to order by. One per orderField, respectively|
 
 #### Example
 Get all active streams in Seattle

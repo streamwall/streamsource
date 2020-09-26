@@ -9,6 +9,7 @@ const { Stream } = require('../models')
 
 const ACCEPT_PARAMS = [
   'source',
+  'platform',
   'link',
   'status',
   'isExpired',
@@ -23,6 +24,7 @@ const ACCEPT_PARAMS = [
 
 const ORDERABLE_FIELDS = [
   'source',
+  'platform',
   'link',
   'status',
   'isExpired',
@@ -53,6 +55,14 @@ async function getStreams(req, res) {
       notSource:   {
         field: 'source',
         rule:  { [Op.notILike]: `%${req.query.notSource}%`, }
+      },
+      platform:    {
+        field: 'platform',
+        rule:  { [Op.iLike]: `%${req.query.platform}%`, }
+      },
+      notPlatform: {
+        field: 'platform',
+        rule:  { [Op.notILike]: `%${req.query.notPlatform}%`, }
       },
       link:        {
         field: 'link',
@@ -169,7 +179,7 @@ async function getStreams(req, res) {
 }
 
 async function createStream(req, res) {
-  if(!req.user || !accessControl.can(req.user.role).createAny('stream')) {
+  if (!req.user || !accessControl.can(req.user.role).createAny('stream')) {
     res.status(401)
     return
   }
@@ -188,7 +198,7 @@ async function createStream(req, res) {
 }
 
 async function patchStream(req, res) {
-  if(!req.user || !accessControl.can(req.user.role).updateAny('stream')) {
+  if (!req.user || !accessControl.can(req.user.role).updateAny('stream')) {
     res.status(401)
     return
   }
@@ -228,7 +238,7 @@ async function getStream(req, res) {
 }
 
 async function expireStream(req, res) {
-  if(!req.user || !accessControl.can(req.user.role).deleteAny('stream')) {
+  if (!req.user || !accessControl.can(req.user.role).deleteAny('stream')) {
     res.status(401)
     return
   }
