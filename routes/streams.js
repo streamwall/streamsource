@@ -58,11 +58,11 @@ async function getStreams(req, res) {
       },
       platform:    {
         field: 'platform',
-        rule:  { [Op.iLike]: `%${req.query.platform}%`, }
+        rule:  { [Op.eq]: req.query.platform, }
       },
       notPlatform: {
         field: 'platform',
-        rule:  { [Op.notILike]: `%${req.query.notPlatform}%`, }
+        rule:  { [Op.notEq]: req.query.notPlatform, }
       },
       link:        {
         field: 'link',
