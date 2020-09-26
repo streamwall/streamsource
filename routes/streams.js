@@ -162,7 +162,10 @@ async function getStreams(req, res) {
     order
   }
   const streams = await Stream.findAll(queryOptions)
-  res.status(200).json(streams)
+  const response = {
+    data: streams
+  }
+  res.status(200).json(response)
 }
 
 async function createStream(req, res) {
@@ -178,7 +181,10 @@ async function createStream(req, res) {
     city,
     region
   })
-  res.status(201).json(stream)
+  const response = {
+    data: stream
+  }
+  res.status(201).json(response)
 }
 
 async function patchStream(req, res) {
@@ -193,12 +199,18 @@ async function patchStream(req, res) {
   const updatedStream = await stream.update(permittedBody)
 
   if (updatedStream instanceof ValidationError) {
-    res.status(400).json(updatedStream)
+    const response = {
+      error: updatedStream
+    }
+    res.status(400).json(response)
     return
   }
 
   await updatedStream.reload()
-  res.status(200).json(updatedStream)
+  const response = {
+    data: updatedStream
+  }
+  res.status(200).json(response)
 }
 
 async function getStream(req, res) {
@@ -208,7 +220,10 @@ async function getStream(req, res) {
     res.status(404).send()
     return
   }
-  res.status(200).json(stream)
+  const response = {
+    data: stream
+  }
+  res.status(200).json(response)
 }
 
 async function expireStream(req, res) {
