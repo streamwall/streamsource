@@ -16,13 +16,13 @@ module.exports = (sequelize, DataTypes) => {
 
   Stream.init({
     source:    {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
     },
     platform:  {
       type: DataTypes.ENUM('Facebook', 'Instagram', 'YouTube', 'Periscope', 'Twitch', 'Pig Observer'),
     },
     link:      {
-      type:      DataTypes.STRING,
+      type:      DataTypes.TEXT,
       allowNull: false,
       validate:  {
         isUrl: true,
@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 'Unknown',
     },
     title:     {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
     },
     isExpired: {
       type:         DataTypes.BOOLEAN,
@@ -42,14 +42,14 @@ module.exports = (sequelize, DataTypes) => {
     checkedAt: DataTypes.DATE,
     liveAt:    DataTypes.DATE,
     embedLink: {
-      type:     DataTypes.STRING,
+      type:     DataTypes.TEXT,
       validate: {
         isUrl: true,
       }
     },
-    postedBy:  DataTypes.STRING,
-    city:      DataTypes.STRING,
-    region:    DataTypes.STRING,
+    postedBy:  DataTypes.TEXT,
+    city:      DataTypes.TEXT,
+    region:    DataTypes.TEXT,
     state:     {
       type: DataTypes.VIRTUAL,
       get() {

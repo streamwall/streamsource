@@ -9,13 +9,13 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       source: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
       },
       platform: {
         type: Sequelize.ENUM('Facebook', 'Instagram', 'YouTube', 'Periscope', 'Twitch', 'Pig Observer'),
       },
       link: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: false,
       },
       status: {
@@ -27,19 +27,19 @@ module.exports = {
         defaultValue: false,
       },
       title: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT,
       },
       embedLink: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT,
       },
       postedBy: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT,
       },
       city: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT,
       },
       region: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT,
       },
       checkedAt: {
         type: Sequelize.DATE
