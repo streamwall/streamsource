@@ -191,7 +191,7 @@ async function createStream(req, res) {
     return
   }
 
-  const { link, postedBy, city, region, source, platform, title } = req.body
+  const { link, postedBy, city, region, source, platform, title, status } = req.body
   const stream = await Stream.create({
     link,
     postedBy,
@@ -199,7 +199,8 @@ async function createStream(req, res) {
     region,
     source,
     platform,
-    title
+    title,
+    status,
   })
   const response = {
     data: stream
