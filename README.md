@@ -78,6 +78,7 @@ Note: All string searches are case-insensitive and queried based on `ILIKE '%YOU
 |notRegion|String|Name of a region (e.g., state, country, province) to exclude|
 |orderFields|String, CSV|CSV of fields to order by. Must be accompanied by an orderDirection for each field|
 |orderDirections|String, CSV|CSV of directions to order by. One per orderField, respectively|
+|format|String|Currently only accepts "`array`" or null; returns a raw array of streams for Streamwall if set to `array`, otherwise it's formatted like `{ data: [ {...}, {...} ] }`|
 
 #### Example
 Get all active streams in Seattle

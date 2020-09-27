@@ -44,8 +44,11 @@ async function getStreams(req, res) {
     isExpired: { [Op.not]: true }
   }
   let order
+  let format
 
   if (req.query) {
+    format = req.query.format
+
     // Non-date-related
     const filterRules = {
       source:      {
@@ -129,12 +132,18 @@ async function getStreams(req, res) {
       'checkedAt'
     ]
     dateFilters.forEach((fieldName) => {
-      const fromParam = req.query[`${fieldName}From`]
       const toParam = req.query[`${fieldName}To`]
+      const fromParam = req.query[`${fieldName}From`]
       if (fromParam || toParam) {
         filter[fieldName] = {
-          [Op.lt]: toParam || new Date(),
-          [Op.gt]: fromParam || new Date(0)
+          [Op.or]: {
+            [Op.lt]: toParam || new Date(),
+            [Op.eq]: null,
+          },
+          [Op.or]: {
+            [Op.gt]: fromParam || new Date(0),
+            [Op.eq]: null,
+          }
         }
       }
     })
@@ -172,9 +181,7 @@ async function getStreams(req, res) {
     order
   }
   const streams = await Stream.findAll(queryOptions)
-  const response = {
-    data: streams
-  }
+  const response = format === 'array' ? streams : { data: streams }
   res.status(200).json(response)
 }
 
