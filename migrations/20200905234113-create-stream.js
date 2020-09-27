@@ -12,14 +12,14 @@ module.exports = {
         type: Sequelize.TEXT,
       },
       platform: {
-        type: Sequelize.ENUM('Facebook', 'Instagram', 'YouTube', 'Periscope', 'Twitch', 'Pig Observer', 'WSDOT'),
+        type: Sequelize.TEXT,
       },
       link: {
         type: Sequelize.TEXT,
         allowNull: false,
       },
       status: {
-        type: Sequelize.ENUM('Live', 'Offline', 'Unknown', 'Persistent'),
+        type: Sequelize.TEXT,
         defaultValue: 'Unknown',
       },
       isExpired: {
