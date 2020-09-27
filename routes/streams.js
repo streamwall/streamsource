@@ -61,11 +61,11 @@ async function getStreams(req, res) {
       },
       platform:    {
         field: 'platform',
-        rule:  { [Op.eq]: req.query.platform, }
+        rule:  { [Op.eq]: `${req.query.platform}`, }
       },
       notPlatform: {
         field: 'platform',
-        rule:  { [Op.notEq]: req.query.notPlatform, }
+        rule:  { [Op.not]: `${req.query.notPlatform}`, }
       },
       link:        {
         field: 'link',
@@ -180,6 +180,7 @@ async function getStreams(req, res) {
     where: filter,
     order
   }
+  console.log(queryOptions)
   const streams = await Stream.findAll(queryOptions)
   const response = format === 'array' ? streams : { data: streams }
   res.status(200).json(response)
