@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
     },
     platform:  {
-      type: DataTypes.ENUM('Facebook', 'Instagram', 'YouTube', 'Periscope', 'Twitch', 'Pig Observer'),
+      type: DataTypes.ENUM('Facebook', 'Instagram', 'YouTube', 'Periscope', 'Twitch', 'Pig Observer', 'WSDOT'),
     },
     link:      {
       type:      DataTypes.TEXT,
@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     status:    {
-      type:         DataTypes.ENUM('Live', 'Offline', 'Unknown'),
+      type:         DataTypes.ENUM('Live', 'Offline', 'Unknown', 'Persistent'),
       defaultValue: 'Unknown',
     },
     title:     {
