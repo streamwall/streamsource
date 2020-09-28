@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
         attributes: ['city', [sequelize.fn('COUNT', 'city'), 'freq']],
         order: [[sequelize.fn('COUNT', 'city'), 'DESC']]
       })
-      return commonCity.get('city')
+      return commonCity?.get('city') || ''
     }
 
     async getInferredRegion() {
@@ -53,7 +53,7 @@ module.exports = (sequelize, DataTypes) => {
         attributes: ['region', [sequelize.fn('COUNT', 'region'), 'freq']],
         order: [[sequelize.fn('COUNT', 'region'), 'DESC']]
       })
-      return commonRegion.get('region')
+      return commonRegion?.get('region') || ''
     }
   }
 
