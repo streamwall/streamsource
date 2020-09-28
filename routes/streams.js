@@ -193,6 +193,13 @@ async function createStream(req, res) {
     return
   }
 
+  // Don't add duplicate links if the link is already present and active
+  const existingStream = await Stream.findOne({ where: { link, isExpired: false } })
+  if(existingStream) {
+    res.status(303).json({ data: existingStream })
+    return
+  }
+
   const stream = await Stream.build({
     link,
     postedBy,
