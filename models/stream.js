@@ -1,4 +1,6 @@
 'use strict';
+const { Op } = require("sequelize");
+
 const {
   Model
 } = require('sequelize');
@@ -11,6 +13,47 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+    }
+
+    async useInferredLocation() {
+      this.city = await this.getInferredCity()
+      this.region = await this.getInferredRegion()
+    }
+
+    async getInferredCity() {
+      const commonCity = await Stream.findOne({
+        where:      {
+          [Op.or]: [
+            { source: { [Op.iLike]: this.source } },
+            { link: { [Op.iLike]: this.link } },
+          ],
+          city: {
+            [Op.not]: null,
+          }
+        },
+        group:      ['city'],
+        attributes: ['city', [sequelize.fn('COUNT', 'city'), 'freq']],
+        order: [[sequelize.fn('COUNT', 'city'), 'DESC']]
+      })
+      return commonCity.get('city')
+    }
+
+    async getInferredRegion() {
+      const commonRegion = await Stream.findOne({
+        where:      {
+          [Op.or]: [
+            { source: { [Op.iLike]: this.source } },
+            { link: { [Op.iLike]: this.link } },
+          ],
+          region: {
+            [Op.not]: null,
+          }
+        },
+        group:      ['region'],
+        attributes: ['region', [sequelize.fn('COUNT', 'region'), 'freq']],
+        order: [[sequelize.fn('COUNT', 'region'), 'DESC']]
+      })
+      return commonRegion.get('region')
     }
   }
 

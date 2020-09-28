@@ -187,13 +187,13 @@ async function getStreams(req, res) {
 }
 
 async function createStream(req, res) {
+  const { link, postedBy, city, region, source, platform, title, status } = req.body
   if (!req.user || !accessControl.can(req.user.role).createAny('stream')) {
     res.status(401)
     return
   }
 
-  const { link, postedBy, city, region, source, platform, title, status } = req.body
-  const stream = await Stream.create({
+  const stream = await Stream.build({
     link,
     postedBy,
     city,
@@ -203,6 +203,13 @@ async function createStream(req, res) {
     title,
     status,
   })
+
+  if (!stream.city && !stream.region) {
+    await stream.useInferredLocation()
+  }
+
+  await stream.save()
+
   const response = {
     data: stream
   }
