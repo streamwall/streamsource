@@ -227,6 +227,16 @@ async function patchStream(req, res) {
   const permittedBody = _.pickBy(req.body, (value, key) => {
     return ACCEPT_PARAMS.includes(key.toString())
   })
+
+  // Take a stab at the location if it's not already set
+  const cityIsSet = stream.city || permittedBody.city
+  const regionIsSet = stream.region || permittedBody.region
+  if (!cityIsSet && !regionIsSet) {
+    permittedBody.city = await stream.getInferredCity()
+    permittedBody.region = await stream.getInferredRegion()
+  }
+  console.log(permittedBody.city, permittedBody.region)
+
   const updatedStream = await stream.update(permittedBody)
 
   if (updatedStream instanceof ValidationError) {
