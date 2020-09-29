@@ -15,45 +15,50 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
     }
 
-    async useInferredLocation() {
-      this.city = await this.getInferredCity()
-      this.region = await this.getInferredRegion()
-    }
+    // Assign self.city and self.location "automatically."
+    // Does nothing if either city or region are already set
+    // Assumes that the last entered location for a streamer is correct.
+    // Does not automatically save to the database
+    // Does nothing if no past streams exist that match self.source or self.link
+    async inferLocation() {
+      if (this.city || this.region) {
+        return
+      }
 
-    async getInferredCity() {
-      const commonCity = await Stream.findOne({
-        where:      {
-          [Op.or]: [
-            { source: { [Op.iLike]: this.source } },
-            { link: { [Op.iLike]: this.link } },
-          ],
-          city: {
-            [Op.not]: null,
-          }
+      // Assumes that the pastStream.source is "unique-enough";
+      // However, we know that multiple streamers sometimes
+      // use the same name to stream, e.g., Bear Gang, Concrete Reporting, Unicorn Riot, Boop Troop, etc.
+      const pastStream = await Stream.findOne({
+        where: {
+          [Op.and]: [
+            {
+              [Op.or]: [
+                { source: this.source },
+                { link: this.link },
+              ]
+            },
+            {
+              [Op.or]: [
+                {
+                  city: {
+                    [Op.not]: null,
+                    [Op.not]: ''
+                  }
+                },
+                {
+                  region: {
+                    [Op.not]: null,
+                    [Op.not]: ''
+                  }
+                },
+              ]
+            }
+          ]
         },
-        group:      ['city'],
-        attributes: ['city', [sequelize.fn('COUNT', 'city'), 'freq']],
-        order: [[sequelize.fn('COUNT', 'city'), 'DESC']]
+        order: [['createdAt', 'DESC']]
       })
-      return (commonCity && commonCity.get('city')) || ''
-    }
-
-    async getInferredRegion() {
-      const commonRegion = await Stream.findOne({
-        where:      {
-          [Op.or]: [
-            { source: { [Op.iLike]: this.source } },
-            { link: { [Op.iLike]: this.link } },
-          ],
-          region: {
-            [Op.not]: null,
-          }
-        },
-        group:      ['region'],
-        attributes: ['region', [sequelize.fn('COUNT', 'region'), 'freq']],
-        order: [[sequelize.fn('COUNT', 'region'), 'DESC']]
-      })
-      return (commonRegion && commonRegion.get('region')) || ''
+      this.city = (pastStream && pastStream.city) || ''
+      this.region = (pastStream && pastStream.region) || ''
     }
   }
 
@@ -103,6 +108,11 @@ module.exports = (sequelize, DataTypes) => {
       }
     }
   }, {
+    hooks:     {
+      beforeSave: async (stream, options) => {
+        await stream.inferLocation()
+      },
+    },
     sequelize,
     modelName: 'Stream',
   });
