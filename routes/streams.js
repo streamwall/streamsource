@@ -3,7 +3,6 @@ const { Op, ValidationError } = require("sequelize");
 const express = require('express');
 const passport = require("passport");
 const { accessControl } = require("../auth/authorization");
-const { accessControl } = require("../auth/authorization");
 const router = express.Router();
 
 const { Stream } = require('../models')
