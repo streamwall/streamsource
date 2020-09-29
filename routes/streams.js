@@ -3,6 +3,7 @@ const { Op, ValidationError } = require("sequelize");
 const express = require('express');
 const passport = require("passport");
 const { accessControl } = require("../auth/authorization");
+const { accessControl } = require("../auth/authorization");
 const router = express.Router();
 
 const { Stream } = require('../models')
@@ -188,7 +189,7 @@ async function getStreams(req, res) {
 
 async function createStream(req, res) {
   const { link, postedBy, city, region, source, platform, title, status } = req.body
-  if (!req.user || !accessControl.can(req.user.role).createAny('stream')) {
+  if (!req.user || !accessControl.can(req.user.role).createAny('stream').granted) {
     res.status(401)
     return
   }
@@ -224,7 +225,7 @@ async function createStream(req, res) {
 }
 
 async function patchStream(req, res) {
-  if (!req.user || !accessControl.can(req.user.role).updateAny('stream')) {
+  if (!req.user || !accessControl.can(req.user.role).updateAny('stream').granted) {
     res.status(401)
     return
   }
@@ -274,7 +275,7 @@ async function getStream(req, res) {
 }
 
 async function expireStream(req, res) {
-  if (!req.user || !accessControl.can(req.user.role).deleteAny('stream')) {
+  if (!req.user || !accessControl.can(req.user.role).deleteAny('stream').granted) {
     res.status(401)
     return
   }
