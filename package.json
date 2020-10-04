@@ -14,17 +14,20 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-query-boolean": "^2.0.0",
+    "express-winston": "^4.0.5",
     "http-errors": "~1.6.3",
     "jade": "~1.11.0",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.20",
+    "logdna-winston": "^2.3.2",
     "morgan": "~1.9.1",
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "pg": "^8.3.3",
     "pg-hstore": "^2.3.3",
-    "sequelize": "^6.3.5"
+    "sequelize": "^6.3.5",
+    "winston": "^3.3.3"
   },
   "devDependencies": {
     "sequelize-cli": "^6.2.0"
