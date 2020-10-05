@@ -171,6 +171,13 @@ async function getStreams(req, res) {
   res.status(200).json(response)
 }
 
+async function normalizeLink(link) {
+  let normalizedLink = link
+  normalizedLink = normalizedLink.replace(/\/$/,'')
+  normalizedLink = normalizedLink.replace(/https?:\/\/(www\.)?/i, '')
+  return normalizedLink
+}
+
 async function createStream(req, res) {
   if (!req.user || !accessControl.can(req.user.role).createAny('stream').granted) {
     res.status(401)
@@ -178,10 +185,11 @@ async function createStream(req, res) {
   }
 
   // Don't add duplicate links if the link is already present and active
+  const normalizedLink = await normalizeLink(req.body.link)
   const existingStream = await Stream.findOne({
     where: {
-      link:      req.body.link,
-      isExpired: false
+      link: { [Op.iLike]:  `%${normalizedLink}%` },
+      isExpired: false,
     }
   })
   if(existingStream) {
