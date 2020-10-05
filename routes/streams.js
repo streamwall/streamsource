@@ -7,21 +7,6 @@ const router = express.Router();
 
 const { Stream } = require('../models')
 
-const ACCEPT_PARAMS = [
-  'source',
-  'platform',
-  'link',
-  'status',
-  'isExpired',
-  'title',
-  'embedLink',
-  'postedBy',
-  'city',
-  'region',
-  'checkedAt',
-  'liveAt'
-]
-
 const ORDERABLE_FIELDS = [
   'source',
   'platform',
@@ -187,35 +172,33 @@ async function getStreams(req, res) {
 }
 
 async function createStream(req, res) {
-  const { link, postedBy, city, region, source, platform, title, status } = req.body
   if (!req.user || !accessControl.can(req.user.role).createAny('stream').granted) {
     res.status(401)
     return
   }
 
   // Don't add duplicate links if the link is already present and active
-  const existingStream = await Stream.findOne({ where: { link, isExpired: false } })
+  const existingStream = await Stream.findOne({
+    where: {
+      link:      req.body.link,
+      isExpired: false
+    }
+  })
   if(existingStream) {
     res.status(303).json({ data: existingStream })
     return
   }
 
-  const stream = await Stream.build({
-    link,
-    postedBy,
-    city,
-    region,
-    source,
-    platform,
-    title,
-    status,
+  const stream = await Stream.create({
+    city:     req.body.city,
+    link:     req.body.link,
+    platform: req.body.platform,
+    postedBy: req.body.postedBy,
+    region:   req.body.region,
+    source:   req.body.source,
+    status:   req.body.status,
+    title:    req.body.title,
   })
-
-  if (!stream.city && !stream.region) {
-    await stream.useInferredLocation()
-  }
-
-  await stream.save()
 
   const response = {
     data: stream
@@ -231,20 +214,21 @@ async function patchStream(req, res) {
 
   const id = req.params.id
   const stream = await Stream.findByPk(id)
-  const permittedBody = _.pickBy(req.body, (value, key) => {
-    return ACCEPT_PARAMS.includes(key.toString())
+
+  const updatedStream = await stream.update({
+    source:    req.body.source,
+    platform:  req.body.platform,
+    link:      req.body.link,
+    status:    req.body.status,
+    isExpired: req.body.isExpired,
+    title:     req.body.title,
+    embedLink: req.body.embedLink,
+    postedBy:  req.body.postedBy,
+    city:      req.body.city,
+    region:    req.body.region,
+    checkedAt: req.body.checkedAt,
+    liveAt:    req.body.liveAt
   })
-
-  // Take a stab at the location if it's not already set
-  const cityIsSet = stream.city || permittedBody.city
-  const regionIsSet = stream.region || permittedBody.region
-  if (!cityIsSet && !regionIsSet) {
-    permittedBody.city = await stream.getInferredCity()
-    permittedBody.region = await stream.getInferredRegion()
-  }
-  console.log(permittedBody.city, permittedBody.region)
-
-  const updatedStream = await stream.update(permittedBody)
 
   if (updatedStream instanceof ValidationError) {
     const response = {
