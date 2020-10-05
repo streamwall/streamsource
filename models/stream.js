@@ -28,14 +28,17 @@ module.exports = (sequelize, DataTypes) => {
       // Assumes that the pastStream.source is "unique-enough";
       // However, we know that multiple streamers sometimes
       // use the same name to stream, e.g., Bear Gang, Concrete Reporting, Unicorn Riot, Boop Troop, etc.
+      const matchingFilter = [
+        {link: this.link},
+      ]
+      if(this.source) {
+        matchingFilter.push({ source: this.source })
+      }
       const pastStream = await Stream.findOne({
         where: {
           [Op.and]: [
             {
-              [Op.or]: [
-                { source: this.source },
-                { link: this.link },
-              ]
+              [Op.or]: matchingFilter,
             },
             {
               [Op.or]: [
