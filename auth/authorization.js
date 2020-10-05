@@ -14,7 +14,6 @@ ac.grant('editor')
   .deleteAny('stream')
 
 ac.grant('default')
-  .createAny('stream')
   .readAny('stream')
 
 ac.lock()
