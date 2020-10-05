@@ -31,4 +31,12 @@ const logger = expressWinston.logger({
   exitOnError: false
 });
 
-module.exports = logger;
+const errorLogger = expressWinston.errorLogger({
+  transports: [
+    new winston.transports.Console(options.console),
+    new LogdnaWinston(options.logdna)
+  ],
+  exitOnError: false
+})
+
+module.exports = { logger, errorLogger };
