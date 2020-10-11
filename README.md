@@ -1,8 +1,42 @@
 # StreamSource
+Streamsource is a publicly readable API to store and retrieve information about livestreams across many streaming platforms.
+
+## Getting Started
+**If you just want to use the API to read stream data found at [streams.streamwall.io](http://streams.streamwall.io), see [API Reference](#api-reference)**
+
+### Current state
+Streamsource is in active development at a very early stage. Do not consider the API stable. We don't even have versioning yet! (we accept PRs!)
+
+Many assumptions are built in, and this application is tightly coupled to a few different services. This will improve over time.
+
+### Installation
+
+1. Clone this repository
+1. `npm install`
+1. Install Postgres and create a database, a user, etc.
+1. Copy example.env to just .env and update your configuration settings
+1. `npx sequelize-cli db:migrate`
+
+### Running
+
+1. Make sure Postgres is running
+1. Start server: `node bin/www`
+1. Preview streams json: http://localhost:3000/streams
+
+### Upgrading
+
+1. Get new code: `git pull`
+1. Apply migrations: `npx sequelize-cli db:migrate`
+1. Restart server: `node bin/www` 
+
+### Development and contributing
+
+This project is in its infancy. We're open to pull requests and will work with you to get improvements merged.
 
 ## API Reference
+
 ### Authentication
-Certain routes are protected with a JWT that you must include in your Authorization header when making authenticated requests.
+Most routes are protected with a JWT that you must include in your Authorization header when making authenticated requests.
 
 API tokens can be obtained by creating a user and POSTing to /users/login, which will generate and return a token.
 
@@ -10,6 +44,17 @@ Subsequent authenticated requests must include the following header:
 ```
 Authorization: Bearer MYTOKEN
 ```
+
+#### Getting Started with Authentication
+1. Create your user
+    ```
+    curl -d "email=youremail@yourdomain.com&password=abc123" -X POST http://localhost:3000/users/signup
+    ```
+2. Log in
+    ```
+    curl -d "email=youremail@yourdomain.com&password=abc123" -X POST http://localhost:3000/users/login
+    ```
+3. Save the token in your app/script/bot's configuration file (keep it secret!)
 
 ### POST /users/signup
 Creates a new user
@@ -67,6 +112,7 @@ Note: All string searches are case-insensitive and queried based on `ILIKE '%YOU
 |link|String|The URL of a stream|
 |status|String|One of: `['Live', 'Offline', 'Unknown']`|
 |notStatus|String|Exclude this status. One of: `['Live', 'Offline', 'Unknown']`|
+|isPinned|Boolean|Defaults to null. When true, prevents state changes, e.g. updates to `isExpired` or `status`|
 |isExpired|Boolean|Streams are considered expired when they are no longer active. Default: false|
 |title|String|Title of a stream|
 |notTitle|String|Title of a stream|
@@ -94,6 +140,7 @@ curl http://localhost:3000/streams?city=seattle
         "link": "https://www.instagram.com/future_crystals/live",
         "status": "Live",
         "title": "",
+        "isPinned": false,
         "isExpired": false,
         "checkedAt": "2020-09-25T04:58:52.840Z",
         "liveAt": "2020-09-25T04:58:52.840Z",
@@ -121,6 +168,7 @@ Create a new stream.
         "link": "https://www.instagram.com/future_crystals/live",
         "status": "Live",
         "title": "",
+        "isPinned": false,
         "isExpired": false,
         "checkedAt": "2020-09-25T04:58:52.840Z",
         "liveAt": "2020-09-25T04:58:52.840Z",
@@ -145,6 +193,7 @@ Get details for a single stream
         "link": "https://www.instagram.com/future_crystals/live",
         "status": "Live",
         "title": "",
+        "isPinned": false,
         "isExpired": false,
         "checkedAt": "2020-09-25T04:58:52.840Z",
         "liveAt": "2020-09-25T04:58:52.840Z",
@@ -181,6 +230,34 @@ Expire a stream
     {
         ...
         "isExpired": true,
+        ...
+    }
+```
+### PUT /streams/:id/pin
+Pin a stream; prevents state changes while pinned
+- **Requires authentication**
+- **Requires privileged role: Editor or Admin**
+```
+ curl -X PUT http://localhost:3000/streams/1/pin --header 'Authorization: Bearer MYTOKEN'
+```
+```json
+    {
+        ...
+        "isPinned": true,
+        ...
+    }
+```
+### DELETE /streams/:id/pin
+Unpin a stream
+- **Requires authentication**
+- **Requires privileged role: Editor or Admin**
+```
+ curl -X PUT http://localhost:3000/streams/1/pin --header 'Authorization: Bearer MYTOKEN'
+```
+```json
+    {
+        ...
+        "isPinned": false,
         ...
     }
 ```

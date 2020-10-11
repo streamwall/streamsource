@@ -29,9 +29,9 @@ module.exports = (sequelize, DataTypes) => {
       // However, we know that multiple streamers sometimes
       // use the same name to stream, e.g., Bear Gang, Concrete Reporting, Unicorn Riot, Boop Troop, etc.
       const matchingFilter = [
-        {link: this.link},
+        { link: this.link },
       ]
-      if(this.source) {
+      if (this.source) {
         matchingFilter.push({ source: this.source })
       }
       const pastStream = await Stream.findOne({
@@ -99,6 +99,7 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     postedBy:  DataTypes.TEXT,
+    isPinned:  DataTypes.BOOLEAN,
     city:      DataTypes.TEXT,
     region:    DataTypes.TEXT,
     state:     {

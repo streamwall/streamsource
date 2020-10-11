@@ -68,6 +68,10 @@ async function getStreams(req, res) {
         field: 'isExpired',
         rule:  { [req.query.isExpired ? Op.is : Op.not]: true, }
       },
+      isPinned:    {
+        field: 'isPinned',
+        rule:  { [req.query.isPinned ? Op.is : Op.not]: true, }
+      },
       title:       {
         field: 'title',
         rule:  { [Op.iLike]: `%${req.query.title}%` }
@@ -173,7 +177,7 @@ async function getStreams(req, res) {
 
 async function normalizeLink(link) {
   let normalizedLink = link
-  normalizedLink = normalizedLink.replace(/\/$/,'')
+  normalizedLink = normalizedLink.replace(/\/$/, '')
   normalizedLink = normalizedLink.replace(/https?:\/\/(www\.)?/i, '')
   return normalizedLink
 }
@@ -188,11 +192,11 @@ async function createStream(req, res) {
   const normalizedLink = await normalizeLink(req.body.link)
   const existingStream = await Stream.findOne({
     where: {
-      link: { [Op.iLike]:  `%${normalizedLink}%` },
+      link:      { [Op.iLike]: `%${normalizedLink}%` },
       isExpired: false,
     }
   })
-  if(existingStream) {
+  if (existingStream) {
     res.status(303).json({ data: existingStream })
     return
   }
@@ -223,6 +227,20 @@ async function patchStream(req, res) {
   const id = req.params.id
   const stream = await Stream.findByPk(id)
 
+  const statusIsChanging = req.body.status && req.body.status !== stream.status
+  const isExpiredIsChanging = req.body.isExpired !== undefined && req.body.isExpired !== stream.isExpired
+  const willChangeState = statusIsChanging || isExpiredIsChanging
+  const pinInvalidatesStateChange = stream.isPinned && willChangeState
+  if (pinInvalidatesStateChange) {
+    const error = new Error("Stream is pinned and cannot alter 'isExpired' or 'status' states. Unpin this resource in order to make changes.")
+    res.status(409).json({
+      error: {
+        message: error.message
+      }
+    })
+    return
+  }
+
   const updatedStream = await stream.update({
     source:    req.body.source,
     platform:  req.body.platform,
@@ -235,7 +253,8 @@ async function patchStream(req, res) {
     city:      req.body.city,
     region:    req.body.region,
     checkedAt: req.body.checkedAt,
-    liveAt:    req.body.liveAt
+    liveAt:    req.body.liveAt,
+    isPinned:  req.body.isPinned,
   })
 
   if (updatedStream instanceof ValidationError) {
@@ -265,6 +284,40 @@ async function getStream(req, res) {
   res.status(200).json(response)
 }
 
+async function pinStream(req, res) {
+  if (!req.user || !accessControl.can(req.user.role).updateAny('stream').granted) {
+    res.status(401)
+    return
+  }
+
+  const id = req.params.id
+  const stream = await Stream.findByPk(id)
+  if (!stream) {
+    res.status(404).send()
+  }
+
+  await stream.update({ isPinned: true })
+
+  res.status(204).send()
+}
+
+async function unpinStream(req, res) {
+  if (!req.user || !accessControl.can(req.user.role).updateAny('stream').granted) {
+    res.status(401)
+    return
+  }
+
+  const id = req.params.id
+  const stream = await Stream.findByPk(id)
+  if (!stream) {
+    res.status(404).send()
+  }
+
+  await stream.update({ isPinned: false })
+
+  res.status(204).send()
+}
+
 async function expireStream(req, res) {
   if (!req.user || !accessControl.can(req.user.role).deleteAny('stream').granted) {
     res.status(401)
@@ -277,15 +330,34 @@ async function expireStream(req, res) {
     res.status(404).send()
     return
   }
+  if (stream.isPinned) {
+    const error = new Error("Stream is pinned and cannot alter 'isExpired' or 'status' states. Unpin this resource in order to make changes.")
+    res.status(409).json({
+      error: error,
+    })
+  }
+
   await stream.update({ isExpired: true })
   res.status(204).send()
 }
 
-/* GET streams listing. */
+// List streams
 router.get('/', getStreams)
+
+// Create
 router.post('/', passport.authenticate('jwt', { session: false }), createStream)
+
+// Pin / unpin streams. This is a field on the model; in RESTful terms, let's call this a "virtual resource". Think "pin" as in "thumbtack", not as a verb ;)
+router.put('/:id/pin', passport.authenticate('jwt', { session: false }), pinStream)
+router.delete('/:id/pin', passport.authenticate('jwt', { session: false }), unpinStream)
+
+// Read
 router.get('/:id', getStream)
+
+// Update
 router.patch('/:id', passport.authenticate('jwt', { session: false }), patchStream)
+
+// Soft delete
 router.delete('/:id', passport.authenticate('jwt', { session: false }), expireStream)
 
 module.exports = router;
