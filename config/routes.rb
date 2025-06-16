@@ -12,6 +12,12 @@ Rails.application.routes.draw do
         member do
           put 'pin'
           delete 'pin', to: 'streams#unpin'
+          get 'analytics'
+        end
+        
+        collection do
+          post 'bulk_import'
+          get 'export'
         end
       end
     end
@@ -28,6 +34,29 @@ Rails.application.routes.draw do
   # API Documentation
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/swagger'
+  
+  # Feature flags admin UI (admin only)
+  authenticate :user, ->(u) { u.admin? } do
+    mount Flipper::UI.app(Flipper) => '/admin/flipper'
+  end
+  
+  # Alternative: Use a custom constraint for non-Devise authentication
+  constraints lambda { |request| 
+    token = request.headers['Authorization']&.split(' ')&.last
+    if token
+      begin
+        payload = JWT.decode(token, Rails.application.secret_key_base, true, algorithm: ApplicationConstants::JWT::ALGORITHM)[0]
+        user = User.find_by(id: payload['user_id'])
+        user&.admin?
+      rescue
+        false
+      end
+    else
+      false
+    end
+  } do
+    mount Flipper::UI.app(Flipper) => '/flipper'
+  end
   
   # Redirect root to API docs
   root to: redirect('/api-docs')

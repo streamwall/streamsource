@@ -52,3 +52,6 @@ if Stream.count.zero?
   
   puts "Created 3 sample streams for editor user"
 end
+
+# Load feature flags
+load Rails.root.join('db/seeds/feature_flags.rb')

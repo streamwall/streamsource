@@ -32,6 +32,7 @@ A modern, secure Rails 8 API for managing streaming sources with JWT authenticat
 - **API Documentation**: OpenAPI/Swagger documentation
 - **Docker Support**: Fully containerized application
 - **Test Coverage**: Comprehensive test suite with 100% coverage goal
+- **Feature Flags**: Flipper-based feature management system
 
 ## Technology Stack
 
@@ -46,6 +47,7 @@ A modern, secure Rails 8 API for managing streaming sources with JWT authenticat
 - **API Documentation**: Rswag (OpenAPI/Swagger)
 - **Serialization**: ActiveModel::Serializers
 - **Containerization**: Docker & Docker Compose
+- **Feature Flags**: Flipper with ActiveRecord adapter
 
 ## Getting Started
 

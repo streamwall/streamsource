@@ -71,4 +71,35 @@ module ApplicationConstants
     HEALTH_NOT_READY = 'not ready'
     DATABASE_CONNECTED = 'connected'
   end
+  
+  # Feature Flags
+  module Features
+    # Stream features
+    STREAM_ANALYTICS = :stream_analytics
+    STREAM_BULK_IMPORT = :stream_bulk_import
+    STREAM_EXPORT = :stream_export
+    STREAM_WEBHOOKS = :stream_webhooks
+    STREAM_TAGS = :stream_tags
+    STREAM_SCHEDULING = :stream_scheduling
+    
+    # User features
+    USER_PROFILE_CUSTOMIZATION = :user_profile_customization
+    USER_TWO_FACTOR_AUTH = :user_two_factor_auth
+    USER_API_KEYS = :user_api_keys
+    USER_ACTIVITY_LOG = :user_activity_log
+    
+    # API features
+    API_GRAPHQL = :api_graphql
+    API_WEBSOCKETS = :api_websockets
+    API_V2 = :api_v2
+    
+    # System features
+    ADVANCED_SEARCH = :advanced_search
+    REAL_TIME_NOTIFICATIONS = :real_time_notifications
+    MAINTENANCE_MODE = :maintenance_mode
+    
+    # Experimental features
+    AI_STREAM_RECOMMENDATIONS = :ai_stream_recommendations
+    COLLABORATIVE_PLAYLISTS = :collaborative_playlists
+  end
 end

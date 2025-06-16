@@ -282,6 +282,97 @@ Remove pin from a stream (owner or `admin` only).
 **Response:**
 Same as Get Stream response with `is_pinned: false`
 
+#### Stream Analytics (Feature Flagged)
+Get analytics data for a stream.
+
+**Endpoint:** `GET /streams/:id/analytics`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Note:** This endpoint requires the `stream_analytics` feature flag to be enabled for the user.
+
+**Response:**
+```json
+{
+  "stream_id": 1,
+  "views_count": 5432,
+  "unique_viewers": 876,
+  "average_watch_time": 1823,
+  "peak_concurrent_viewers": 234,
+  "last_updated": "2024-01-01T12:00:00Z"
+}
+```
+
+#### Bulk Import Streams (Feature Flagged)
+Import multiple streams at once.
+
+**Endpoint:** `POST /streams/bulk_import`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+- `Content-Type: application/json`
+
+**Note:** This endpoint requires the `stream_bulk_import` feature flag to be enabled (default: editors only).
+
+**Body:**
+```json
+{
+  "streams": [
+    {
+      "name": "Stream 1",
+      "url": "https://example.com/stream1",
+      "status": "active"
+    },
+    {
+      "name": "Stream 2",
+      "url": "https://example.com/stream2",
+      "status": "active"
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "imported": 2,
+  "total": 2,
+  "errors": []
+}
+```
+
+#### Export Streams (Feature Flagged)
+Export stream data in JSON format.
+
+**Endpoint:** `GET /streams/export`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Query Parameters:**
+- Same filtering options as List Streams
+
+**Note:** This endpoint requires the `stream_export` feature flag to be enabled.
+
+**Response:**
+```json
+{
+  "exported_at": "2024-01-01T12:00:00Z",
+  "count": 25,
+  "streams": [
+    {
+      "name": "Stream Name",
+      "url": "https://example.com/stream",
+      "status": "active",
+      "is_pinned": false,
+      "created_at": "2024-01-01T10:00:00Z",
+      "owner_email": "user@example.com"
+    }
+  ]
+}
+```
+
 ### Health Checks
 
 #### Health Status

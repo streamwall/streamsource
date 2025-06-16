@@ -15,6 +15,11 @@ class User < ApplicationRecord
   # Associations
   has_many :streams, dependent: :destroy
 
+  # Flipper actor
+  def flipper_id
+    "User:#{id}"
+  end
+
   # Enums
   enum :role, {
     default: 'default',
@@ -45,6 +50,18 @@ class User < ApplicationRecord
     editor? || admin?
   end
   
+  # Feature flag groups
+  def beta_user?
+    # You can implement your own logic here
+    # For example: created_at < 30.days.ago || email.ends_with?('@beta.test')
+    false
+  end
+  
+  def premium?
+    # Placeholder for premium user logic
+    # Could check subscription status, role, etc.
+    admin?
+  end
   
   private
   

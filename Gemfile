@@ -56,6 +56,11 @@ gem "active_model_serializers", "~> 0.10.14"
 gem "rswag-api"
 gem "rswag-ui"
 
+# Feature flags
+gem "flipper", "~> 1.3"
+gem "flipper-active_record", "~> 1.3"
+gem "flipper-ui", "~> 1.3"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   # gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
