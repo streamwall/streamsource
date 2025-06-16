@@ -1,26 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)",
-      "Bash(npm test:*)",
-      "Bash(npm run test:coverage:*)",
-      "Bash(node:*)",
-      "Bash(npm audit:*)",
-      "Bash(find:*)",
-      "Bash(rm:*)",
-      "Bash(npm info:*)",
-      "Bash(npx prisma:*)",
-      "Bash(mkdir:*)",
-      "Bash(npm run build:*)",
-      "Bash(kill:*)",
-      "Bash(true)",
-      "Bash(NODE_ENV=test npm test tests/misc/error-handling.test.js)",
-      "Bash(NODE_ENV=test npm test 2 >& 1)",
-      "Bash(NODE_ENV=test npm test tests/auth/authorization.test.ts)",
-      "Bash(touch:*)",
-      "Bash(npm uninstall:*)",
-      "Bash(grep:*)",
-      "Bash(npm run prisma:generate:*)"
+      "Bash(ls:*)",
+      "Bash(ruby --version)",
+      "Bash(gem install:*)",
+      "Bash(chmod:*)",
+      "Bash(brew install:*)",
+      "Bash(rbenv versions:*)"
     ],
     "deny": []
   }
