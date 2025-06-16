@@ -1,8 +1,14 @@
 # Rack::Attack configuration for rate limiting
 class Rack::Attack
   # Key prefix for Redis
-  redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
-  Rack::Attack.cache.store = ActiveSupport::Cache::RedisCacheStore.new(redis: redis)
+  if ENV['REDIS_URL'].present? || Rails.env.production?
+    require 'redis'
+    redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+    Rack::Attack.cache.store = ActiveSupport::Cache::RedisCacheStore.new(redis: redis)
+  else
+    # Use memory store in development/test without Redis
+    Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
+  end
   
   # Allow all requests from localhost
   safelist('allow-localhost') do |req|

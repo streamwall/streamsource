@@ -16,10 +16,10 @@ class Stream < ApplicationRecord
   belongs_to :user
   
   # Enums
-  enum status: {
+  enum :status, {
     active: 'active',
     inactive: 'inactive'
-  }
+  }, default: 'active'
   
   # Validations
   validates :url, presence: true, 

@@ -1,11 +1,11 @@
 class HealthController < ApplicationController
-  skip_before_action :authenticate_user!, if: -> { respond_to?(:authenticate_user!) }
+  # Health endpoints don't need authentication
   
   def index
     render json: {
       status: 'healthy',
       timestamp: Time.current.iso8601,
-      version: Rails.application.config.version || '1.0.0'
+      version: '1.0.0'
     }
   end
   

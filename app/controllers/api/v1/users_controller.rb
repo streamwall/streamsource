@@ -20,7 +20,7 @@ module Api
       def login
         user = User.find_by(email: params[:email]&.downcase)
         
-        if user && BCrypt::Password.new(user.password_digest) == params[:password]
+        if user && user.authenticate(params[:password])
           token = generate_jwt_token(user)
           render_success({
             user: UserSerializer.new(user),
@@ -45,7 +45,7 @@ module Api
           exp: 24.hours.from_now.to_i
         }
         
-        JWT.encode(payload, Rails.application.credentials.secret_key_base)
+        JWT.encode(payload, Rails.application.secret_key_base)
       end
     end
   end

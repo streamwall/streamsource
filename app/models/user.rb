@@ -10,17 +10,17 @@
 #  updated_at      :datetime         not null
 #
 class User < ApplicationRecord
-  # Include default devise modules. Others available are:
-  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
-  devise :database_authenticatable, :validatable,
-         :jwt_authenticatable, jwt_revocation_strategy: Devise::JWT::RevocationStrategies::Null
+  has_secure_password
+
+  # Associations
+  has_many :streams, dependent: :destroy
 
   # Enums
-  enum role: {
+  enum :role, {
     default: 'default',
     editor: 'editor', 
     admin: 'admin'
-  }
+  }, default: 'default'
   
   # Validations
   validates :email, presence: true, uniqueness: { case_sensitive: false }, 
@@ -45,20 +45,6 @@ class User < ApplicationRecord
     editor? || admin?
   end
   
-  # Override Devise's password= to ensure bcrypt is used
-  def password=(new_password)
-    @password = new_password
-    self.password_digest = BCrypt::Password.create(new_password) if new_password.present?
-  end
-  
-  # For Devise compatibility
-  def encrypted_password
-    password_digest
-  end
-  
-  def encrypted_password=(value)
-    self.password_digest = value
-  end
   
   private
   

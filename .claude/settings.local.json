@@ -6,7 +6,16 @@
       "Bash(gem install:*)",
       "Bash(chmod:*)",
       "Bash(brew install:*)",
-      "Bash(rbenv versions:*)"
+      "Bash(rbenv versions:*)",
+      "Bash(rbenv install:*)",
+      "Bash(rbenv global:*)",
+      "Bash(rbenv:*)",
+      "Bash(brew services:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(open:*)",
+      "Bash(docker:*)",
+      "Bash(curl:*)",
+      "Bash(echo)"
     ],
     "deny": []
   }
