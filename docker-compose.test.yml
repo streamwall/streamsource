@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: streamsource
+      POSTGRES_PASSWORD: streamsource_password
+      POSTGRES_DB: streamsource_test
+    
+  redis:
+    image: redis:7-alpine
+    
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - .:/rails
+    depends_on:
+      - db
+      - redis
+    environment:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://streamsource:streamsource_password@db:5432/streamsource_test
+      REDIS_URL: redis://redis:6379/0
+    command: bundle exec rspec

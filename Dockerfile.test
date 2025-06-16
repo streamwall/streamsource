@@ -1,0 +1,27 @@
+FROM ruby:3.3.6-alpine
+
+# Install dependencies
+RUN apk add --update --no-cache \
+    build-base \
+    postgresql-dev \
+    nodejs \
+    yarn \
+    git \
+    tzdata
+
+# Set working directory
+WORKDIR /rails
+
+# Copy Gemfile and install gems
+COPY Gemfile Gemfile.lock ./
+RUN bundle config set --local without ''
+RUN bundle install
+
+# Copy the rest of the application
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p tmp/pids log storage
+
+# Run tests
+CMD ["bundle", "exec", "rspec"]
