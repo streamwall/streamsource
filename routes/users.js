@@ -33,7 +33,7 @@ async function login(req, res, next) {
     } catch (error) {
       return next(error);
     }
-  })(req, req, next)
+  })(req, res, next)
 }
 
 router.post('/signup', passport.authenticate('signup', { session: false }), createUser)

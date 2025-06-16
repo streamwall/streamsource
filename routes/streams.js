@@ -62,7 +62,7 @@ async function getStreams(req, res) {
       },
       notStatus:   {
         field: 'status',
-        rule:  { [Op.notEq]: req.query.status }
+        rule:  { [Op.notEq]: req.query.notStatus }
       },
       isExpired:   {
         field: 'isExpired',
@@ -140,7 +140,7 @@ async function getStreams(req, res) {
     // Set order
     let orderFields
     let orderDirections
-    if (req.query.orderFields ^ req.query.orderDirections) {
+    if ((req.query.orderFields && !req.query.orderDirections) || (!req.query.orderFields && req.query.orderDirections)) {
       const errorResponse = { error: `Ordering requires both orderFields and orderDirections params to be sent` }
       res.status(400).json(errorResponse)
       return
@@ -184,7 +184,7 @@ async function normalizeLink(link) {
 
 async function createStream(req, res) {
   if (!req.user || !accessControl.can(req.user.role).createAny('stream').granted) {
-    res.status(401)
+    res.status(401).send()
     return
   }
 
@@ -220,7 +220,7 @@ async function createStream(req, res) {
 
 async function patchStream(req, res) {
   if (!req.user || !accessControl.can(req.user.role).updateAny('stream').granted) {
-    res.status(401)
+    res.status(401).send()
     return
   }
 
@@ -286,7 +286,7 @@ async function getStream(req, res) {
 
 async function pinStream(req, res) {
   if (!req.user || !accessControl.can(req.user.role).updateAny('stream').granted) {
-    res.status(401)
+    res.status(401).send()
     return
   }
 
@@ -294,6 +294,7 @@ async function pinStream(req, res) {
   const stream = await Stream.findByPk(id)
   if (!stream) {
     res.status(404).send()
+    return
   }
 
   await stream.update({ isPinned: true })
@@ -303,7 +304,7 @@ async function pinStream(req, res) {
 
 async function unpinStream(req, res) {
   if (!req.user || !accessControl.can(req.user.role).updateAny('stream').granted) {
-    res.status(401)
+    res.status(401).send()
     return
   }
 
@@ -311,6 +312,7 @@ async function unpinStream(req, res) {
   const stream = await Stream.findByPk(id)
   if (!stream) {
     res.status(404).send()
+    return
   }
 
   await stream.update({ isPinned: false })
@@ -320,7 +322,7 @@ async function unpinStream(req, res) {
 
 async function expireStream(req, res) {
   if (!req.user || !accessControl.can(req.user.role).deleteAny('stream').granted) {
-    res.status(401)
+    res.status(401).send()
     return
   }
 
@@ -335,6 +337,7 @@ async function expireStream(req, res) {
     res.status(409).json({
       error: error,
     })
+    return
   }
 
   await stream.update({ isExpired: true })
