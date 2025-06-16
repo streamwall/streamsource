@@ -105,3 +105,4 @@ dist
 
 # JetBrains IDEs
 .idea
+/generated/prisma

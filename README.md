@@ -1,5 +1,7 @@
 # StreamSource
 
+**🚀 Fully modernized in 2025 with TypeScript, Prisma ORM, Express 5, and enterprise-grade security.**
+
 Streamsource is a publicly readable API to store and retrieve information about livestreams across many streaming platforms.
 
 ## Table of Contents
@@ -26,17 +28,44 @@ Streamsource is a publicly readable API to store and retrieve information about 
 ### Current State
 Streamsource is in active development at an early stage. The API is not yet stable and versioning has not been implemented. We welcome contributions!
 
+### 🚀 Modernization Complete (2025)
+The application has been fully modernized with current best practices:
+- ✅ **Security**: All dependencies updated, Helmet.js, rate limiting, and input validation
+- ✅ **Infrastructure**: Express 5, Docker support, GitHub Actions CI/CD
+- ✅ **Type Safety**: Complete TypeScript conversion with strict typing
+- ✅ **Database**: Prisma ORM with type-safe queries and migrations
+- ✅ **Monitoring**: Prometheus metrics integration
+- ✅ **Testing**: Full test suite migrated to TypeScript with Prisma mocks
+
+See [CLAUDE.md](CLAUDE.md) for architecture details and development guidelines.
+
 ## Getting Started
 
 **If you just want to use the API to read stream data**, see the [API Reference](#api-reference) section.
 
 ### Prerequisites
 
-- Node.js (v12 or higher recommended)
-- PostgreSQL (v10 or higher)
-- LogDNA account (for production logging)
+- Node.js (v20 LTS recommended)
+- PostgreSQL (v15 or higher)
+- Docker & Docker Compose (optional, for containerized development)
+- LogDNA account (optional, for production logging)
 
 ### Quick Start
+
+#### Using Docker (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/streamwall/streamsource.git
+cd streamsource
+
+# Start the application with Docker Compose
+docker-compose up
+
+# The API will be available at http://localhost:3000
+```
+
+#### Manual Setup
 
 ```bash
 # Clone the repository
@@ -47,11 +76,15 @@ cd streamsource
 npm install
 
 # Set up environment variables
-cp example.env .env
+cp .env.example .env 2>/dev/null || echo 'DATABASE_URL="postgresql://user:password@localhost:5432/streamsource"' > .env
+echo 'JWT_SECRET="your-secret-key-change-in-production"' >> .env
 # Edit .env with your configuration
 
+# Generate Prisma client
+npm run prisma:generate
+
 # Run database migrations
-npx sequelize-cli db:migrate
+npm run prisma:migrate
 
 # Start the server
 npm start
