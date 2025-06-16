@@ -25,10 +25,10 @@ class User < ApplicationRecord
   # Validations
   validates :email, presence: true, uniqueness: { case_sensitive: false }, 
                     format: { with: URI::MailTo::EMAIL_REGEXP }
-  validates :password, length: { minimum: 8 }, 
+  validates :password, length: { minimum: ApplicationConstants::Password::MIN_LENGTH }, 
                       format: {
-                        with: /\A(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                        message: "must include lowercase, uppercase, and number"
+                        with: ApplicationConstants::Password::COMPLEXITY_REGEX,
+                        message: ApplicationConstants::Password::COMPLEXITY_MESSAGE
                       }, 
                       on: :create
   validates :role, inclusion: { in: roles.keys }

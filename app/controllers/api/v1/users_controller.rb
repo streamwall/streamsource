@@ -27,7 +27,7 @@ module Api
             token: token
           })
         else
-          render_error('Invalid email or password', :unauthorized)
+          render_error(ApplicationConstants::Messages::INVALID_CREDENTIALS, :unauthorized)
         end
       end
       
@@ -42,10 +42,10 @@ module Api
           user_id: user.id,
           email: user.email,
           role: user.role,
-          exp: 24.hours.from_now.to_i
+          exp: ApplicationConstants::JWT::EXPIRATION_TIME.from_now.to_i
         }
         
-        JWT.encode(payload, Rails.application.secret_key_base)
+        JWT.encode(payload, Rails.application.secret_key_base, ApplicationConstants::JWT::ALGORITHM)
       end
     end
   end

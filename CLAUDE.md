@@ -1,0 +1,235 @@
+# Claude AI Assistant Context
+
+This document provides context and guidelines for AI assistants (particularly Claude) working on the StreamSource API project.
+
+## Project Overview
+
+StreamSource is a Rails 8 API application for managing streaming sources. It was migrated from a Node.js/Express application to Rails, implementing modern security practices and comprehensive testing.
+
+## Key Technical Details
+
+### Architecture
+- **Rails 8.0.2** API-only mode
+- **PostgreSQL** for data persistence
+- **Redis** for caching and rate limiting
+- **JWT** for stateless authentication
+- **Docker** for containerization
+
+### Code Organization
+- Thin controllers with business logic in models
+- Authorization separated into Pundit policies
+- Constants centralized in `config/application_constants.rb`
+- Comprehensive test coverage (target: 100%)
+
+### Authentication & Authorization
+- JWT tokens with 24-hour expiration
+- Three roles: default, editor, admin
+- Role-based permissions:
+  - **default**: Can view streams only
+  - **editor**: Can create/edit/delete own streams
+  - **admin**: Full access to all streams
+
+### Important Patterns
+1. **Error Handling**: Centralized in BaseController
+2. **Pagination**: Default 25 items, max 100
+3. **Rate Limiting**: Configured in Rack::Attack
+4. **Serialization**: Using ActiveModel::Serializers
+
+## Common Tasks
+
+### Adding New Features
+1. Start with tests (TDD approach)
+2. Update models with validations
+3. Add controller actions
+4. Create/update policies for authorization
+5. Add serializers for JSON output
+6. Update API documentation
+7. Add integration tests
+
+### Database Changes
+1. Create migration: `bin/rails generate migration AddFieldToModel`
+2. Update model validations and associations
+3. Update serializers if needed
+4. Update tests
+5. Run migration: `bin/rails db:migrate`
+
+### API Endpoint Addition
+1. Add route in `config/routes.rb`
+2. Create controller action
+3. Add authorization policy
+4. Write request specs
+5. Update API documentation
+
+## Testing Guidelines
+
+### Running Tests
+```bash
+# All tests
+bundle exec rspec
+
+# Specific file
+bundle exec rspec spec/models/user_spec.rb
+
+# With coverage
+COVERAGE=true bundle exec rspec
+```
+
+### Test Structure
+- Unit tests for models
+- Controller tests for endpoints
+- Request specs for integration
+- Policy specs for authorization
+- Always test edge cases
+
+## Security Considerations
+
+1. **Never commit secrets** - Use environment variables
+2. **Validate all input** - Strong params in controllers
+3. **Authorize all actions** - Use Pundit policies
+4. **Rate limit endpoints** - Configured in Rack::Attack
+5. **Sanitize output** - Use serializers
+
+## Performance Optimization
+
+1. **Use pagination** - Never return unlimited records
+2. **Add database indexes** - For foreign keys and commonly queried fields
+3. **Cache when appropriate** - Redis available for caching
+4. **Optimize queries** - Use includes/joins to avoid N+1
+
+## Code Style
+
+1. **Follow Rubocop rules** - Run `rubocop` before committing
+2. **Descriptive names** - Variables, methods, and classes
+3. **Keep methods small** - Single responsibility principle
+4. **Document complex logic** - Add comments for clarity
+5. **Use constants** - No magic numbers or strings
+
+## Docker Commands
+
+```bash
+# Start services
+docker-compose up -d
+
+# Run migrations
+docker-compose exec web bin/rails db:migrate
+
+# Access console
+docker-compose exec web bin/rails console
+
+# Run tests
+docker-compose exec web bundle exec rspec
+
+# View logs
+docker-compose logs -f web
+```
+
+## Common Issues & Solutions
+
+### JWT Token Issues
+- Tokens expire after 24 hours
+- Use `ApplicationConstants::JWT::ALGORITHM` for consistency
+- Secret key from `Rails.application.secret_key_base`
+
+### Rate Limiting
+- Development uses memory store
+- Production uses Redis
+- Clear with: `docker-compose exec redis redis-cli FLUSHALL`
+
+### Database Connection
+- Ensure PostgreSQL is running
+- Check DATABASE_URL environment variable
+- Run migrations after schema changes
+
+## API Response Formats
+
+### Success Response
+```json
+{
+  "data": {
+    "id": 1,
+    "attribute": "value"
+  }
+}
+```
+
+### Error Response
+```json
+{
+  "error": "Error message here"
+}
+```
+
+### Paginated Response
+```json
+{
+  "data": [...],
+  "meta": {
+    "current_page": 1,
+    "total_pages": 10,
+    "total_count": 250,
+    "per_page": 25
+  }
+}
+```
+
+## Deployment Checklist
+
+1. Run tests: `bundle exec rspec`
+2. Check code style: `rubocop`
+3. Update documentation
+4. Set environment variables
+5. Run migrations in production
+6. Verify health checks work
+7. Monitor rate limiting
+8. Check error tracking
+
+## AI Assistant Guidelines
+
+When working on this project:
+
+1. **Prioritize tests** - Always write/update tests for changes
+2. **Follow patterns** - Maintain consistency with existing code
+3. **Document changes** - Update README and inline comments
+4. **Consider security** - Validate input, authorize actions
+5. **Think about performance** - Pagination, caching, indexes
+6. **Use constants** - Add to ApplicationConstants module
+7. **Keep it simple** - Avoid over-engineering
+
+## Migration from Node.js
+
+This project was migrated from a Node.js/Express application. Key differences:
+
+1. **ORM**: Sequelize → ActiveRecord
+2. **Auth**: Passport → JWT with custom implementation
+3. **Testing**: Jest → RSpec
+4. **Validation**: Express-validator → ActiveModel validations
+5. **Rate Limiting**: express-rate-limit → Rack::Attack
+
+## Future Enhancements
+
+Potential areas for improvement:
+
+1. **GraphQL API** - Alternative to REST
+2. **WebSocket Support** - Real-time updates
+3. **Background Jobs** - Sidekiq integration
+4. **File Uploads** - Active Storage
+5. **API Versioning** - Beyond v1
+6. **Caching Layer** - Redis caching
+7. **Search** - Elasticsearch integration
+8. **Monitoring** - APM integration
+
+## Resources
+
+- [Rails Guides](https://guides.rubyonrails.org/)
+- [JWT.io](https://jwt.io/)
+- [Pundit Documentation](https://github.com/varvet/pundit)
+- [RSpec Best Practices](https://www.betterspecs.org/)
+- [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/)
+
+## Contact
+
+For questions about architectural decisions or patterns used in this project, refer to:
+- Git history for context
+- Test files for usage examples
+- Comments in complex code sections
+- This document for high-level guidance

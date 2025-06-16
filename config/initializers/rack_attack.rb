@@ -15,31 +15,31 @@ class Rack::Attack
     req.ip == '127.0.0.1' || req.ip == '::1'
   end
   
-  # Throttle all requests by IP (100 requests per minute)
-  throttle('req/ip', limit: 100, period: 1.minute) do |req|
+  # Throttle all requests by IP
+  throttle('req/ip', limit: ApplicationConstants::RateLimit::REQUESTS_PER_MINUTE, period: 1.minute) do |req|
     req.ip
   end
   
-  # Throttle login attempts by IP (5 requests per 20 minutes)
-  throttle('logins/ip', limit: 5, period: 20.minutes) do |req|
+  # Throttle login attempts by IP
+  throttle('logins/ip', limit: ApplicationConstants::RateLimit::LOGIN_ATTEMPTS_PER_PERIOD, period: ApplicationConstants::RateLimit::LOGIN_PERIOD) do |req|
     req.ip if req.path == '/api/v1/users/login' && req.post?
   end
   
-  # Throttle login attempts by email (5 requests per 20 minutes)
-  throttle('logins/email', limit: 5, period: 20.minutes) do |req|
+  # Throttle login attempts by email
+  throttle('logins/email', limit: ApplicationConstants::RateLimit::LOGIN_ATTEMPTS_PER_PERIOD, period: ApplicationConstants::RateLimit::LOGIN_PERIOD) do |req|
     if req.path == '/api/v1/users/login' && req.post?
       req.params['email'].to_s.downcase.presence
     end
   end
   
-  # Throttle signup attempts by IP (3 requests per hour)
-  throttle('signups/ip', limit: 3, period: 1.hour) do |req|
+  # Throttle signup attempts by IP
+  throttle('signups/ip', limit: ApplicationConstants::RateLimit::SIGNUP_ATTEMPTS_PER_PERIOD, period: ApplicationConstants::RateLimit::SIGNUP_PERIOD) do |req|
     req.ip if req.path == '/api/v1/users/signup' && req.post?
   end
   
   # Exponential backoff for repeated violations
-  (2..6).each do |level|
-    throttle("req/ip/#{level}", limit: (50 * level), period: (8**level).seconds) do |req|
+  ApplicationConstants::RateLimit::BACKOFF_LEVELS.each do |level|
+    throttle("req/ip/#{level}", limit: (50 * level), period: (ApplicationConstants::RateLimit::BACKOFF_BASE**level).seconds) do |req|
       req.ip if req.env['rack.attack.matched'] && req.env['rack.attack.match_type'] == :throttle
     end
   end
@@ -56,6 +56,6 @@ class Rack::Attack
       'X-RateLimit-Reset' => (now + (match_data[:period] - now % match_data[:period])).to_s
     }
     
-    [429, headers, [{ error: 'Too many requests. Please try again later.' }.to_json]]
+    [429, headers, [{ error: ApplicationConstants::Messages::RATE_LIMITED }.to_json]]
   end
 end

@@ -24,10 +24,14 @@ class Stream < ApplicationRecord
   # Validations
   validates :url, presence: true, 
                   format: { 
-                    with: URI::regexp(%w[http https]),
-                    message: "must be a valid HTTP or HTTPS URL"
+                    with: ApplicationConstants::Stream::URL_REGEX,
+                    message: ApplicationConstants::Stream::URL_ERROR_MESSAGE
                   }
-  validates :name, presence: true, length: { minimum: 1, maximum: 255 }
+  validates :name, presence: true, 
+                   length: { 
+                     minimum: ApplicationConstants::Stream::NAME_MIN_LENGTH, 
+                     maximum: ApplicationConstants::Stream::NAME_MAX_LENGTH 
+                   }
   validates :user, presence: true
   
   # Scopes
@@ -37,6 +41,7 @@ class Stream < ApplicationRecord
   scope :unpinned, -> { where(is_pinned: false) }
   scope :recent, -> { order(created_at: :desc) }
   scope :by_user, ->(user) { where(user: user) }
+  scope :ordered, -> { order(is_pinned: :desc, created_at: :desc) }
   
   # Callbacks
   before_validation :normalize_url
