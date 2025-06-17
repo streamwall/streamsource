@@ -4,7 +4,7 @@ module Admin
     
     def index
       @pagy, @streams = pagy(
-        Stream.includes(:user)
+        Stream.includes(:user, :streamer)
               .filtered(filter_params)
               .ordered,
         items: 20
@@ -135,11 +135,11 @@ module Admin
     def stream_params
       params.require(:stream).permit(:source, :link, :status, :platform, :orientation, 
                                       :kind, :city, :state, :notes, :title, 
-                                      :posted_by, :user_id, :is_pinned)
+                                      :posted_by, :user_id, :streamer_id, :is_pinned)
     end
     
     def filter_params
-      params.permit(:status, :platform, :kind, :orientation, :user_id, :search, :is_pinned)
+      params.permit(:status, :platform, :kind, :orientation, :user_id, :search, :is_pinned, :is_archived)
     end
   end
 end

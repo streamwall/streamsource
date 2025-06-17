@@ -6,6 +6,7 @@
 #  link            :string           not null
 #  source          :string           not null
 #  user_id         :bigint           not null
+#  streamer_id     :bigint
 #  is_pinned       :boolean          default(false)
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
@@ -20,10 +21,15 @@
 #  posted_by       :string
 #  orientation     :string
 #  kind            :string           default("video")
+#  started_at      :datetime
+#  ended_at        :datetime
+#  is_archived     :boolean          default(false)
 #
 class Stream < ApplicationRecord
   # Associations
   belongs_to :user
+  belongs_to :streamer, optional: true # Optional for now during migration
+  has_many :notes, as: :notable, dependent: :destroy
   
   # Enums
   enum :status, {
@@ -78,11 +84,22 @@ class Stream < ApplicationRecord
   scope :unpinned, -> { where(is_pinned: false) }
   scope :recent, -> { order(created_at: :desc) }
   scope :by_user, ->(user) { where(user: user) }
+  scope :by_streamer, ->(streamer) { where(streamer: streamer) }
   scope :by_platform, ->(platform) { where(platform: platform) }
   scope :by_kind, ->(kind) { where(kind: kind) }
   scope :recently_checked, -> { order(last_checked_at: :desc) }
   scope :recently_live, -> { order(last_live_at: :desc) }
-  scope :ordered, -> { order(is_pinned: :desc, created_at: :desc) }
+  scope :ordered, -> { order(is_pinned: :desc, started_at: :desc) }
+  
+  # Archival scopes
+  scope :archived, -> { where(is_archived: true) }
+  scope :not_archived, -> { where(is_archived: false) }
+  scope :active, -> { not_archived }
+  scope :needs_archiving, -> { 
+    not_archived
+      .where.not(status: 'Live')
+      .where('last_checked_at < ?', 30.minutes.ago)
+  }
   
   # Filtering scope for admin interface
   scope :filtered, ->(params) do
@@ -93,6 +110,7 @@ class Stream < ApplicationRecord
     scope = scope.where(orientation: params[:orientation]) if params[:orientation].present?
     scope = scope.where(user_id: params[:user_id]) if params[:user_id].present?
     scope = scope.where(is_pinned: params[:is_pinned]) if params[:is_pinned].present?
+    scope = scope.where(is_archived: params[:is_archived]) if params[:is_archived].present?
     if params[:search].present?
       scope = scope.where(
         'source ILIKE ? OR link ILIKE ? OR title ILIKE ? OR city ILIKE ? OR state ILIKE ? OR notes ILIKE ? OR posted_by ILIKE ?', 
@@ -108,6 +126,7 @@ class Stream < ApplicationRecord
   before_validation :set_posted_by
   before_save :update_last_checked_at, if: :status_changed?
   before_save :update_last_live_at, if: -> { status_changed? && live? }
+  before_save :set_started_at, if: -> { status_changed? && live? && started_at.blank? }
   
   # Instance methods
   def pin!
@@ -127,15 +146,63 @@ class Stream < ApplicationRecord
   end
   
   def mark_as_live!
-    update!(status: 'Live', last_checked_at: Time.current, last_live_at: Time.current)
+    updates = {
+      status: 'Live', 
+      last_checked_at: Time.current, 
+      last_live_at: Time.current
+    }
+    updates[:started_at] = Time.current if started_at.blank?
+    update!(updates)
   end
   
   def mark_as_offline!
     update!(status: 'Offline', last_checked_at: Time.current)
+    # Check if stream should be archived
+    archive! if should_archive?
   end
   
   def mark_as_unknown!
     update!(status: 'Unknown', last_checked_at: Time.current)
+    # Check if stream should be archived
+    archive! if should_archive?
+  end
+  
+  def archive!
+    return if is_archived?
+    
+    update!(
+      is_archived: true,
+      ended_at: ended_at || last_checked_at || Time.current
+    )
+  end
+  
+  def should_archive?
+    return false if is_archived?
+    return false if live?
+    
+    # Archive if offline/unknown for more than 30 minutes
+    last_checked_at.present? && last_checked_at < 30.minutes.ago
+  end
+  
+  def duration
+    return nil unless started_at.present?
+    
+    end_time = ended_at || Time.current
+    end_time - started_at
+  end
+  
+  def duration_in_words
+    return nil unless duration
+    
+    seconds = duration.to_i
+    hours = seconds / 3600
+    minutes = (seconds % 3600) / 60
+    
+    if hours > 0
+      "#{hours}h #{minutes}m"
+    else
+      "#{minutes}m"
+    end
   end
   
   private
@@ -157,5 +224,9 @@ class Stream < ApplicationRecord
   
   def update_last_live_at
     self.last_live_at = Time.current
+  end
+  
+  def set_started_at
+    self.started_at = Time.current
   end
 end

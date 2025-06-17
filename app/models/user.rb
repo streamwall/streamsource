@@ -14,6 +14,7 @@ class User < ApplicationRecord
 
   # Associations
   has_many :streams, dependent: :destroy
+  has_many :streamers, dependent: :destroy
 
   # Flipper actor
   def flipper_id

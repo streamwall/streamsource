@@ -1,5 +1,14 @@
 <tr id="<%= dom_id(stream) %>" class="hover:bg-gray-50">
   <td class="px-6 py-4 whitespace-nowrap">
+    <% if stream.streamer.present? %>
+      <%= link_to admin_streamer_path(stream.streamer), class: "text-sm font-medium text-indigo-600 hover:text-indigo-900" do %>
+        <%= stream.streamer.name %>
+      <% end %>
+    <% else %>
+      <span class="text-sm text-gray-400 italic">No streamer</span>
+    <% end %>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
     <div class="flex items-center">
       <% if stream.is_pinned? %>
         <svg class="h-4 w-4 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -35,16 +44,22 @@
     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= badge_color %>">
       <%= stream.status %>
     </span>
+    <% if stream.is_archived? %>
+      <span class="ml-1 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+        Archived
+      </span>
+    <% end %>
   </td>
   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-    <% if stream.city.present? || stream.state.present? %>
-      <%= [stream.city, stream.state].compact.join(', ') %>
+    <% if stream.started_at.present? %>
+      <% if stream.is_archived? %>
+        <%= stream.duration_in_words || "—" %>
+      <% else %>
+        <%= time_ago_in_words(stream.started_at) %> ago
+      <% end %>
     <% else %>
       <span class="text-gray-400">—</span>
     <% end %>
-  </td>
-  <td class="px-6 py-4 whitespace-nowrap">
-    <div class="text-sm text-gray-900"><%= stream.posted_by || stream.user.email %></div>
   </td>
   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
     <% if stream.last_live_at.present? %>
@@ -52,11 +67,6 @@
     <% else %>
       <span class="text-gray-400">Never</span>
     <% end %>
-  </td>
-  <td class="px-6 py-4 whitespace-nowrap">
-    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-      <%= stream.kind %>
-    </span>
   </td>
   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
     <div class="flex items-center justify-end space-x-2">
@@ -66,13 +76,15 @@
         </svg>
       </a>
       
-      <%= button_to admin_toggle_pin_stream_path(stream), 
-          method: :patch,
-          class: "text-gray-400 hover:text-gray-600",
-          title: stream.is_pinned? ? "Unpin" : "Pin" do %>
-        <svg class="h-5 w-5" fill="<%= stream.is_pinned? ? 'currentColor' : 'none' %>" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-        </svg>
+      <% unless stream.is_archived? %>
+        <%= button_to admin_toggle_pin_stream_path(stream), 
+            method: :patch,
+            class: "text-gray-400 hover:text-gray-600",
+            title: stream.is_pinned? ? "Unpin" : "Pin" do %>
+          <svg class="h-5 w-5" fill="<%= stream.is_pinned? ? 'currentColor' : 'none' %>" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+        <% end %>
       <% end %>
       
       <%= link_to admin_edit_stream_path(stream), 
