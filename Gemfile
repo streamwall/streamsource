@@ -109,7 +109,7 @@ group :test do
 end
 
 # Performance monitoring
-gem "skylight", "~> 6.0" # or gem "appsignal", "~> 3.5"
+# gem "skylight", "~> 6.0" # or gem "appsignal", "~> 3.5"
 
 # Background jobs (if needed later)
 # gem "sidekiq", "~> 7.2"

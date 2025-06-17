@@ -37,7 +37,6 @@ A modern Rails 8 application for managing streaming sources with both a RESTful 
 - **Pagination**: Efficient data loading with Pagy
 - **Docker Support**: Fully containerized application
 - **Test Coverage**: Comprehensive test suite with high coverage
-- **Performance Monitoring**: Skylight integration for production monitoring
 
 ## Technology Stack
 
@@ -352,7 +351,7 @@ The application includes health checks for Kubernetes:
 2. Configure production database
 3. Set up Redis for caching and sessions
 4. Configure email delivery (if needed)
-5. Set up monitoring (Skylight, New Relic, etc.)
+5. Set up monitoring (New Relic, AppSignal, etc.)
 6. Configure log aggregation
 7. Set up SSL/TLS termination
 8. Configure CORS for your domains

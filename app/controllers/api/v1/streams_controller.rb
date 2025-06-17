@@ -117,7 +117,9 @@ module Api
         errors = []
         
         streams_data.each_with_index do |stream_params, index|
-          stream = current_user.streams.build(stream_params.permit(:name, :url, :status))
+          stream = current_user.streams.build(stream_params.permit(:source, :link, :status, :platform, 
+                                                                   :orientation, :kind, :city, :state, 
+                                                                   :notes, :title, :posted_by))
           if stream.save
             imported_count += 1
           else
@@ -147,11 +149,21 @@ module Api
         
         export_data = streams.map do |stream|
           {
-            name: stream.name,
-            url: stream.url,
+            source: stream.source,
+            link: stream.link,
             status: stream.status,
+            platform: stream.platform,
+            orientation: stream.orientation,
+            kind: stream.kind,
+            city: stream.city,
+            state: stream.state,
+            notes: stream.notes,
+            title: stream.title,
+            posted_by: stream.posted_by,
             is_pinned: stream.is_pinned,
             created_at: stream.created_at.iso8601,
+            last_checked_at: stream.last_checked_at&.iso8601,
+            last_live_at: stream.last_live_at&.iso8601,
             owner_email: stream.user.email
           }
         end
@@ -170,7 +182,8 @@ module Api
       end
       
       def stream_params
-        params.permit(:url, :name, :status)
+        params.permit(:source, :link, :status, :platform, :orientation, :kind,
+                      :city, :state, :notes, :title, :posted_by)
       end
     end
   end

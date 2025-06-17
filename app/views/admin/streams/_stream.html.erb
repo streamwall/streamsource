@@ -1,32 +1,71 @@
 <tr id="<%= dom_id(stream) %>" class="hover:bg-gray-50">
   <td class="px-6 py-4 whitespace-nowrap">
-    <div class="text-sm font-medium text-gray-900"><%= stream.name %></div>
-  </td>
-  <td class="px-6 py-4 whitespace-nowrap">
-    <div class="text-sm text-gray-500 truncate max-w-xs" title="<%= stream.url %>">
-      <%= stream.url %>
+    <div class="flex items-center">
+      <% if stream.is_pinned? %>
+        <svg class="h-4 w-4 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      <% end %>
+      <div>
+        <div class="text-sm font-medium text-gray-900"><%= stream.source %></div>
+        <% if stream.title.present? %>
+          <div class="text-xs text-gray-500"><%= truncate(stream.title, length: 50) %></div>
+        <% end %>
+      </div>
     </div>
   </td>
   <td class="px-6 py-4 whitespace-nowrap">
-    <div class="text-sm text-gray-900"><%= stream.user.email %></div>
+    <% if stream.platform.present? %>
+      <span class="text-sm text-gray-900">
+        <%= stream.platform %>
+        <% if stream.orientation.present? %>
+          <span class="text-xs text-gray-500">(<%= stream.orientation %>)</span>
+        <% end %>
+      </span>
+    <% else %>
+      <span class="text-sm text-gray-400">—</span>
+    <% end %>
   </td>
   <td class="px-6 py-4 whitespace-nowrap">
-    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= stream.active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+    <% badge_color = case stream.status
+       when 'Live' then 'bg-green-100 text-green-800'
+       when 'Offline' then 'bg-gray-100 text-gray-800'
+       else 'bg-yellow-100 text-yellow-800'
+       end %>
+    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= badge_color %>">
       <%= stream.status %>
     </span>
   </td>
   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-    <% if stream.is_pinned? %>
-      <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-      </svg>
+    <% if stream.city.present? || stream.state.present? %>
+      <%= [stream.city, stream.state].compact.join(', ') %>
+    <% else %>
+      <span class="text-gray-400">—</span>
     <% end %>
   </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <div class="text-sm text-gray-900"><%= stream.posted_by || stream.user.email %></div>
+  </td>
   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-    <%= stream.created_at.strftime("%b %d, %Y") %>
+    <% if stream.last_live_at.present? %>
+      <%= time_ago_in_words(stream.last_live_at) %> ago
+    <% else %>
+      <span class="text-gray-400">Never</span>
+    <% end %>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+      <%= stream.kind %>
+    </span>
   </td>
   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
     <div class="flex items-center justify-end space-x-2">
+      <a href="<%= stream.link %>" target="_blank" class="text-blue-600 hover:text-blue-900" title="View stream">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </a>
+      
       <%= button_to admin_toggle_pin_stream_path(stream), 
           method: :patch,
           class: "text-gray-400 hover:text-gray-600",
