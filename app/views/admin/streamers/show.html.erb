@@ -1,4 +1,5 @@
-<% content_for :page_title, @streamer.name %>
+<% content_for :page_title, "Streamer: #{@streamer.name}" %>
+<% content_for :page_subtitle, "Viewing streamer details and platform accounts" %>
 <% content_for :page_actions do %>
   <%= link_to admin_streamers_path, 
       class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>

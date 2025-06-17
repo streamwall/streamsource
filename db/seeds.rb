@@ -48,14 +48,23 @@ if Rails.env.development? || Rails.env.test?
 end
 
 # Create sample streams
-if Stream.count.zero?
+if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
+  # Get the admin and editor users
+  admin = User.find_by(email: 'admin@example.com')
+  editor = User.find_by(email: 'editor@example.com')
+  default_user = User.find_by(email: 'user@example.com')
+  
+  unless admin && editor && default_user
+    puts "Skipping stream creation - users not found"
+    return
+  end
   # Create realistic sample streams for admin
   sample_streams = [
     {
       source: "nyc_streamer",
       link: "https://www.tiktok.com/@nyc_streamer/live",
-      platform: "TikTok",
-      status: "Live",
+      platform: "tiktok",
+      status: "live",
       city: "New York",
       state: "NY",
       title: "Live from Times Square",
@@ -68,8 +77,8 @@ if Stream.count.zero?
     {
       source: "protest_watch",
       link: "https://www.twitch.tv/protest_watch",
-      platform: "Twitch",
-      status: "Offline",
+      platform: "twitch",
+      status: "offline",
       city: "Los Angeles",
       state: "CA",
       title: "LA Protest Coverage",
@@ -82,8 +91,8 @@ if Stream.count.zero?
     {
       source: "weather_cam_chicago",
       link: "https://www.youtube.com/watch?v=weather123",
-      platform: "YouTube",
-      status: "Live",
+      platform: "youtube",
+      status: "live",
       city: "Chicago",
       state: "IL",
       title: "Chicago Weather Cam",
@@ -95,8 +104,8 @@ if Stream.count.zero?
     {
       source: "seattle_traffic",
       link: "https://www.facebook.com/seattletraffic/live",
-      platform: "Facebook",
-      status: "Unknown",
+      platform: "facebook",
+      status: "unknown",
       city: "Seattle",
       state: "WA",
       title: "I-5 Traffic Cam",
@@ -108,8 +117,8 @@ if Stream.count.zero?
     {
       source: "miami_beach_cam",
       link: "https://www.instagram.com/miamibeachcam/live",
-      platform: "Instagram",
-      status: "Live",
+      platform: "instagram",
+      status: "live",
       city: "Miami",
       state: "FL",
       title: "Miami Beach Live",
@@ -125,7 +134,7 @@ if Stream.count.zero?
       **stream_data,
       user: admin,
       last_checked_at: rand(1..24).hours.ago,
-      last_live_at: stream_data[:status] == "Live" ? rand(1..6).hours.ago : rand(1..30).days.ago
+      last_live_at: stream_data[:status] == "live" ? rand(1..6).hours.ago : rand(1..30).days.ago
     )
   end
   
@@ -136,8 +145,8 @@ if Stream.count.zero?
     {
       source: "boston_news",
       link: "https://www.tiktok.com/@boston_news/live",
-      platform: "TikTok",
-      status: "Live",
+      platform: "tiktok",
+      status: "live",
       city: "Boston",
       state: "MA",
       title: "Boston Breaking News",
@@ -149,8 +158,8 @@ if Stream.count.zero?
     {
       source: "denver_weather",
       link: "https://www.twitch.tv/denver_weather",
-      platform: "Twitch",
-      status: "Offline",
+      platform: "twitch",
+      status: "offline",
       city: "Denver",
       state: "CO",
       title: "Denver Weather Station",
@@ -162,8 +171,8 @@ if Stream.count.zero?
     {
       source: "phoenix_traffic",
       link: "https://example.com/phoenix-traffic",
-      platform: "Other",
-      status: "Unknown",
+      platform: "other",
+      status: "unknown",
       city: "Phoenix",
       state: "AZ",
       title: "I-10 Traffic Monitor",
@@ -179,7 +188,7 @@ if Stream.count.zero?
       **stream_data,
       user: editor,
       last_checked_at: rand(1..48).hours.ago,
-      last_live_at: stream_data[:status] == "Live" ? rand(1..12).hours.ago : nil
+      last_live_at: stream_data[:status] == "live" ? rand(1..12).hours.ago : nil
     )
   end
   

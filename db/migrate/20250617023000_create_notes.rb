@@ -7,8 +7,8 @@ class CreateNotes < ActiveRecord::Migration[8.0]
       t.timestamps
     end
     
-    add_index :notes, [:notable_type, :notable_id]
-    add_index :notes, :user_id
+    # Note: t.references :user already creates an index on user_id
+    # Note: t.references :notable with polymorphic: true already creates index on [notable_type, notable_id]
     add_index :notes, :created_at
   end
 end

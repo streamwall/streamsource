@@ -56,7 +56,7 @@ class CreateAnnotations < ActiveRecord::Migration[8.0]
     add_index :annotations, [:event_timestamp, :priority_level]
     
     add_index :annotation_streams, [:annotation_id, :stream_id], unique: true
-    add_index :annotation_streams, :stream_id
+    # Note: t.references :stream already creates an index on stream_id
     add_index :annotation_streams, :stream_timestamp_seconds
     add_index :annotation_streams, :relevance_score
   end

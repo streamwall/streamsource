@@ -10,9 +10,57 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_17_022109) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_17_024000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "annotation_streams", force: :cascade do |t|
+    t.bigint "annotation_id", null: false
+    t.bigint "stream_id", null: false
+    t.bigint "added_by_user_id", null: false
+    t.integer "stream_timestamp_seconds"
+    t.string "stream_timestamp_display"
+    t.integer "relevance_score", default: 3
+    t.text "stream_notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["added_by_user_id"], name: "index_annotation_streams_on_added_by_user_id"
+    t.index ["annotation_id", "stream_id"], name: "index_annotation_streams_on_annotation_id_and_stream_id", unique: true
+    t.index ["annotation_id"], name: "index_annotation_streams_on_annotation_id"
+    t.index ["relevance_score"], name: "index_annotation_streams_on_relevance_score"
+    t.index ["stream_id"], name: "index_annotation_streams_on_stream_id"
+    t.index ["stream_timestamp_seconds"], name: "index_annotation_streams_on_stream_timestamp_seconds"
+  end
+
+  create_table "annotations", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.datetime "event_timestamp", null: false
+    t.string "title", limit: 200, null: false
+    t.text "description"
+    t.string "event_type", null: false
+    t.string "priority_level", default: "medium", null: false
+    t.string "review_status", default: "pending", null: false
+    t.string "location"
+    t.decimal "latitude", precision: 10, scale: 6
+    t.decimal "longitude", precision: 10, scale: 6
+    t.text "tags"
+    t.string "external_url"
+    t.boolean "requires_review", default: false
+    t.datetime "resolved_at"
+    t.bigint "resolved_by_user_id"
+    t.text "resolution_notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_timestamp", "priority_level"], name: "index_annotations_on_event_timestamp_and_priority_level"
+    t.index ["event_timestamp"], name: "index_annotations_on_event_timestamp"
+    t.index ["event_type"], name: "index_annotations_on_event_type"
+    t.index ["location"], name: "index_annotations_on_location"
+    t.index ["priority_level"], name: "index_annotations_on_priority_level"
+    t.index ["requires_review"], name: "index_annotations_on_requires_review"
+    t.index ["resolved_by_user_id"], name: "index_annotations_on_resolved_by_user_id"
+    t.index ["review_status"], name: "index_annotations_on_review_status"
+    t.index ["user_id"], name: "index_annotations_on_user_id"
+  end
 
   create_table "flipper_features", force: :cascade do |t|
     t.string "key", null: false
@@ -28,6 +76,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_17_022109) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["feature_key", "key"], name: "index_flipper_gates_on_feature_key_and_key", unique: true
+  end
+
+  create_table "notes", force: :cascade do |t|
+    t.text "content", null: false
+    t.bigint "user_id", null: false
+    t.string "notable_type", null: false
+    t.bigint "notable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_notes_on_created_at"
+    t.index ["notable_type", "notable_id"], name: "index_notes_on_notable"
+    t.index ["user_id"], name: "index_notes_on_user_id"
   end
 
   create_table "streamer_accounts", force: :cascade do |t|
@@ -101,6 +161,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_17_022109) do
     t.index ["role"], name: "index_users_on_role"
   end
 
+  add_foreign_key "annotation_streams", "annotations"
+  add_foreign_key "annotation_streams", "streams"
+  add_foreign_key "annotation_streams", "users", column: "added_by_user_id"
+  add_foreign_key "annotations", "users"
+  add_foreign_key "annotations", "users", column: "resolved_by_user_id"
+  add_foreign_key "notes", "users"
   add_foreign_key "streamer_accounts", "streamers"
   add_foreign_key "streamers", "users"
   add_foreign_key "streams", "streamers"

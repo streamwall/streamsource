@@ -23,7 +23,8 @@
       "Bash(bundle exec rails generate:*)",
       "Bash(bundle exec rails:*)",
       "Bash(ruby:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(./bin/rails:*)"
     ],
     "deny": []
   }
