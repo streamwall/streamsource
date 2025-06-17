@@ -133,11 +133,13 @@ module Admin
     end
     
     def stream_params
-      params.require(:stream).permit(:name, :url, :status, :user_id, :is_pinned)
+      params.require(:stream).permit(:source, :link, :status, :platform, :orientation, 
+                                      :kind, :city, :state, :notes, :title, 
+                                      :posted_by, :user_id, :is_pinned)
     end
     
     def filter_params
-      params.permit(:status, :user_id, :search, :is_pinned)
+      params.permit(:status, :platform, :kind, :orientation, :user_id, :search, :is_pinned)
     end
   end
 end

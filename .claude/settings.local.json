@@ -19,7 +19,8 @@
       "Bash(bundle exec rspec:*)",
       "Bash(rails:*)",
       "Bash(bundle install:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(bundle exec rails generate:*)"
     ],
     "deny": []
   }

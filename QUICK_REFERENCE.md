@@ -185,7 +185,6 @@ Stimulus.controllers.find(c => c.constructor.name === "ModalController")
 - `RAILS_LOG_TO_STDOUT` - Log to stdout (true/false)
 - `WEB_CONCURRENCY` - Number of Puma workers
 - `RAILS_MAX_THREADS` - Max threads per worker
-- `SKYLIGHT_AUTHENTICATION` - Performance monitoring
 
 ## Troubleshooting
 

@@ -1,5 +1,7 @@
 class StreamSerializer < ActiveModel::Serializer
-  attributes :id, :url, :name, :status, :is_pinned, :created_at, :updated_at
+  attributes :id, :source, :link, :status, :is_pinned, :created_at, :updated_at,
+             :city, :state, :platform, :notes, :title, :last_checked_at, 
+             :last_live_at, :posted_by, :orientation, :kind
   
   belongs_to :user
   

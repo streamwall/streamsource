@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_01_17_000001) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_17_013537) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -31,14 +31,28 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_17_000001) do
   end
 
   create_table "streams", force: :cascade do |t|
-    t.string "url", null: false
-    t.string "name", null: false
+    t.string "link", null: false
+    t.string "source", null: false
     t.bigint "user_id", null: false
-    t.string "status", default: "active"
     t.boolean "is_pinned", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "city"
+    t.string "state"
+    t.string "platform"
+    t.string "status", default: "Unknown"
+    t.text "notes"
+    t.string "title"
+    t.datetime "last_checked_at"
+    t.datetime "last_live_at"
+    t.string "posted_by"
+    t.string "orientation"
+    t.string "kind", default: "video"
     t.index ["is_pinned"], name: "index_streams_on_is_pinned"
+    t.index ["kind"], name: "index_streams_on_kind"
+    t.index ["last_checked_at"], name: "index_streams_on_last_checked_at"
+    t.index ["last_live_at"], name: "index_streams_on_last_live_at"
+    t.index ["platform"], name: "index_streams_on_platform"
     t.index ["status"], name: "index_streams_on_status"
     t.index ["user_id", "created_at"], name: "index_streams_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_streams_on_user_id"
