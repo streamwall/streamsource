@@ -1,0 +1,22 @@
+<turbo-frame id="modal">
+  <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" data-action="click->modal#closeOnClickOutside" data-modal-target="container"></div>
+  
+  <div class="fixed inset-0 z-10 overflow-y-auto">
+    <div class="flex min-h-full items-center justify-center p-4">
+      <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6" id="edit_stream_<%= @stream.id %>_modal">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-medium text-gray-900">Edit Stream</h3>
+          <%= link_to admin_streams_path, 
+              class: "text-gray-400 hover:text-gray-500",
+              data: { turbo_frame: "_top" } do %>
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          <% end %>
+        </div>
+        
+        <%= render 'form', stream: @stream, users: @users %>
+      </div>
+    </div>
+  </div>
+</turbo-frame>

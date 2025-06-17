@@ -1,0 +1,11 @@
+<% if defined?(notice) && notice.present? %>
+  <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4" data-turbo-temporary>
+    <p class="text-sm"><%= notice %></p>
+  </div>
+<% end %>
+
+<% if defined?(alert) && alert.present? %>
+  <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4" data-turbo-temporary>
+    <p class="text-sm"><%= alert %></p>
+  </div>
+<% end %>

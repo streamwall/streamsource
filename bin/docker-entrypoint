@@ -1,0 +1,14 @@
+#!/bin/bash -e
+
+# If running the rails server then create or migrate existing database
+if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
+  bundle exec rails db:prepare
+fi
+
+# If the command starts with ./bin/rails, use bundle exec
+if [[ "${1}" == "./bin/rails" ]]; then
+  shift
+  exec bundle exec rails "${@}"
+else
+  exec "${@}"
+fi

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>StreamSource Admin - Login</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    
+    <%= stylesheet_link_tag "/assets/application", "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "/assets/application", "data-turbo-track": "reload", type: "module" %>
+  </head>
+
+  <body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center">
+      <div class="max-w-md w-full">
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-bold text-gray-900">StreamSource</h1>
+          <p class="text-gray-600 mt-2">Admin Panel</p>
+        </div>
+        
+        <!-- Flash messages -->
+        <div id="flash" class="mb-4">
+          <% if flash[:notice].present? %>
+            <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4" data-turbo-temporary>
+              <p class="text-sm"><%= flash[:notice] %></p>
+            </div>
+          <% end %>
+          
+          <% if flash[:alert].present? %>
+            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4" data-turbo-temporary>
+              <p class="text-sm"><%= flash[:alert] %></p>
+            </div>
+          <% end %>
+        </div>
+        
+        <%= yield %>
+      </div>
+    </div>
+  </body>
+</html>

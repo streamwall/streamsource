@@ -1,41 +1,81 @@
-# Use Node.js LTS Alpine image for smaller size
-FROM node:20-alpine AS base
+# syntax = docker/dockerfile:1
 
-# Install production dependencies
-FROM base AS deps
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
+# Make sure RUBY_VERSION matches the Ruby version in .ruby-version
+ARG RUBY_VERSION=3.3.0
+FROM ruby:$RUBY_VERSION-slim as base
 
-# Install all dependencies for building
-FROM base AS dev-deps
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+# Rails app lives here
+WORKDIR /rails
 
-# Build the application
-FROM dev-deps AS build
-WORKDIR /app
-COPY . .
-RUN npm run build || true
+# Set environment
+ENV BUNDLE_PATH="/usr/local/bundle" \
+    BUNDLE_APP_CONFIG="/usr/local/bundle" \
+    GEM_HOME="/usr/local/bundle" \
+    PATH="/usr/local/bundle/bin:${PATH}"
 
-# Production image
-FROM base AS runtime
-WORKDIR /app
+# Throw-away build stage to reduce size of final image
+FROM base as build
 
-# Copy production dependencies
-COPY --from=deps /app/node_modules ./node_modules
+# Install packages needed to build gems and Node.js for asset compilation
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential git libpq-dev libvips pkg-config curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g yarn
+
+# Install application gems
+COPY Gemfile ./
+COPY Gemfile.lock* ./
+# Remove any existing bundle config and set proper configuration
+RUN rm -rf .bundle ~/.bundle && \
+    bundle config unset frozen && \
+    bundle config set --global path "${BUNDLE_PATH}" && \
+    bundle config set --global without "" && \
+    bundle config unset with && \
+    bundle lock --add-platform aarch64-linux --add-platform x86_64-linux && \
+    bundle install --jobs 4 --retry 3 && \
+    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
+    bundle exec bootsnap precompile --gemfile
 
 # Copy application code
 COPY . .
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-USER nodejs
+# Install JavaScript dependencies
+RUN if [ -f "package.json" ]; then \
+      yarn install; \
+    fi
 
-# Expose port
+# Precompile bootsnap code for faster boot times  
+RUN bundle exec bootsnap precompile app/ lib/
+
+# Final stage for app image
+FROM base
+
+# Install packages needed for deployment including Node.js for runtime JavaScript
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y curl libvips postgresql-client && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g yarn && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Copy built artifacts: gems, application
+COPY --from=build /usr/local/bundle /usr/local/bundle
+COPY --from=build /rails /rails
+
+# Remove any host bundle config that might have been copied
+RUN rm -rf /rails/.bundle
+
+# Run and own only the runtime files as a non-root user for security
+RUN useradd rails --create-home --shell /bin/bash && \
+    mkdir -p db log storage tmp && \
+    chown -R rails:rails db log storage tmp && \
+    chown -R rails:rails /usr/local/bundle
+USER rails:rails
+
+# Entrypoint prepares the database.
+ENTRYPOINT ["/rails/bin/docker-entrypoint"]
+
+# Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
-
-# Start the application
-CMD ["node", "bin/www"]
+CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
