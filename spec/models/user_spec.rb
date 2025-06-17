@@ -5,6 +5,10 @@ RSpec.describe User, type: :model do
   
   describe 'associations' do
     it { should have_many(:streams).dependent(:destroy) }
+    it { should have_many(:streamers).dependent(:destroy) }
+    it { should have_many(:annotations).dependent(:destroy) }
+    it { should have_many(:annotation_streams).with_foreign_key('added_by_user_id').dependent(:destroy) }
+    it { should have_many(:resolved_annotations).class_name('Annotation').with_foreign_key('resolved_by_user_id') }
   end
   
   describe 'validations' do
@@ -108,6 +112,32 @@ RSpec.describe User, type: :model do
       it 'returns false for default user' do
         user = build(:user)
         expect(user.can_modify_streams?).to be false
+      end
+    end
+    
+    describe '#flipper_id' do
+      it 'returns formatted flipper id' do
+        user = create(:user)
+        expect(user.flipper_id).to eq("User:#{user.id}")
+      end
+    end
+    
+    describe '#beta_user?' do
+      it 'returns false by default' do
+        user = build(:user)
+        expect(user.beta_user?).to be false
+      end
+    end
+    
+    describe '#premium?' do
+      it 'returns true for admin' do
+        user = build(:user, :admin)
+        expect(user.premium?).to be true
+      end
+      
+      it 'returns false for non-admin' do
+        user = build(:user)
+        expect(user.premium?).to be false
       end
     end
   end
