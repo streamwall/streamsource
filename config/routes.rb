@@ -64,6 +64,15 @@ Rails.application.routes.draw do
     
     resources :feature_flags, only: [:index]
     
+    # Annotations routes
+    resources :annotations do
+      member do
+        patch 'resolve'
+        patch 'dismiss'
+        post 'add_stream'
+      end
+    end
+    
     root to: 'streams#index'
   end
   

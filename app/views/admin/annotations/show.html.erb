@@ -1,0 +1,197 @@
+<% content_for :page_title, "Annotation: #{@annotation.title}" %>
+<% content_for :page_actions do %>
+  <%= link_to edit_admin_annotation_path(@annotation), 
+      class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50",
+      data: { turbo_frame: "modal" } do %>
+    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+    </svg>
+    Edit Annotation
+  <% end %>
+  <%= link_to admin_annotations_path, class: "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700" do %>
+    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+    </svg>
+    Back to Annotations
+  <% end %>
+<% end %>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Annotation Details -->
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Basic Info -->
+    <div class="bg-white shadow rounded-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-medium text-gray-900">Event Information</h2>
+        <div class="flex items-center space-x-2">
+          <span class="px-3 py-1 text-sm font-medium rounded-full <%= @annotation.priority_color %>">
+            <%= @annotation.priority_level.capitalize %>
+          </span>
+          <span class="px-3 py-1 text-sm font-medium rounded-full <%= @annotation.status_color %>">
+            <%= @annotation.review_status.humanize %>
+          </span>
+          <% if @annotation.requires_review? %>
+            <span class="px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800">
+              Review Required
+            </span>
+          <% end %>
+        </div>
+      </div>
+      
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-gray-500">Event Title</dt>
+          <dd class="mt-1 text-lg font-medium text-gray-900"><%= @annotation.title %></dd>
+        </div>
+        
+        <% if @annotation.description.present? %>
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Description</dt>
+            <dd class="mt-1 text-sm text-gray-900 whitespace-pre-wrap"><%= @annotation.description %></dd>
+          </div>
+        <% end %>
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Event Type</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @annotation.event_type.humanize %></dd>
+        </div>
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Event Time</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @annotation.event_timestamp.strftime("%B %d, %Y at %I:%M %p") %>
+            <span class="text-gray-500 text-xs">(<%= @annotation.time_ago %> ago)</span>
+          </dd>
+        </div>
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Location</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @annotation.location_display %></dd>
+        </div>
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Created By</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @annotation.user.email %></dd>
+        </div>
+        
+        <% if @annotation.tag_list.any? %>
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Tags</dt>
+            <dd class="mt-1">
+              <% @annotation.tag_list.each do |tag| %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mr-2 mb-2">
+                  <%= tag %>
+                </span>
+              <% end %>
+            </dd>
+          </div>
+        <% end %>
+        
+        <% if @annotation.resolved? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Resolved By</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @annotation.resolved_by_user.email %></dd>
+          </div>
+          
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Resolved At</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <%= @annotation.resolved_at.strftime("%B %d, %Y at %I:%M %p") %>
+            </dd>
+          </div>
+          
+          <% if @annotation.resolution_notes.present? %>
+            <div class="sm:col-span-2">
+              <dt class="text-sm font-medium text-gray-500">Resolution Notes</dt>
+              <dd class="mt-1 text-sm text-gray-900 whitespace-pre-wrap"><%= @annotation.resolution_notes %></dd>
+            </div>
+          <% end %>
+        <% end %>
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Created</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @annotation.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+          </dd>
+        </div>
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @annotation.updated_at.strftime("%B %d, %Y at %I:%M %p") %>
+          </dd>
+        </div>
+      </dl>
+      
+      <% if @annotation.external_url.present? %>
+        <div class="mt-6 pt-6 border-t">
+          <h3 class="text-sm font-medium text-gray-500 mb-2">External Reference</h3>
+          <div class="flex items-center space-x-2">
+            <code class="text-xs bg-gray-100 px-2 py-1 rounded break-all"><%= @annotation.external_url %></code>
+            <a href="<%= @annotation.external_url %>" target="_blank" class="text-blue-600 hover:text-blue-900" title="Open external link">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      <% end %>
+      
+      <!-- Action buttons for unresolved annotations -->
+      <% unless @annotation.resolved? %>
+        <% if @annotation.review_status_pending? || @annotation.review_status_in_review? %>
+          <div class="mt-6 pt-6 border-t flex space-x-3">
+            <%= button_to resolve_admin_annotation_path(@annotation), 
+                method: :patch,
+                class: "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700" do %>
+              <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Mark as Resolved
+            <% end %>
+            
+            <%= button_to dismiss_admin_annotation_path(@annotation), 
+                method: :patch,
+                class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50" do %>
+              <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Dismiss
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+  
+  <!-- Linked Streams Section -->
+  <div class="space-y-6">
+    <div class="bg-white shadow rounded-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-medium text-gray-900">Linked Streams</h2>
+        <span class="text-sm text-gray-500"><%= @annotation.stream_count %> <%= 'stream'.pluralize(@annotation.stream_count) %></span>
+      </div>
+      
+      <div id="annotation_streams">
+        <% if @annotation_streams.any? %>
+          <div class="space-y-4">
+            <% @annotation_streams.each do |annotation_stream| %>
+              <%= render 'annotation_stream', annotation_stream: annotation_stream %>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-6">
+            <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No streams linked</h3>
+            <p class="mt-1 text-sm text-gray-500">This event hasn't been linked to any streams yet.</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal container -->
+<turbo-frame id="modal" data-controller="modal"></turbo-frame>

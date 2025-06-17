@@ -15,6 +15,9 @@ class User < ApplicationRecord
   # Associations
   has_many :streams, dependent: :destroy
   has_many :streamers, dependent: :destroy
+  has_many :annotations, dependent: :destroy
+  has_many :annotation_streams, foreign_key: 'added_by_user_id', dependent: :destroy
+  has_many :resolved_annotations, class_name: 'Annotation', foreign_key: 'resolved_by_user_id'
 
   # Flipper actor
   def flipper_id
