@@ -16,7 +16,10 @@
       "Bash(docker:*)",
       "Bash(curl:*)",
       "Bash(echo)",
-      "Bash(bundle exec rspec:*)"
+      "Bash(bundle exec rspec:*)",
+      "Bash(rails:*)",
+      "Bash(bundle install:*)",
+      "Bash(echo:*)"
     ],
     "deny": []
   }

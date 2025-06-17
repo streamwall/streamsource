@@ -12,10 +12,22 @@ gem "pg", "~> 1.1"
 gem "puma", ">= 5.0"
 
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
-# gem "jbuilder"
+gem "jbuilder"
 
 # Use Redis adapter to run Action Cable in production
 gem "redis", ">= 4.0.1"
+
+# Hotwire's SPA-like page accelerator
+gem "turbo-rails"
+
+# Hotwire's modest JavaScript framework
+gem "stimulus-rails"
+
+# Bundle and process CSS
+gem "cssbundling-rails"
+
+# Bundle and transpile JavaScript
+gem "jsbundling-rails"
 
 # Use Kredis to get higher-level data types in Redis [https://github.com/rails/kredis]
 # gem "kredis"
@@ -48,6 +60,7 @@ gem "rack-attack", "~> 6.7"
 
 # Pagination
 gem "kaminari", "~> 1.2"
+gem "pagy", "~> 6.2"
 
 # Serialization
 gem "active_model_serializers", "~> 0.10.14"

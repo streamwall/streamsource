@@ -103,6 +103,8 @@ GEM
       bigdecimal
       rexml
     crass (1.0.6)
+    cssbundling-rails (1.4.3)
+      railties (>= 6.0.0)
     database_cleaner-active_record (2.2.1)
       activerecord (>= 5.a)
       database_cleaner-core (~> 2.0.0)
@@ -140,6 +142,18 @@ GEM
       railties (>= 6.1.0)
     faker (3.5.1)
       i18n (>= 1.8.11, < 2)
+    flipper (1.3.4)
+      concurrent-ruby (< 2)
+    flipper-active_record (1.3.4)
+      activerecord (>= 4.2, < 9)
+      flipper (~> 1.3.4)
+    flipper-ui (1.3.4)
+      erubi (>= 1.0.0, < 2.0.0)
+      flipper (~> 1.3.4)
+      rack (>= 1.4, < 4)
+      rack-protection (>= 1.5.3, < 5.0.0)
+      rack-session (>= 1.0.2, < 3.0.0)
+      sanitize (< 8)
     globalid (1.2.1)
       activesupport (>= 6.1)
     hashdiff (1.2.0)
@@ -150,6 +164,11 @@ GEM
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
+    jbuilder (2.13.0)
+      actionview (>= 5.0.0)
+      activesupport (>= 5.0.0)
+    jsbundling-rails (1.3.1)
+      railties (>= 6.0.0)
     json (2.12.2)
     json-schema (5.1.1)
       addressable (~> 2.8)
@@ -201,21 +220,8 @@ GEM
     nio4r (2.7.4)
     nokogiri (1.18.8-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.18.8-aarch64-linux-musl)
-      racc (~> 1.4)
-    nokogiri (1.18.8-arm-linux-gnu)
-      racc (~> 1.4)
-    nokogiri (1.18.8-arm-linux-musl)
-      racc (~> 1.4)
-    nokogiri (1.18.8-arm64-darwin)
-      racc (~> 1.4)
-    nokogiri (1.18.8-x86_64-darwin)
-      racc (~> 1.4)
-    nokogiri (1.18.8-x86_64-linux-gnu)
-      racc (~> 1.4)
-    nokogiri (1.18.8-x86_64-linux-musl)
-      racc (~> 1.4)
     orm_adapter (0.5.0)
+    pagy (6.5.0)
     parallel (1.27.0)
     parser (3.3.8.0)
       ast (~> 2.4.1)
@@ -240,6 +246,10 @@ GEM
     rack-cors (3.0.0)
       logger
       rack (>= 3.0.14)
+    rack-protection (4.1.1)
+      base64 (>= 0.1.0)
+      logger (>= 1.6.0)
+      rack (>= 3.0.0, < 4)
     rack-session (2.1.1)
       base64 (>= 0.1.0)
       rack (>= 3.0.0)
@@ -352,6 +362,9 @@ GEM
       rubocop-performance (>= 1.24)
       rubocop-rails (>= 2.30)
     ruby-progressbar (1.13.0)
+    sanitize (7.0.0)
+      crass (~> 1.0.2)
+      nokogiri (>= 1.16.8)
     securerandom (0.4.1)
     shoulda-matchers (6.5.0)
       activesupport (>= 5.2.0)
@@ -363,9 +376,14 @@ GEM
     simplecov_json_formatter (0.1.4)
     skylight (6.0.4)
       activesupport (>= 5.2.0)
+    stimulus-rails (1.3.4)
+      railties (>= 6.0.0)
     stringio (3.1.7)
     thor (1.3.2)
     timeout (0.4.3)
+    turbo-rails (2.0.16)
+      actionpack (>= 7.1.0)
+      railties (>= 7.1.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     unicode-display_width (3.1.4)
@@ -393,14 +411,7 @@ GEM
     zeitwerk (2.7.3)
 
 PLATFORMS
-  aarch64-linux-gnu
-  aarch64-linux-musl
-  arm-linux-gnu
-  arm-linux-musl
-  arm64-darwin
-  x86_64-darwin
-  x86_64-linux-gnu
-  x86_64-linux-musl
+  aarch64-linux
 
 DEPENDENCIES
   active_model_serializers (~> 0.10.14)
@@ -409,14 +420,21 @@ DEPENDENCIES
   binding_of_caller
   bootsnap
   brakeman
+  cssbundling-rails
   database_cleaner-active_record (~> 2.1)
   devise (~> 4.9)
   devise-jwt (~> 0.11)
   factory_bot_rails (~> 6.4)
   faker (~> 3.2)
+  flipper (~> 1.3)
+  flipper-active_record (~> 1.3)
+  flipper-ui (~> 1.3)
+  jbuilder
+  jsbundling-rails
   jwt
   kaminari (~> 1.2)
   lograge (~> 0.14)
+  pagy (~> 6.2)
   pg (~> 1.1)
   puma (>= 5.0)
   pundit (~> 2.3)
@@ -432,6 +450,8 @@ DEPENDENCIES
   shoulda-matchers (~> 6.0)
   simplecov
   skylight (~> 6.0)
+  stimulus-rails
+  turbo-rails
   tzinfo-data
   vcr (~> 6.2)
   webmock (~> 3.19)

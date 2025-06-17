@@ -2,7 +2,7 @@
 
 ## Common Commands
 
-### Development
+### Development with Docker
 
 ```bash
 # Start all services
@@ -12,67 +12,71 @@ docker-compose up -d
 docker-compose logs -f web
 
 # Access Rails console
-docker-compose exec web bin/rails console
+docker-compose exec web bundle exec rails console
 
 # Run migrations
-docker-compose exec web bin/rails db:migrate
+docker-compose exec web bundle exec rails db:migrate
 
 # Run tests
 docker-compose exec web bundle exec rspec
+
+# Build assets
+docker-compose exec web yarn build
+docker-compose exec web yarn build:css
 
 # Stop all services
 docker-compose down
 ```
 
-### Database
+### Database Operations
 
 ```bash
-# Create database
-bin/rails db:create
+# Create and setup database
+docker-compose exec web bundle exec rails db:setup
 
 # Run migrations
-bin/rails db:migrate
+docker-compose exec web bundle exec rails db:migrate
 
 # Rollback migration
-bin/rails db:rollback
+docker-compose exec web bundle exec rails db:rollback
 
-# Reset database
-bin/rails db:reset
+# Reset database (drop, create, migrate, seed)
+docker-compose exec web bundle exec rails db:reset
 
-# Seed data
-bin/rails db:seed
+# Access PostgreSQL console
+docker-compose exec db psql -U streamsource streamsource_development
 ```
 
 ### Testing
 
 ```bash
 # Run all tests
-bundle exec rspec
+docker-compose exec web bundle exec rspec
 
 # Run specific test file
-bundle exec rspec spec/models/user_spec.rb
+docker-compose exec web bundle exec rspec spec/models/user_spec.rb
 
 # Run with coverage
-COVERAGE=true bundle exec rspec
+docker-compose exec web COVERAGE=true bundle exec rspec
 
 # Run specific test by line number
-bundle exec rspec spec/models/user_spec.rb:42
+docker-compose exec web bundle exec rspec spec/models/user_spec.rb:42
 ```
 
 ### Code Quality
 
 ```bash
 # Run linter
-rubocop
+docker-compose exec web bundle exec rubocop
 
 # Auto-fix linting issues
-rubocop -a
+docker-compose exec web bundle exec rubocop -A
 
 # Security audit
-bundle audit
+docker-compose exec web bundle audit
 
 # Check for outdated gems
-bundle outdated
+docker-compose exec web bundle outdated
 ```
 
 ## API Endpoints
@@ -83,6 +87,7 @@ bundle outdated
 - `GET /health` - Health check
 - `GET /health/live` - Liveness probe
 - `GET /health/ready` - Readiness probe
+- `GET /api-docs` - Swagger documentation
 
 ### Protected Endpoints (require JWT)
 - `GET /api/v1/streams` - List streams
@@ -92,6 +97,24 @@ bundle outdated
 - `DELETE /api/v1/streams/:id` - Delete stream (owner/admin)
 - `PUT /api/v1/streams/:id/pin` - Pin stream
 - `DELETE /api/v1/streams/:id/pin` - Unpin stream
+
+### Feature-Flagged Endpoints
+- `GET /api/v1/streams/:id/analytics` - Stream analytics
+- `GET /api/v1/streams/export` - Export streams
+- `POST /api/v1/streams/bulk_import` - Bulk import
+
+## Admin Interface
+
+### URLs
+- `/admin` - Admin dashboard (redirects to streams)
+- `/admin/login` - Admin login page
+- `/admin/streams` - Manage streams
+- `/admin/users` - Manage users
+- `/admin/feature_flags` - Feature flags
+
+### Default Credentials (Development)
+- Email: `admin@example.com`
+- Password: `password123`
 
 ## Quick Debugging
 
@@ -103,31 +126,58 @@ payload = JWT.decode(token, Rails.application.secret_key_base, true, algorithm: 
 puts payload
 ```
 
-### Test Authentication
+### Test API Authentication
 ```bash
 # Login and save token
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/users/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@example.com", "password": "Admin123!"}' | jq -r '.token')
+  -d '{"email": "admin@example.com", "password": "password123"}' | jq -r '.token')
 
 # Use token
 curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/streams
 ```
 
+### View Rails Routes
+```bash
+# All routes
+docker-compose exec web bundle exec rails routes
+
+# Filter routes
+docker-compose exec web bundle exec rails routes | grep stream
+
+# Routes for specific controller
+docker-compose exec web bundle exec rails routes -c streams
+```
+
 ### Clear Rate Limits
 ```bash
-# In development (memory store)
+# In development (restart to clear memory store)
 docker-compose restart web
 
-# In production (Redis)
-docker-compose exec redis redis-cli FLUSHALL
+# In production (clear Redis)
+docker-compose exec redis redis-cli
+> KEYS rack::attack* | xargs DEL
+```
+
+### Debug JavaScript
+```javascript
+// In browser console
+
+// Check if Turbo is working
+Turbo.session.drive
+
+// List Stimulus controllers
+Stimulus.controllers
+
+// Debug specific controller
+Stimulus.controllers.find(c => c.constructor.name === "ModalController")
 ```
 
 ## Environment Variables
 
 ### Required
 - `DATABASE_URL` - PostgreSQL connection string
-- `REDIS_URL` - Redis connection string
+- `REDIS_URL` - Redis connection string  
 - `SECRET_KEY_BASE` - Rails secret key
 
 ### Optional
@@ -135,17 +185,34 @@ docker-compose exec redis redis-cli FLUSHALL
 - `RAILS_LOG_TO_STDOUT` - Log to stdout (true/false)
 - `WEB_CONCURRENCY` - Number of Puma workers
 - `RAILS_MAX_THREADS` - Max threads per worker
+- `SKYLIGHT_AUTHENTICATION` - Performance monitoring
 
 ## Troubleshooting
 
-### Bundle Install Fails
+### Container Issues
 ```bash
-# Update bundler
-gem install bundler
+# Rebuild containers
+docker-compose build --no-cache web
 
-# Clear bundle cache
-rm -rf vendor/bundle
-bundle install
+# Remove all containers and volumes
+docker-compose down -v
+
+# Check container logs
+docker-compose logs web | tail -100
+```
+
+### Asset Problems
+```bash
+# Rebuild all assets
+docker-compose exec web yarn build
+docker-compose exec web yarn build:css
+
+# Check asset files
+docker-compose exec web ls -la public/assets/
+
+# Clear asset cache
+docker-compose exec web rm -rf app/assets/builds/*
+docker-compose exec web yarn build && yarn build:css
 ```
 
 ### Database Connection Error
@@ -153,64 +220,120 @@ bundle install
 # Check PostgreSQL is running
 docker-compose ps db
 
-# Check connection
-docker-compose exec db psql -U streamsource -d streamsource_development
+# Test connection
+docker-compose exec db pg_isready -U streamsource
+
+# Check database exists
+docker-compose exec db psql -U streamsource -l
 ```
 
-### Redis Connection Error
+### Bundle/Gem Issues
 ```bash
-# Check Redis is running
-docker-compose ps redis
+# Install missing gems
+docker-compose exec web bundle install
 
-# Test connection
-docker-compose exec redis redis-cli ping
+# Update gems
+docker-compose exec web bundle update
+
+# Check gem location
+docker-compose exec web bundle show <gem-name>
 ```
 
 ### Tests Failing
 ```bash
 # Reset test database
-RAILS_ENV=test bin/rails db:reset
+docker-compose exec web RAILS_ENV=test bundle exec rails db:reset
 
-# Clear test logs
-RAILS_ENV=test bin/rails log:clear
+# Run single test with details
+docker-compose exec web bundle exec rspec path/to/spec.rb --format documentation
 
-# Run single test with output
-bundle exec rspec path/to/spec.rb --format documentation
+# Check test logs
+docker-compose exec web tail -f log/test.log
 ```
 
 ## Performance Tips
 
-1. **Use includes to avoid N+1**
-   ```ruby
-   Stream.includes(:user).where(status: 'active')
-   ```
+### Database Queries
+```ruby
+# Use includes to avoid N+1
+Stream.includes(:user).where(status: 'active')
 
-2. **Add database indexes**
-   ```ruby
-   add_index :streams, [:user_id, :created_at]
-   ```
+# Use pluck for single columns
+User.where(role: 'admin').pluck(:email)
 
-3. **Use pagination**
-   ```ruby
-   Stream.page(params[:page]).per(25)
-   ```
+# Use select for specific columns
+Stream.select(:id, :name, :url).where(user_id: user.id)
+```
 
-4. **Cache expensive operations**
-   ```ruby
-   Rails.cache.fetch("streams/#{user.id}", expires_in: 1.hour) do
-     user.streams.active.to_a
-   end
-   ```
+### Caching
+```ruby
+# Cache expensive operations
+Rails.cache.fetch("user_streams/#{user.id}", expires_in: 1.hour) do
+  user.streams.active.to_a
+end
+
+# Clear cache
+Rails.cache.clear
+```
+
+### Background Jobs (Ready for Sidekiq)
+```ruby
+# When implemented, use for:
+# - Email sending
+# - Export generation
+# - Analytics processing
+# - Bulk operations
+```
 
 ## Security Checklist
 
-- [ ] Never commit `.env` file
+- [ ] Never commit `.env` or credentials
 - [ ] Use strong params in controllers
-- [ ] Authorize all actions with Pundit
+- [ ] Authorize all actions with Pundit policies
 - [ ] Validate all user inputs
-- [ ] Keep dependencies updated
-- [ ] Run security audits regularly
+- [ ] Keep dependencies updated (`bundle audit`)
 - [ ] Use HTTPS in production
-- [ ] Set secure headers
+- [ ] Configure CORS properly
 - [ ] Monitor rate limiting
-- [ ] Review logs for anomalies
+- [ ] Review logs regularly
+- [ ] Rotate secrets periodically
+
+## Git Workflow
+
+```bash
+# Create feature branch
+git checkout -b feature/your-feature
+
+# Run tests before committing
+docker-compose exec web bundle exec rspec
+docker-compose exec web bundle exec rubocop
+
+# Commit with descriptive message
+git add .
+git commit -m "Add feature: description"
+
+# Push and create PR
+git push origin feature/your-feature
+```
+
+## Useful Rails Commands
+
+```bash
+# Generate migration
+docker-compose exec web bundle exec rails generate migration AddFieldToModel field:type
+
+# Generate model
+docker-compose exec web bundle exec rails generate model ModelName field:type
+
+# Rails console shortcuts
+# c - continue
+# n - next line
+# s - step into
+# reload! - reload console
+
+# View middleware stack
+docker-compose exec web bundle exec rails middleware
+
+# View initializers
+docker-compose exec web bundle exec rails initializers
+```

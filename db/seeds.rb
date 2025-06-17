@@ -2,29 +2,53 @@
 # development, test). The code here should be idempotent so that it can be executed at any point in every environment.
 # The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
 
-# Create default admin user
-admin = User.find_or_create_by!(email: 'admin@example.com') do |user|
-  user.password = 'Admin123!'
-  user.role = 'admin'
+# Only create default users in development and test environments
+if Rails.env.development? || Rails.env.test?
+  # Create default admin user
+  admin = User.find_or_create_by!(email: 'admin@example.com') do |user|
+    user.password = 'password123'
+    user.role = 'admin'
+    user.name = 'Admin User'
+  end
+
+  if admin.previously_new_record?
+    puts "Admin user created: #{admin.email} (password: password123)"
+  else
+    puts "Admin user already exists: #{admin.email}"
+  end
+
+  # Create editor user
+  editor = User.find_or_create_by!(email: 'editor@example.com') do |user|
+    user.password = 'password123'
+    user.role = 'editor'
+    user.name = 'Editor User'
+  end
+
+  if editor.previously_new_record?
+    puts "Editor user created: #{editor.email} (password: password123)"
+  else
+    puts "Editor user already exists: #{editor.email}"
+  end
+
+  # Create default user
+  default_user = User.find_or_create_by!(email: 'user@example.com') do |user|
+    user.password = 'password123'
+    user.role = 'default'
+    user.name = 'Default User'
+  end
+
+  if default_user.previously_new_record?
+    puts "Default user created: #{default_user.email} (password: password123)"
+  else
+    puts "Default user already exists: #{default_user.email}"
+  end
+  
+  puts "\n========================================"
+  puts "Development Admin Login Credentials:"
+  puts "Email: admin@example.com"
+  puts "Password: password123"
+  puts "========================================\n"
 end
-
-puts "Admin user created: #{admin.email}"
-
-# Create editor user
-editor = User.find_or_create_by!(email: 'editor@example.com') do |user|
-  user.password = 'Editor123!'
-  user.role = 'editor'
-end
-
-puts "Editor user created: #{editor.email}"
-
-# Create default user
-default_user = User.find_or_create_by!(email: 'user@example.com') do |user|
-  user.password = 'User123!'
-  user.role = 'default'
-end
-
-puts "Default user created: #{default_user.email}"
 
 # Create sample streams for admin
 if Stream.count.zero?

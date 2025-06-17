@@ -7,47 +7,70 @@ FROM ruby:$RUBY_VERSION-slim as base
 # Rails app lives here
 WORKDIR /rails
 
-# Set production environment
-ENV RAILS_ENV="production" \
-    BUNDLE_DEPLOYMENT="1" \
-    BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development test"
+# Set environment
+ENV BUNDLE_PATH="/usr/local/bundle" \
+    BUNDLE_APP_CONFIG="/usr/local/bundle" \
+    GEM_HOME="/usr/local/bundle" \
+    PATH="/usr/local/bundle/bin:${PATH}"
 
 # Throw-away build stage to reduce size of final image
 FROM base as build
 
-# Install packages needed to build gems
+# Install packages needed to build gems and Node.js for asset compilation
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libpq-dev libvips pkg-config
+    apt-get install --no-install-recommends -y build-essential git libpq-dev libvips pkg-config curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g yarn
 
 # Install application gems
-COPY Gemfile Gemfile.lock ./
-RUN bundle install && \
+COPY Gemfile ./
+COPY Gemfile.lock* ./
+# Remove any existing bundle config and set proper configuration
+RUN rm -rf .bundle ~/.bundle && \
+    bundle config unset frozen && \
+    bundle config set --global path "${BUNDLE_PATH}" && \
+    bundle config set --global without "" && \
+    bundle config unset with && \
+    bundle lock --add-platform aarch64-linux --add-platform x86_64-linux && \
+    bundle install --jobs 4 --retry 3 && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
 # Copy application code
 COPY . .
 
-# Precompile bootsnap code for faster boot times
+# Install JavaScript dependencies
+RUN if [ -f "package.json" ]; then \
+      yarn install; \
+    fi
+
+# Precompile bootsnap code for faster boot times  
 RUN bundle exec bootsnap precompile app/ lib/
 
 # Final stage for app image
 FROM base
 
-# Install packages needed for deployment
+# Install packages needed for deployment including Node.js for runtime JavaScript
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y curl libvips postgresql-client && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g yarn && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Copy built artifacts: gems, application
 COPY --from=build /usr/local/bundle /usr/local/bundle
 COPY --from=build /rails /rails
 
+# Remove any host bundle config that might have been copied
+RUN rm -rf /rails/.bundle
+
 # Run and own only the runtime files as a non-root user for security
 RUN useradd rails --create-home --shell /bin/bash && \
     mkdir -p db log storage tmp && \
-    chown -R rails:rails db log storage tmp
+    chown -R rails:rails db log storage tmp && \
+    chown -R rails:rails /usr/local/bundle
 USER rails:rails
 
 # Entrypoint prepares the database.

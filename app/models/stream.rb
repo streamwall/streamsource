@@ -43,6 +43,18 @@ class Stream < ApplicationRecord
   scope :by_user, ->(user) { where(user: user) }
   scope :ordered, -> { order(is_pinned: :desc, created_at: :desc) }
   
+  # Filtering scope for admin interface
+  scope :filtered, ->(params) do
+    scope = all
+    scope = scope.where(status: params[:status]) if params[:status].present?
+    scope = scope.where(user_id: params[:user_id]) if params[:user_id].present?
+    scope = scope.where(is_pinned: params[:is_pinned]) if params[:is_pinned].present?
+    if params[:search].present?
+      scope = scope.where('name ILIKE ? OR url ILIKE ?', "%#{params[:search]}%", "%#{params[:search]}%")
+    end
+    scope
+  end
+  
   # Callbacks
   before_validation :normalize_url
   

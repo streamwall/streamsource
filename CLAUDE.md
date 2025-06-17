@@ -4,15 +4,18 @@ This document provides context and guidelines for AI assistants (particularly Cl
 
 ## Project Overview
 
-StreamSource is a Rails 8 API application for managing streaming sources. It was migrated from a Node.js/Express application to Rails, implementing modern security practices and comprehensive testing.
+StreamSource is a Rails 8 application providing both a RESTful API and an admin web interface for managing streaming sources. It was migrated from a Node.js/Express application to Rails, implementing modern security practices, comprehensive testing, and a real-time admin interface using Hotwire.
 
 ## Key Technical Details
 
 ### Architecture
-- **Rails 8.0.2** API-only mode
-- **PostgreSQL** for data persistence
-- **Redis** for caching and rate limiting
-- **JWT** for stateless authentication
+- **Rails 8.0.2** with API + Admin interface
+- **PostgreSQL 15** for data persistence
+- **Redis 7** for caching, sessions, and rate limiting
+- **JWT** for API authentication
+- **Session-based auth** for admin interface
+- **Hotwire** (Turbo + Stimulus) for real-time UI
+- **Tailwind CSS** for styling
 - **Docker** for containerization
 
 ### Code Organization
@@ -22,29 +25,41 @@ StreamSource is a Rails 8 API application for managing streaming sources. It was
 - Comprehensive test coverage (target: 100%)
 
 ### Authentication & Authorization
-- JWT tokens with 24-hour expiration
+- **API**: JWT tokens with 24-hour expiration
+- **Admin**: Session-based authentication
 - Three roles: default, editor, admin
 - Role-based permissions:
   - **default**: Can view streams only
   - **editor**: Can create/edit/delete own streams
-  - **admin**: Full access to all streams
+  - **admin**: Full access to all resources + admin interface
 
 ### Important Patterns
 1. **Error Handling**: Centralized in BaseController
-2. **Pagination**: Default 25 items, max 100
+2. **Pagination**: Default 25 items, max 100 (Pagy in admin)
 3. **Rate Limiting**: Configured in Rack::Attack
-4. **Serialization**: Using ActiveModel::Serializers
+4. **Serialization**: ActiveModel::Serializers for API
+5. **Real-time updates**: Turbo Streams for admin interface
+6. **Feature flags**: Flipper for gradual rollouts
+7. **Asset pipeline**: ESBuild + Tailwind CSS
 
 ## Common Tasks
 
-### Adding New Features
+### Adding New API Features
 1. Start with tests (TDD approach)
 2. Update models with validations
-3. Add controller actions
+3. Add controller actions in `api/v1/`
 4. Create/update policies for authorization
 5. Add serializers for JSON output
 6. Update API documentation
 7. Add integration tests
+
+### Adding Admin Interface Features
+1. Create controller in `admin/` namespace
+2. Add routes with HTML format support
+3. Create views using Turbo Frames
+4. Add Stimulus controllers for interactivity
+5. Style with Tailwind CSS classes
+6. Test with system specs
 
 ### Database Changes
 1. Create migration: `bin/rails generate migration AddFieldToModel`
@@ -103,12 +118,18 @@ COVERAGE=true bundle exec rspec
 3. **Keep methods small** - Single responsibility principle
 4. **Document complex logic** - Add comments for clarity
 5. **Use constants** - No magic numbers or strings
+6. **Hotwire conventions** - Use Turbo Frames and Streams appropriately
+7. **Tailwind utilities** - Prefer utility classes over custom CSS
 
 ## Docker Commands
 
 ```bash
 # Start services
 docker-compose up -d
+
+# Build assets
+docker-compose exec web yarn build
+docker-compose exec web yarn build:css
 
 # Run migrations
 docker-compose exec web bin/rails db:migrate

@@ -63,5 +63,6 @@ docs/
 *.md
 
 # Bundler
-.bundle/
+.bundle/config
+!.bundle/config.docker
 vendor/bundle/
