@@ -106,8 +106,8 @@
       </div>
       
       <div id="streamer_notes">
-        <% if @streamer.notes.any? %>
-          <% @streamer.notes.includes(:user).recent.each do |note| %>
+        <% if @streamer.note_records.any? %>
+          <% @streamer.note_records.includes(:user).recent.each do |note| %>
             <%= render 'admin/notes/note', note: note %>
           <% end %>
         <% else %>

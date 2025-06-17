@@ -62,10 +62,14 @@ Rails.application.routes.draw do
     patch 'users/:id/toggle_admin', to: 'users#toggle_admin', as: 'toggle_admin_user'
     resources :users, only: [:index, :show, :create, :update, :destroy]
     
-    resources :feature_flags, only: [:index]
+    resources :feature_flags, only: [:index] do
+      member do
+        patch :update
+      end
+    end
     
     # Annotations routes
-    resources :annotations do
+    resources :annotations, only: [:index, :show, :new, :edit, :create, :update, :destroy] do
       member do
         patch 'resolve'
         patch 'dismiss'

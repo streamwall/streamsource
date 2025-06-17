@@ -28,7 +28,7 @@ class Annotation < ApplicationRecord
   belongs_to :resolved_by_user, class_name: 'User', optional: true
   has_many :annotation_streams, dependent: :destroy
   has_many :streams, through: :annotation_streams
-  has_many :notes, as: :notable, dependent: :destroy
+  has_many :note_records, as: :notable, class_name: 'Note', dependent: :destroy
   
   # Enums
   enum :event_type, {

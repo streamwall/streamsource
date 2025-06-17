@@ -1,0 +1,26 @@
+meta {
+  name: Update stream
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/v1/streams/:id
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: 
+}
+
+body:json {
+  {
+    "stream": {
+      "name": "",
+      "description": "",
+      "source_url": "",
+      "is_pinned": ""
+    }
+  }
+}

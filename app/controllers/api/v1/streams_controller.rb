@@ -10,19 +10,20 @@ module Api
         streams = streams.where(status: params[:status]) if params[:status].present?
         streams = streams.where.not(status: params[:notStatus]) if params[:notStatus].present?
         streams = streams.by_user(User.find(params[:user_id])) if params[:user_id].present?
+        streams = streams.where(is_pinned: params[:is_pinned]) if params[:is_pinned].present?
         
         # Apply sorting
         case params[:sort]
         when 'name'
-          streams = streams.order(name: :asc)
+          streams = streams.order(source: :asc)
         when '-name'
-          streams = streams.order(name: :desc)
+          streams = streams.order(source: :desc)
         when 'created'
           streams = streams.order(created_at: :asc)
         when '-created'
           streams = streams.order(created_at: :desc)
         else
-          streams = streams.recent
+          streams = streams.order(is_pinned: :desc).recent
         end
         
         # Pagination
@@ -31,14 +32,15 @@ module Api
         render json: {
           streams: ActiveModelSerializers::SerializableResource.new(
             streams,
-            each_serializer: StreamSerializer
+            each_serializer: StreamSerializer,
+            scope: serialization_scope
           ),
           meta: pagination_meta(streams)
         }
       end
       
       def show
-        render json: @stream, serializer: StreamSerializer
+        render json: @stream, serializer: StreamSerializer, scope: serialization_scope
       end
       
       def create
@@ -46,7 +48,7 @@ module Api
         authorize stream
         
         if stream.save
-          render json: stream, serializer: StreamSerializer, status: :created
+          render json: stream, serializer: StreamSerializer, scope: serialization_scope, status: :created
         else
           render_error(stream.errors.full_messages.join(', '), :unprocessable_entity)
         end
@@ -56,7 +58,7 @@ module Api
         authorize @stream
         
         if @stream.update(stream_params)
-          render json: @stream, serializer: StreamSerializer
+          render json: @stream, serializer: StreamSerializer, scope: serialization_scope
         else
           render_error(@stream.errors.full_messages.join(', '), :unprocessable_entity)
         end
@@ -71,13 +73,13 @@ module Api
       def pin
         authorize @stream, :update?
         @stream.pin!
-        render json: @stream, serializer: StreamSerializer
+        render json: @stream, serializer: StreamSerializer, scope: serialization_scope
       end
       
       def unpin
         authorize @stream, :update?
         @stream.unpin!
-        render json: @stream, serializer: StreamSerializer
+        render json: @stream, serializer: StreamSerializer, scope: serialization_scope
       end
       
       # Analytics endpoint (feature flagged)

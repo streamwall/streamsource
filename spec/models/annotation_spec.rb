@@ -8,7 +8,7 @@ RSpec.describe Annotation, type: :model do
     it { should belong_to(:resolved_by_user).class_name('User').optional }
     it { should have_many(:annotation_streams).dependent(:destroy) }
     it { should have_many(:streams).through(:annotation_streams) }
-    it { should have_many(:notes).dependent(:destroy) }
+    it { should have_many(:note_records).class_name('Note').dependent(:destroy) }
   end
   
   describe 'validations' do
@@ -21,11 +21,11 @@ RSpec.describe Annotation, type: :model do
     it 'validates latitude range' do
       annotation = build(:annotation, latitude: 91)
       expect(annotation).not_to be_valid
-      expect(annotation.errors[:latitude]).to include('must be less than or equal to 90')
+      expect(annotation.errors[:latitude]).to include('must be in -90..90')
       
       annotation.latitude = -91
       expect(annotation).not_to be_valid
-      expect(annotation.errors[:latitude]).to include('must be greater than or equal to -90')
+      expect(annotation.errors[:latitude]).to include('must be in -90..90')
       
       annotation.latitude = 40.7128
       expect(annotation).to be_valid
@@ -34,11 +34,11 @@ RSpec.describe Annotation, type: :model do
     it 'validates longitude range' do
       annotation = build(:annotation, longitude: 181)
       expect(annotation).not_to be_valid
-      expect(annotation.errors[:longitude]).to include('must be less than or equal to 180')
+      expect(annotation.errors[:longitude]).to include('must be in -180..180')
       
       annotation.longitude = -181
       expect(annotation).not_to be_valid
-      expect(annotation.errors[:longitude]).to include('must be greater than or equal to -180')
+      expect(annotation.errors[:longitude]).to include('must be in -180..180')
       
       annotation.longitude = -74.0060
       expect(annotation).to be_valid
@@ -76,14 +76,14 @@ RSpec.describe Annotation, type: :model do
       viral_moment: 'viral_moment',
       coordinated_action: 'coordinated_action',
       other: 'other'
-    ).with_prefix(true) }
+    ).with_prefix(true).backed_by_column_of_type(:string) }
     
     it { should define_enum_for(:priority_level).with_values(
       low: 'low',
       medium: 'medium',
       high: 'high',
       critical: 'critical'
-    ).with_prefix(true) }
+    ).with_prefix(true).backed_by_column_of_type(:string) }
     
     it { should define_enum_for(:review_status).with_values(
       pending: 'pending',
@@ -91,7 +91,7 @@ RSpec.describe Annotation, type: :model do
       reviewed: 'reviewed',
       resolved: 'resolved',
       dismissed: 'dismissed'
-    ).with_prefix(true) }
+    ).with_prefix(true).backed_by_column_of_type(:string) }
   end
   
   describe 'scopes' do

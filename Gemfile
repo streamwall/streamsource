@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-ruby "3.3.0"
+ruby "3.3.6"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.0.0"
@@ -90,6 +90,7 @@ group :development, :test do
   gem "faker", "~> 3.2"
   gem "shoulda-matchers", "~> 6.0"
   gem "database_cleaner-active_record", "~> 2.1"
+  gem "rails-controller-testing", "~> 1.0"
 end
 
 group :development do
@@ -99,6 +100,9 @@ group :development do
   # Better error pages
   gem "better_errors"
   gem "binding_of_caller"
+  
+  # N+1 query detection
+  gem "bullet"
 end
 
 group :test do

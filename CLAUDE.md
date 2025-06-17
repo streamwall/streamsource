@@ -215,6 +215,7 @@ When working on this project:
 5. **Think about performance** - Pagination, caching, indexes
 6. **Use constants** - Add to ApplicationConstants module
 7. **Keep it simple** - Avoid over-engineering
+8. **Always run unit tests before finishing your work**
 
 ## Migration from Node.js
 
@@ -254,3 +255,6 @@ For questions about architectural decisions or patterns used in this project, re
 - Test files for usage examples
 - Comments in complex code sections
 - This document for high-level guidance
+
+## Project Docker Deployment Notes
+- The project should be run in the docker container and not on the host machine.

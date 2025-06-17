@@ -2,10 +2,8 @@ require 'flipper'
 require 'flipper/adapters/active_record'
 require 'flipper/middleware/memoizer'
 
-Rails.application.configure do
-  # Memoize feature flag checks for the duration of a request
-  config.middleware.use Flipper::Middleware::Memoizer
-end
+# Note: Flipper::Middleware::Memoizer is already added by the flipper gem
+# No need to add it manually
 
 # Configure Flipper
 Flipper.configure do |config|

@@ -10,14 +10,14 @@ RSpec.describe 'Streams Workflow', type: :request do
     it 'allows CRUD operations on streams' do
       # Create a stream
       post '/api/v1/streams',
-        params: { name: 'Test Stream', url: 'https://example.com/test' },
+        params: { source: 'Test Stream', link: 'https://example.com/test' },
         headers: headers
       
       expect(response).to have_http_status(:created)
       stream = JSON.parse(response.body)
       stream_id = stream['id']
-      expect(stream['name']).to eq('Test Stream')
-      expect(stream['status']).to eq('active')
+      expect(stream['source']).to eq('Test Stream')
+      expect(stream['status']).to eq('unknown')
       expect(stream['is_pinned']).to be false
       
       # Read the stream
@@ -28,13 +28,13 @@ RSpec.describe 'Streams Workflow', type: :request do
       
       # Update the stream
       patch "/api/v1/streams/#{stream_id}",
-        params: { name: 'Updated Stream', status: 'inactive' },
+        params: { source: 'Updated Stream', status: 'offline' },
         headers: headers
       
       expect(response).to have_http_status(:success)
       updated = JSON.parse(response.body)
-      expect(updated['name']).to eq('Updated Stream')
-      expect(updated['status']).to eq('inactive')
+      expect(updated['source']).to eq('Updated Stream')
+      expect(updated['status']).to eq('offline')
       
       # Pin the stream
       put "/api/v1/streams/#{stream_id}/pin", headers: headers
@@ -66,14 +66,14 @@ RSpec.describe 'Streams Workflow', type: :request do
     it 'enforces create permissions' do
       # Default user cannot create
       post '/api/v1/streams',
-        params: { name: 'Test', url: 'https://test.com' },
+        params: { source: 'Test', link: 'https://test.com' },
         headers: auth_headers(default_user)
       
       expect(response).to have_http_status(:forbidden)
       
       # Editor can create
       post '/api/v1/streams',
-        params: { name: 'Test', url: 'https://test.com' },
+        params: { source: 'Test', link: 'https://test.com' },
         headers: auth_headers(editor)
       
       expect(response).to have_http_status(:created)
@@ -82,21 +82,21 @@ RSpec.describe 'Streams Workflow', type: :request do
     it 'enforces update permissions' do
       # Editor can update own stream
       patch "/api/v1/streams/#{editor_stream.id}",
-        params: { name: 'Updated' },
+        params: { source: 'Updated' },
         headers: auth_headers(editor)
       
       expect(response).to have_http_status(:success)
       
       # Editor cannot update others stream
       patch "/api/v1/streams/#{other_stream.id}",
-        params: { name: 'Updated' },
+        params: { source: 'Updated' },
         headers: auth_headers(editor)
       
       expect(response).to have_http_status(:forbidden)
       
       # Admin can update any stream
       patch "/api/v1/streams/#{other_stream.id}",
-        params: { name: 'Admin Updated' },
+        params: { source: 'Admin Updated' },
         headers: auth_headers(admin)
       
       expect(response).to have_http_status(:success)
@@ -105,27 +105,27 @@ RSpec.describe 'Streams Workflow', type: :request do
   
   describe 'filtering and pagination' do
     before do
-      create_list(:stream, 5, user: editor, status: 'active')
-      create_list(:stream, 3, user: editor, status: 'inactive')
+      create_list(:stream, 5, user: editor, status: 'live')
+      create_list(:stream, 3, user: editor, status: 'offline')
       create(:stream, user: editor, is_pinned: true)
     end
     
     it 'filters by status' do
       get '/api/v1/streams',
-        params: { status: 'active' },
+        params: { status: 'live' },
         headers: headers
       
       json = JSON.parse(response.body)
-      expect(json['streams'].all? { |s| s['status'] == 'active' }).to be true
+      expect(json['streams'].all? { |s| s['status'] == 'live' }).to be true
     end
     
     it 'filters by notStatus' do
       get '/api/v1/streams',
-        params: { notStatus: 'inactive' },
+        params: { notStatus: 'offline' },
         headers: headers
       
       json = JSON.parse(response.body)
-      expect(json['streams'].none? { |s| s['status'] == 'inactive' }).to be true
+      expect(json['streams'].none? { |s| s['status'] == 'offline' }).to be true
     end
     
     it 'filters by is_pinned' do
@@ -169,13 +169,13 @@ RSpec.describe 'Streams Workflow', type: :request do
   describe 'error handling' do
     it 'returns proper error for invalid stream data' do
       post '/api/v1/streams',
-        params: { name: '', url: 'not-a-url' },
+        params: { source: '', link: 'not-a-url' },
         headers: headers
       
       expect(response).to have_http_status(:unprocessable_entity)
       error = JSON.parse(response.body)['error']
-      expect(error).to include("Name can't be blank")
-      expect(error).to include("Url must be a valid HTTP or HTTPS URL")
+      expect(error).to include("Source can't be blank")
+      expect(error).to include("Link must be a valid HTTP or HTTPS URL")
     end
     
     it 'returns 404 for non-existent stream' do

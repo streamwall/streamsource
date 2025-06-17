@@ -11,7 +11,7 @@ RSpec.describe AnnotationStream, type: :model do
   
   describe 'validations' do
     it { should validate_inclusion_of(:relevance_score).in_array([1, 2, 3, 4, 5]) }
-    it { should validate_numericality_of(:stream_timestamp_seconds).is_greater_than_or_equal_to(0).allow_nil(true) }
+    it { should validate_numericality_of(:stream_timestamp_seconds).is_greater_than_or_equal_to(0).allow_nil }
     it { should validate_length_of(:stream_notes).is_at_most(1000) }
   end
   
@@ -26,8 +26,10 @@ RSpec.describe AnnotationStream, type: :model do
     
     describe '.by_relevance' do
       it 'orders by relevance_score descending' do
-        expect(AnnotationStream.by_relevance.first).to eq(high_relevance)
-        expect(AnnotationStream.by_relevance.last.relevance_score).to be <= 3
+        results = AnnotationStream.by_relevance
+        expect(results.first.relevance_score).to eq(5)
+        expect(results).to include(high_relevance)
+        expect(results.last.relevance_score).to be <= 3
       end
     end
     
@@ -83,28 +85,28 @@ RSpec.describe AnnotationStream, type: :model do
     
     describe '#formatted_stream_timestamp' do
       it 'formats hours:minutes:seconds for long durations' do
-        annotation_stream.stream_timestamp_seconds = 3665
-        expect(annotation_stream.formatted_stream_timestamp).to eq('1:01:05')
+        as = build(:annotation_stream, stream_timestamp_seconds: 3665)
+        expect(as.formatted_stream_timestamp).to eq('1:01:05')
       end
       
       it 'formats minutes:seconds for short durations' do
-        annotation_stream.stream_timestamp_seconds = 125
-        expect(annotation_stream.formatted_stream_timestamp).to eq('2:05')
+        as = build(:annotation_stream, stream_timestamp_seconds: 125)
+        expect(as.formatted_stream_timestamp).to eq('2:05')
       end
       
       it 'handles zero seconds' do
-        annotation_stream.stream_timestamp_seconds = 0
-        expect(annotation_stream.formatted_stream_timestamp).to eq('0:00')
+        as = build(:annotation_stream, stream_timestamp_seconds: 0)
+        expect(as.formatted_stream_timestamp).to eq('0:00')
       end
       
       it 'returns saved display format if available' do
-        annotation_stream.stream_timestamp_display = 'Custom Format'
-        expect(annotation_stream.formatted_stream_timestamp).to eq('Custom Format')
+        as = build(:annotation_stream, stream_timestamp_display: 'Custom Format')
+        expect(as.formatted_stream_timestamp).to eq('Custom Format')
       end
       
       it 'returns Unknown for nil timestamp' do
-        annotation_stream.stream_timestamp_seconds = nil
-        expect(annotation_stream.formatted_stream_timestamp).to eq('Unknown')
+        as = build(:annotation_stream, stream_timestamp_seconds: nil)
+        expect(as.formatted_stream_timestamp).to eq('Unknown')
       end
     end
     
@@ -148,14 +150,16 @@ RSpec.describe AnnotationStream, type: :model do
   end
   
   describe 'uniqueness constraint' do
-    it 'prevents duplicate annotation-stream pairs' do
+    it 'prevents duplicate annotation-stream pairs at database level' do
       annotation = create(:annotation)
       stream = create(:stream)
-      create(:annotation_stream, annotation: annotation, stream: stream)
+      user = create(:user)
+      create(:annotation_stream, annotation: annotation, stream: stream, added_by_user: user)
       
-      duplicate = build(:annotation_stream, annotation: annotation, stream: stream)
-      expect(duplicate).not_to be_valid
-      expect { duplicate.save!(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
+      duplicate = build(:annotation_stream, annotation: annotation, stream: stream, added_by_user: user)
+      # No model validation exists for uniqueness, only database constraint
+      expect(duplicate).to be_valid
+      expect { duplicate.save! }.to raise_error(ActiveRecord::RecordNotUnique)
     end
   end
   

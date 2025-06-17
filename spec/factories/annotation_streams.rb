@@ -1,10 +1,10 @@
 FactoryBot.define do
   factory :annotation_stream do
-    association :annotation
-    association :stream
-    association :added_by_user, factory: :user
-    stream_timestamp_seconds { rand(0..3600) } # Random timestamp up to 1 hour
-    relevance_score { rand(1..5) }
+    annotation
+    stream
+    added_by_user { association :user }
+    stream_timestamp_seconds { 120 } # Default to 2 minutes
+    relevance_score { 3 } # Default to medium relevance
     stream_notes { Faker::Lorem.sentence }
     
     trait :high_relevance do

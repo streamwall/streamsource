@@ -9,11 +9,21 @@ module Api
       
       # Pagination helpers
       def paginate(collection)
-        page = params[:page] || ApplicationConstants::Pagination::DEFAULT_PAGE
-        per_page = params[:per_page] || ApplicationConstants::Pagination::DEFAULT_PER_PAGE
-        per_page = [per_page.to_i, ApplicationConstants::Pagination::MAX_PER_PAGE].min
+        page = (params[:page] || ApplicationConstants::Pagination::DEFAULT_PAGE).to_i
+        per_page = (params[:per_page] || ApplicationConstants::Pagination::DEFAULT_PER_PAGE).to_i
+        per_page = [per_page, ApplicationConstants::Pagination::MAX_PER_PAGE].min
         
-        collection.page(page).per(per_page)
+        # Manual pagination using offset and limit
+        offset = (page - 1) * per_page
+        paginated = collection.offset(offset).limit(per_page)
+        
+        # Add singleton methods for Kaminari compatibility
+        paginated.define_singleton_method(:current_page) { page }
+        paginated.define_singleton_method(:limit_value) { per_page }
+        paginated.define_singleton_method(:total_count) { collection.count }
+        paginated.define_singleton_method(:total_pages) { (collection.count.to_f / per_page).ceil }
+        
+        paginated
       end
       
       def pagination_meta(collection)
@@ -43,6 +53,20 @@ module Api
       
       def not_found
         render_error(ApplicationConstants::Messages::NOT_FOUND, :not_found)
+      end
+      
+      # Helper method to provide serialization options with scope
+      def serialization_scope
+        SerializationScope.new(current_user)
+      end
+      
+      # Simple class to pass user context to serializers
+      class SerializationScope
+        attr_reader :current_user
+        
+        def initialize(user)
+          @current_user = user
+        end
       end
     end
   end

@@ -1,23 +1,9 @@
 FactoryBot.define do
   factory :streamer do
-    association :user
+    user
     name { Faker::Internet.unique.username(separators: ['_']) }
-    bio { Faker::Lorem.paragraph(sentence_count: 2) }
-    status { 'active' }
-    is_featured { false }
     notes { Faker::Lorem.sentence }
-    
-    trait :featured do
-      is_featured { true }
-    end
-    
-    trait :inactive do
-      status { 'inactive' }
-    end
-    
-    trait :banned do
-      status { 'banned' }
-    end
+    posted_by { nil } # Will be set from user.email by controller
     
     trait :with_accounts do
       after(:create) do |streamer|
@@ -34,7 +20,7 @@ FactoryBot.define do
     
     trait :live do
       after(:create) do |streamer|
-        create(:stream, streamer: streamer, status: 'Live')
+        create(:stream, :live, streamer: streamer, user: streamer.user)
       end
     end
   end

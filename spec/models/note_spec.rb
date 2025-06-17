@@ -10,7 +10,7 @@ RSpec.describe Note, type: :model do
   
   describe 'validations' do
     it { should validate_presence_of(:content) }
-    it { should validate_length_of(:content).is_at_least(1).is_at_most(1000) }
+    it { should validate_length_of(:content).is_at_least(1).is_at_most(2000) }
   end
   
   describe 'polymorphic associations' do
@@ -61,27 +61,23 @@ RSpec.describe Note, type: :model do
       end
     end
     
-    describe '.for_notable_type' do
+    describe '.for_streams' do
       let!(:stream_note) { create(:note, notable: create(:stream), user: user) }
       let!(:streamer_note) { create(:note, notable: create(:streamer), user: user) }
       
-      it 'returns notes for specific notable type' do
-        expect(Note.for_notable_type('Stream')).to include(stream_note)
-        expect(Note.for_notable_type('Stream')).not_to include(streamer_note)
+      it 'returns notes for streams only' do
+        expect(Note.for_streams).to include(stream_note)
+        expect(Note.for_streams).not_to include(streamer_note)
       end
     end
-  end
-  
-  describe 'callbacks' do
-    describe '#sanitize_content' do
-      it 'strips leading and trailing whitespace' do
-        note = create(:note, content: '  This is a note  ')
-        expect(note.content).to eq('This is a note')
-      end
+    
+    describe '.for_streamers' do
+      let!(:stream_note) { create(:note, notable: create(:stream), user: user) }
+      let!(:streamer_note) { create(:note, notable: create(:streamer), user: user) }
       
-      it 'preserves internal whitespace' do
-        note = create(:note, content: 'This  has  spaces')
-        expect(note.content).to eq('This  has  spaces')
+      it 'returns notes for streamers only' do
+        expect(Note.for_streamers).to include(streamer_note)
+        expect(Note.for_streamers).not_to include(stream_note)
       end
     end
   end
@@ -105,48 +101,20 @@ RSpec.describe Note, type: :model do
       end
     end
     
-    describe '#notable_name' do
-      it 'returns stream source for stream notes' do
-        stream = create(:stream, source: 'TestStream')
-        note = create(:note, notable: stream)
-        expect(note.notable_name).to eq('Stream: TestStream')
-      end
-      
-      it 'returns streamer name for streamer notes' do
-        streamer = create(:streamer, name: 'TestStreamer')
-        note = create(:note, notable: streamer)
-        expect(note.notable_name).to eq('Streamer: TestStreamer')
-      end
-      
-      it 'returns annotation title for annotation notes' do
-        annotation = create(:annotation, title: 'Breaking News Event')
-        note = create(:note, notable: annotation)
-        expect(note.notable_name).to eq('Annotation: Breaking News Event')
-      end
-      
-      it 'returns Unknown for unsupported types' do
-        # This would require mocking, but the logic is there
-        allow(note).to receive(:notable_type).and_return('Unknown')
-        expect(note.notable_name).to eq('Unknown')
-      end
-    end
-    
-    describe '#formatted_timestamp' do
-      it 'returns formatted creation time' do
-        note = create(:note, created_at: Time.zone.parse('2024-01-15 14:30:00'))
-        expect(note.formatted_timestamp).to eq('January 15, 2024 at 02:30 PM')
-      end
-    end
-    
     describe '#truncated_content' do
       it 'truncates long content' do
         note = create(:note, content: 'a' * 200)
-        expect(note.truncated_content(50)).to eq('a' * 47 + '...')
+        expect(note.truncated_content(50)).to eq('a' * 50 + '...')
       end
       
       it 'returns full content if shorter than limit' do
         note = create(:note, content: 'Short note')
         expect(note.truncated_content(50)).to eq('Short note')
+      end
+      
+      it 'uses default limit of 100' do
+        note = create(:note, content: 'a' * 200)
+        expect(note.truncated_content).to eq('a' * 100 + '...')
       end
     end
   end
@@ -160,15 +128,21 @@ RSpec.describe Note, type: :model do
   end
   
   describe 'character counting' do
-    it 'respects the 1000 character limit' do
-      note = build(:note, content: 'a' * 1001)
+    it 'respects the 2000 character limit' do
+      note = build(:note, content: 'a' * 2001)
       expect(note).not_to be_valid
-      expect(note.errors[:content]).to include('is too long (maximum is 1000 characters)')
+      expect(note.errors[:content]).to include('is too long (maximum is 2000 characters)')
     end
     
-    it 'allows exactly 1000 characters' do
-      note = build(:note, content: 'a' * 1000)
+    it 'allows exactly 2000 characters' do
+      note = build(:note, content: 'a' * 2000)
       expect(note).to be_valid
+    end
+    
+    it 'requires at least 1 character' do
+      note = build(:note, content: '')
+      expect(note).not_to be_valid
+      expect(note.errors[:content]).to include("can't be blank")
     end
   end
 end

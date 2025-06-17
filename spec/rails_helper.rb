@@ -33,7 +33,7 @@ end
 
 RSpec.configure do |config|
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
-  config.fixture_path = Rails.root.join('spec/fixtures')
+  config.fixture_paths = [Rails.root.join('spec/fixtures')]
 
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
@@ -71,13 +71,41 @@ RSpec.configure do |config|
   
   # Database cleaner setup
   config.before(:suite) do
-    DatabaseCleaner.strategy = :transaction
+    DatabaseCleaner.allow_remote_database_url = true # Allow remote URLs in test
+    
+    # Wait for database connection
+    retries = 0
+    begin
+      ActiveRecord::Base.connection.execute("SELECT 1")
+    rescue ActiveRecord::ConnectionNotEstablished, PG::ConnectionBad => e
+      retries += 1
+      if retries < 10
+        puts "Waiting for database connection... (attempt #{retries}/10)"
+        sleep 2
+        retry
+      else
+        raise e
+      end
+    end
+    
+    # Use truncation for initial cleanup to ensure clean state
     DatabaseCleaner.clean_with(:truncation)
+    DatabaseCleaner.strategy = :transaction
   end
 
-  config.around(:each) do |example|
-    DatabaseCleaner.cleaning do
-      example.run
-    end
+  config.before(:each) do
+    DatabaseCleaner.strategy = :transaction
+  end
+
+  config.before(:each, js: true) do
+    DatabaseCleaner.strategy = :truncation
+  end
+
+  config.before(:each) do
+    DatabaseCleaner.start
+  end
+
+  config.after(:each) do
+    DatabaseCleaner.clean
   end
 end

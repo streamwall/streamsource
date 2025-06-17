@@ -40,7 +40,7 @@
       </div>
       <div class="ml-4">
         <p class="text-sm font-medium text-gray-500">Administrators</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= User.where(admin: true).count %></p>
+        <p class="text-2xl font-semibold text-gray-900"><%= User.admins.count %></p>
       </div>
     </div>
   </div>

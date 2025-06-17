@@ -1,21 +1,19 @@
 FactoryBot.define do
   factory :note do
-    association :user
+    user
     content { Faker::Lorem.paragraph(sentence_count: 2) }
-    
-    # Default to stream as notable
-    association :notable, factory: :stream
+    notable { association :stream }
     
     trait :for_stream do
-      association :notable, factory: :stream
+      notable { association :stream }
     end
     
     trait :for_streamer do
-      association :notable, factory: :streamer
+      notable { association :streamer }
     end
     
     trait :for_annotation do
-      association :notable, factory: :annotation
+      notable { association :annotation }
     end
     
     trait :long do

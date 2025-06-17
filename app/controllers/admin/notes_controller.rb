@@ -4,7 +4,7 @@ module Admin
     before_action :set_note, only: [:show, :edit, :update, :destroy]
     
     def index
-      @notes = @notable.notes.includes(:user).recent
+      @notes = @notable.note_records.includes(:user).recent
       
       respond_to do |format|
         format.html
@@ -20,7 +20,7 @@ module Admin
     end
     
     def new
-      @note = @notable.notes.build
+      @note = @notable.note_records.build
       
       respond_to do |format|
         format.html
@@ -29,7 +29,7 @@ module Admin
     end
     
     def create
-      @note = @notable.notes.build(note_params)
+      @note = @notable.note_records.build(note_params)
       @note.user = current_user
       
       respond_to do |format|
@@ -116,7 +116,7 @@ module Admin
     end
     
     def set_note
-      @note = @notable.notes.find(params[:id])
+      @note = @notable.note_records.find(params[:id])
     end
     
     def note_params

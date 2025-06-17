@@ -1,14 +1,14 @@
 FactoryBot.define do
   factory :stream do
-    association :user
-    association :streamer, required: false
+    user
+    streamer { nil }
     source { Faker::Internet.username }
     link { Faker::Internet.url(host: 'tiktok.com') }
     title { Faker::Lorem.sentence }
-    platform { ['TikTok', 'Facebook', 'Twitch', 'YouTube', 'Instagram'].sample }
+    platform { 'tiktok' }
     status { 'Unknown' }
     kind { 'video' }
-    orientation { ['vertical', 'horizontal'].sample }
+    orientation { 'vertical' }
     city { Faker::Address.city }
     state { Faker::Address.state_abbr }
     is_pinned { false }
@@ -17,18 +17,7 @@ FactoryBot.define do
     ended_at { nil }
     last_live_at { nil }
     notes { Faker::Lorem.sentence }
-    posted_by { Faker::Internet.username }
-    
-    # For backward compatibility with existing tests
-    transient do
-      name { nil }
-      url { nil }
-    end
-    
-    after(:build) do |stream, evaluator|
-      stream.source = evaluator.name if evaluator.name
-      stream.link = evaluator.url if evaluator.url
-    end
+    posted_by { nil } # Will be set from user.email by model callback
     
     trait :live do
       status { 'Live' }
@@ -59,6 +48,7 @@ FactoryBot.define do
     trait :tiktok do
       platform { 'TikTok' }
       orientation { 'vertical' }
+      link { Faker::Internet.url(host: 'tiktok.com') }
     end
     
     trait :youtube do
@@ -71,6 +61,18 @@ FactoryBot.define do
       platform { 'Twitch' }
       orientation { 'horizontal' }
       link { Faker::Internet.url(host: 'twitch.tv') }
+    end
+    
+    trait :facebook do
+      platform { 'Facebook' }
+      orientation { 'horizontal' }
+      link { Faker::Internet.url(host: 'facebook.com') }
+    end
+    
+    trait :instagram do
+      platform { 'Instagram' }
+      orientation { 'vertical' }
+      link { Faker::Internet.url(host: 'instagram.com') }
     end
   end
 end

@@ -18,26 +18,26 @@ RSpec.describe "Api::V1::Streams", type: :request do
   end
   
   describe "GET /api/v1/streams" do
-    let!(:active_stream) { create(:stream, user: user, status: 'active') }
-    let!(:inactive_stream) { create(:stream, user: user, status: 'inactive') }
+    let!(:live_stream) { create(:stream, user: user, status: 'live') }
+    let!(:offline_stream) { create(:stream, user: user, status: 'offline') }
     let!(:pinned_stream) { create(:stream, user: user, is_pinned: true) }
     
     context "with valid authentication" do
-      it "returns all active streams" do
+      it "returns all non-archived streams" do
         get "/api/v1/streams", headers: auth_headers
         
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        expect(json['streams'].count).to eq(2) # Only active streams
+        expect(json['streams'].count).to eq(3) # All non-archived streams
       end
       
       it "filters by status parameter" do
-        get "/api/v1/streams", params: { status: 'inactive' }, headers: auth_headers
+        get "/api/v1/streams", params: { status: 'offline' }, headers: auth_headers
         
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
         expect(json['streams'].count).to eq(1)
-        expect(json['streams'].first['status']).to eq('inactive')
+        expect(json['streams'].first['status']).to eq('offline')
       end
     end
     
@@ -52,7 +52,7 @@ RSpec.describe "Api::V1::Streams", type: :request do
   
   describe "POST /api/v1/streams" do
     let(:valid_attributes) {
-      { url: 'https://example.com/stream', name: 'Test Stream' }
+      { link: 'https://example.com/stream', source: 'Test Stream' }
     }
     
     context "as editor" do

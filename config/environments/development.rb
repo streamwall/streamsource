@@ -64,4 +64,18 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # Bullet configuration for N+1 query detection
+  config.after_initialize do
+    Bullet.enable = true
+    Bullet.alert = true
+    Bullet.bullet_logger = true
+    Bullet.console = true
+    Bullet.rails_logger = true
+    Bullet.add_footer = true
+    
+    # Bullet.raise = true  # Uncomment to raise errors in development
+    # Bullet.unused_eager_loading_enable = false  # Set to true to detect unused eager loading
+    # Bullet.counter_cache_enable = false  # Set to true to detect counter cache opportunities
+  end
 end

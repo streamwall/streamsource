@@ -17,7 +17,7 @@ RSpec.describe 'Authentication Flow', type: :request do
       
       # Step 2: Use token to create a stream
       post '/api/v1/streams',
-        params: { name: 'My Stream', url: 'https://example.com/stream' },
+        params: { source: 'My Stream', link: 'https://example.com/stream' },
         headers: { 'Authorization' => "Bearer #{signup_response['token']}" }
       
       expect(response).to have_http_status(:created)
@@ -46,7 +46,7 @@ RSpec.describe 'Authentication Flow', type: :request do
       get '/api/v1/streams'
       expect(response).to have_http_status(:unauthorized)
       
-      post '/api/v1/streams', params: { name: 'Test', url: 'https://test.com' }
+      post '/api/v1/streams', params: { source: 'Test', link: 'https://test.com' }
       expect(response).to have_http_status(:unauthorized)
       
       delete '/api/v1/streams/1'

@@ -24,12 +24,12 @@ RSpec.describe Admin::SessionsController, type: :controller do
       
       it 'redirects to admin root' do
         post :create, params: { email: admin_user.email, password: 'Password123!' }
-        expect(response).to redirect_to(admin_root_path)
+        expect(response).to redirect_to(admin_streams_path)
       end
       
       it 'sets success notice' do
         post :create, params: { email: admin_user.email, password: 'Password123!' }
-        expect(flash[:notice]).to eq('Signed in successfully.')
+        expect(flash[:notice]).to eq('Successfully logged in.')
       end
     end
     
@@ -46,7 +46,7 @@ RSpec.describe Admin::SessionsController, type: :controller do
       
       it 'sets alert message' do
         post :create, params: { email: admin_user.email, password: 'wrong' }
-        expect(flash[:alert]).to eq('Invalid email or password.')
+        expect(flash[:alert]).to eq('Invalid email or password, or insufficient privileges.')
       end
     end
     
@@ -58,7 +58,7 @@ RSpec.describe Admin::SessionsController, type: :controller do
       
       it 'sets alert message' do
         post :create, params: { email: 'nonexistent@example.com', password: 'Password123!' }
-        expect(flash[:alert]).to eq('Invalid email or password.')
+        expect(flash[:alert]).to eq('Invalid email or password, or insufficient privileges.')
       end
     end
     
@@ -77,7 +77,7 @@ RSpec.describe Admin::SessionsController, type: :controller do
       
       it 'sets alert message' do
         post :create, params: { email: regular_user.email, password: 'Password123!' }
-        expect(flash[:alert]).to eq('Invalid email or password.')
+        expect(flash[:alert]).to eq('Invalid email or password, or insufficient privileges.')
       end
     end
   end
@@ -101,7 +101,7 @@ RSpec.describe Admin::SessionsController, type: :controller do
     
     it 'sets notice' do
       delete :destroy
-      expect(flash[:notice]).to eq('Signed out successfully.')
+      expect(flash[:notice]).to eq('Successfully logged out.')
     end
   end
 end

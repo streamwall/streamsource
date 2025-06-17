@@ -30,6 +30,6 @@ class StreamSerializer < ActiveModel::Serializer
   
   def current_user
     # Access current user from serialization scope
-    @instance_options[:scope]&.current_user
+    scope&.current_user if scope&.respond_to?(:current_user)
   end
 end

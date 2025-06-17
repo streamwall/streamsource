@@ -64,17 +64,17 @@ class StreamerAccount < ApplicationRecord
     return if profile_url.present?
     
     self.profile_url = case platform
-    when 'TikTok'
+    when 'tiktok'
       "https://www.tiktok.com/@#{username}"
-    when 'Twitch'
+    when 'twitch'
       "https://www.twitch.tv/#{username}"
-    when 'YouTube'
+    when 'youtube'
       # YouTube URLs are more complex, leave blank for manual entry
       nil
-    when 'Facebook'
+    when 'facebook'
       # Facebook URLs are complex, leave blank for manual entry
       nil
-    when 'Instagram'
+    when 'instagram'
       "https://www.instagram.com/#{username}/"
     end
   end

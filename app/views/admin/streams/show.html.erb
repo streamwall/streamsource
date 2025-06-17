@@ -169,8 +169,8 @@
       </div>
       
       <div id="stream_notes">
-        <% if @stream.notes.any? %>
-          <% @stream.notes.includes(:user).recent.each do |note| %>
+        <% if @stream.note_records.any? %>
+          <% @stream.note_records.includes(:user).recent.each do |note| %>
             <%= render 'admin/notes/note', note: note %>
           <% end %>
         <% else %>

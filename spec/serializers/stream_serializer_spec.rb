@@ -5,9 +5,9 @@ RSpec.describe StreamSerializer do
   let(:stream) do
     create(:stream,
       user: user,
-      name: 'Test Stream',
-      url: 'https://example.com/stream',
-      status: 'active',
+      source: 'Test Stream',
+      link: 'https://example.com/stream',
+      status: 'live',
       is_pinned: true
     )
   end
@@ -19,16 +19,16 @@ RSpec.describe StreamSerializer do
       expect(serialization[:id]).to eq(stream.id)
     end
     
-    it 'includes url' do
-      expect(serialization[:url]).to eq('https://example.com/stream')
+    it 'includes link' do
+      expect(serialization[:link]).to eq('https://example.com/stream')
     end
     
-    it 'includes name' do
-      expect(serialization[:name]).to eq('Test Stream')
+    it 'includes source' do
+      expect(serialization[:source]).to eq('Test Stream')
     end
     
     it 'includes status' do
-      expect(serialization[:status]).to eq('active')
+      expect(serialization[:status]).to eq('live')
     end
     
     it 'includes is_pinned' do
@@ -61,11 +61,11 @@ RSpec.describe StreamSerializer do
   end
   
   describe 'with different statuses' do
-    it 'serializes inactive streams correctly' do
-      inactive_stream = create(:stream, status: 'inactive')
-      serialization = ActiveModelSerializers::Adapter.create(described_class.new(inactive_stream)).as_json
+    it 'serializes offline streams correctly' do
+      offline_stream = create(:stream, status: 'offline')
+      serialization = ActiveModelSerializers::Adapter.create(described_class.new(offline_stream)).as_json
       
-      expect(serialization[:status]).to eq('inactive')
+      expect(serialization[:status]).to eq('offline')
     end
   end
   
@@ -91,8 +91,8 @@ RSpec.describe StreamSerializer do
     it 'includes all attributes for each stream' do
       serialization.each do |stream_json|
         expect(stream_json).to have_key(:id)
-        expect(stream_json).to have_key(:url)
-        expect(stream_json).to have_key(:name)
+        expect(stream_json).to have_key(:link)
+        expect(stream_json).to have_key(:source)
         expect(stream_json).to have_key(:status)
         expect(stream_json).to have_key(:is_pinned)
         expect(stream_json).to have_key(:user)
@@ -103,18 +103,18 @@ RSpec.describe StreamSerializer do
   end
   
   describe 'edge cases' do
-    it 'handles very long names' do
-      stream.name = 'A' * 255
+    it 'handles very long sources' do
+      stream.source = 'A' * 255
       serialization = ActiveModelSerializers::Adapter.create(described_class.new(stream)).as_json
       
-      expect(serialization[:name]).to eq('A' * 255)
+      expect(serialization[:source]).to eq('A' * 255)
     end
     
-    it 'handles special characters in URL' do
-      stream.url = 'https://example.com/stream?param=value&other=test%20space'
+    it 'handles special characters in link' do
+      stream.link = 'https://example.com/stream?param=value&other=test%20space'
       serialization = ActiveModelSerializers::Adapter.create(described_class.new(stream)).as_json
       
-      expect(serialization[:url]).to eq(stream.url)
+      expect(serialization[:link]).to eq(stream.link)
     end
   end
 end

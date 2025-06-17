@@ -1,12 +1,12 @@
 FactoryBot.define do
   factory :annotation do
-    association :user
+    user
     title { "Important Event at #{Faker::Address.city}" }
     description { Faker::Lorem.paragraph(sentence_count: 3) }
-    event_type { Annotation.event_types.keys.sample }
+    event_type { 'other' } # Use 'other' as the default event type
     priority_level { 'medium' }
     review_status { 'pending' }
-    event_timestamp { Faker::Time.between(from: 1.week.ago, to: Time.current) }
+    event_timestamp { 1.hour.ago }
     location { "#{Faker::Address.city}, #{Faker::Address.state_abbr}" }
     latitude { Faker::Address.latitude }
     longitude { Faker::Address.longitude }
@@ -24,14 +24,14 @@ FactoryBot.define do
     trait :resolved do
       review_status { 'resolved' }
       resolved_at { 1.hour.ago }
-      association :resolved_by_user, factory: :user
+      resolved_by_user { association :user }
       resolution_notes { 'Event has been verified and documented' }
     end
     
     trait :dismissed do
       review_status { 'dismissed' }
       resolved_at { 1.hour.ago }
-      association :resolved_by_user, factory: :user
+      resolved_by_user { association :user }
       resolution_notes { 'False alarm - no action needed' }
     end
     

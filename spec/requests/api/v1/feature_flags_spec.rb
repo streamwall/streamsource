@@ -66,9 +66,9 @@ RSpec.describe 'Feature Flags', type: :request do
   describe 'Bulk Import' do
     let(:streams_data) do
       [
-        { name: 'Stream 1', url: 'https://example.com/1' },
-        { name: 'Stream 2', url: 'https://example.com/2' },
-        { name: 'Invalid', url: 'not-a-url' }
+        { source: 'Stream 1', link: 'https://example.com/1' },
+        { source: 'Stream 2', link: 'https://example.com/2' },
+        { source: 'Invalid', link: 'not-a-url' }
       ]
     end
     
@@ -112,8 +112,8 @@ RSpec.describe 'Feature Flags', type: :request do
   
   describe 'Export' do
     before do
-      create_list(:stream, 3, user: editor, status: 'active')
-      create_list(:stream, 2, user: editor, status: 'inactive')
+      create_list(:stream, 3, user: editor, status: 'live')
+      create_list(:stream, 2, user: editor, status: 'offline')
     end
     
     context 'when feature is enabled' do
@@ -129,7 +129,7 @@ RSpec.describe 'Feature Flags', type: :request do
       end
       
       it 'respects filters' do
-        get '/api/v1/streams/export?status=active', headers: auth_headers(user)
+        get '/api/v1/streams/export?status=live', headers: auth_headers(user)
         
         json = JSON.parse(response.body)
         expect(json['count']).to eq(3)

@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version
-ARG RUBY_VERSION=3.3.0
+ARG RUBY_VERSION=3.3.6
 FROM ruby:$RUBY_VERSION-slim as base
 
 # Rails app lives here
@@ -17,6 +17,7 @@ ENV BUNDLE_PATH="/usr/local/bundle" \
 FROM base as build
 
 # Install packages needed to build gems and Node.js for asset compilation
+# Also include packages needed for testing when building test image
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y build-essential git libpq-dev libvips pkg-config curl && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
@@ -79,3 +80,17 @@ ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
 CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
+
+# Test stage - can be targeted with --target test
+FROM build as test
+
+# Install packages needed for testing
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y postgresql-client && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Set test environment
+ENV RAILS_ENV=test
+
+# Default command for test stage
+CMD ["bundle", "exec", "rspec"]

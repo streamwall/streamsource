@@ -1,0 +1,20 @@
+meta {
+  name: List streams
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/streams
+  body: none
+  auth: none
+}
+
+params:query {
+  ~page: 
+  ~per_page: 
+}
+
+headers {
+  Authorization: 
+}

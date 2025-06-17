@@ -1,5 +1,6 @@
 class HealthController < ApplicationController
   # Health endpoints don't need authentication
+  skip_before_action :authenticate_user!
   
   def index
     render json: {

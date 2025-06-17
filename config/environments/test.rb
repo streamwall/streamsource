@@ -33,6 +33,18 @@ Rails.application.configure do
 
   # Disable request forgery protection in test environment.
   config.action_controller.allow_forgery_protection = false
+  
+  # Allow test hosts - Rails 8 uses ActionDispatch::HostAuthorization
+  # Clear default hosts and add test hosts
+  config.hosts = []
+  config.hosts << 'www.example.com'
+  config.hosts << 'test.host'
+  config.hosts << 'test.example.com'
+  config.hosts << 'localhost'
+  config.hosts << /.*\.example\.com/
+  # Also allow IP addresses for tests
+  config.hosts << /[0-9\.]+/
+  config.hosts << /\[.*\]/
 
   # Store uploaded files on the local file system in a temporary directory.
   config.active_storage.service = :test
@@ -61,4 +73,15 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # Bullet configuration for N+1 query detection in tests
+  config.after_initialize do
+    if defined?(Bullet)
+      Bullet.enable = true
+      Bullet.bullet_logger = true
+      Bullet.raise = true  # Raise errors in test environment
+      Bullet.unused_eager_loading_enable = false  # Don't check for unused eager loading in tests
+      Bullet.counter_cache_enable = false  # Don't check for counter cache opportunities in tests
+    end
+  end
 end

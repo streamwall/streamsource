@@ -5,14 +5,32 @@ RSpec.describe "Admin::Annotations", type: :request do
   let(:regular_user) { create(:user) }
   
   before do
-    allow_any_instance_of(Admin::BaseController).to receive(:current_admin_user).and_return(admin_user)
-    allow_any_instance_of(Admin::BaseController).to receive(:authenticate_admin!).and_return(true)
+    # Set a valid host for tests
+    host! 'test.example.com'
+    
+    # Disable maintenance mode for tests
+    allow(Flipper).to receive(:enabled?).with(ApplicationConstants::Features::MAINTENANCE_MODE).and_return(false)
+  end
+  
+  # Helper method to log in admin user
+  def login_admin
+    post '/admin/login', params: { email: admin_user.email, password: 'Password123!' }
+    # For request specs, we need to check if login was successful and follow redirect
+    if response.status == 302
+      # Login was successful, session should be set
+      expect(session[:admin_user_id]).to eq(admin_user.id)
+    else
+      puts "Login failed with status: #{response.status}"
+      puts "Response body: #{response.body}"
+      fail "Admin login failed"
+    end
   end
   
   describe "GET /admin/annotations" do
     let!(:annotations) { create_list(:annotation, 3, user: admin_user) }
     
     it "returns successful response" do
+      login_admin
       get admin_annotations_path
       expect(response).to have_http_status(:success)
     end
@@ -292,8 +310,9 @@ RSpec.describe "Admin::Annotations", type: :request do
   
   describe "authorization" do
     before do
-      allow_any_instance_of(Admin::BaseController).to receive(:current_admin_user).and_return(nil)
-      allow_any_instance_of(Admin::BaseController).to receive(:authenticate_admin!).and_call_original
+      # Clear session to test authorization
+      reset_session
+      allow(Flipper).to receive(:enabled?).with(ApplicationConstants::Features::MAINTENANCE_MODE).and_return(false)
     end
     
     it "redirects non-admin users" do

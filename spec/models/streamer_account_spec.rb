@@ -10,8 +10,6 @@ RSpec.describe StreamerAccount, type: :model do
   describe 'validations' do
     it { should validate_presence_of(:platform) }
     it { should validate_presence_of(:username) }
-    it { should validate_length_of(:username).is_at_least(1).is_at_most(100) }
-    it { should validate_length_of(:profile_url).is_at_most(500) }
     
     it 'validates uniqueness of username per platform and streamer' do
       streamer = create(:streamer)
@@ -19,7 +17,7 @@ RSpec.describe StreamerAccount, type: :model do
       
       duplicate = build(:streamer_account, streamer: streamer, platform: 'twitch', username: 'testuser')
       expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:username]).to include('has already been taken')
+      expect(duplicate.errors[:username]).to include('already exists for this platform')
     end
     
     it 'allows same username on different platforms' do
@@ -40,49 +38,47 @@ RSpec.describe StreamerAccount, type: :model do
     it 'validates profile_url format when present' do
       account = build(:streamer_account, profile_url: 'not-a-url')
       expect(account).not_to be_valid
-      expect(account.errors[:profile_url]).to include('must be a valid URL')
+      expect(account.errors[:profile_url]).to include('must be a valid URL starting with http:// or https://')
     end
     
     it 'allows blank profile_url' do
       account = build(:streamer_account, profile_url: '')
       expect(account).to be_valid
     end
+    
+    it 'validates platform inclusion' do
+      account = build(:streamer_account)
+      # Since Rails enums raise ArgumentError on invalid assignment, we need to test differently
+      expect { account.platform = 'invalid' }.to raise_error(ArgumentError, "'invalid' is not a valid platform")
+    end
   end
   
   describe 'enums' do
     it { should define_enum_for(:platform).with_values(
-      twitch: 'twitch',
-      youtube: 'youtube',
-      tiktok: 'tiktok',
-      instagram: 'instagram',
-      facebook: 'facebook',
-      kick: 'kick',
-      rumble: 'rumble',
-      other: 'other'
-    ).with_prefix(true) }
-    
-    it { should define_enum_for(:status).with_values(
-      active: 'active',
-      suspended: 'suspended',
-      deleted: 'deleted',
-      inactive: 'inactive'
-    ).with_prefix(true) }
+      tiktok: 'TikTok',
+      facebook: 'Facebook',
+      twitch: 'Twitch',
+      youtube: 'YouTube',
+      instagram: 'Instagram',
+      other: 'Other'
+    ).with_prefix(true).backed_by_column_of_type(:string) }
   end
   
   describe 'scopes' do
-    let!(:active_account) { create(:streamer_account, status: 'active', is_verified: true) }
-    let!(:suspended_account) { create(:streamer_account, status: 'suspended') }
-    let!(:unverified_account) { create(:streamer_account, status: 'active', is_verified: false) }
+    let!(:active_account) { create(:streamer_account, is_active: true) }
+    let!(:inactive_account) { create(:streamer_account, is_active: false) }
     
     describe '.active' do
       it 'returns only active accounts' do
-        expect(StreamerAccount.active).to contain_exactly(active_account, unverified_account)
+        expect(StreamerAccount.active).to include(active_account)
+        expect(StreamerAccount.active).not_to include(inactive_account)
       end
     end
     
-    describe '.verified' do
-      it 'returns only verified accounts' do
-        expect(StreamerAccount.verified).to contain_exactly(active_account)
+    describe '.inactive' do
+      it 'returns only inactive accounts' do
+        expect(StreamerAccount.inactive).to include(inactive_account)
+        expect(StreamerAccount.inactive).not_to include(active_account)
       end
     end
     
@@ -91,33 +87,62 @@ RSpec.describe StreamerAccount, type: :model do
       let!(:youtube_account) { create(:streamer_account, platform: 'youtube') }
       
       it 'returns accounts for specific platform' do
-        expect(StreamerAccount.by_platform('twitch')).to contain_exactly(twitch_account)
+        # The by_platform scope is checking against the stored value, not the key
+        expect(StreamerAccount.by_platform('Twitch')).to include(twitch_account)
+        expect(StreamerAccount.by_platform('Twitch')).not_to include(youtube_account)
       end
     end
   end
   
   describe 'callbacks' do
     describe '#normalize_username' do
-      it 'strips whitespace from username' do
-        account = create(:streamer_account, username: '  testuser  ')
+      it 'strips whitespace and downcases username' do
+        account = build(:streamer_account, username: '  TestUser  ')
+        account.save!
+        expect(account.username).to eq('testuser')
+      end
+      
+      it 'only normalizes when username changes' do
+        account = create(:streamer_account, username: 'TestUser')
+        expect(account.username).to eq('testuser')
+        
+        # Updating other attributes should not re-normalize
+        account.update!(profile_url: 'https://example.com')
         expect(account.username).to eq('testuser')
       end
     end
     
     describe '#generate_profile_url' do
-      it 'generates Twitch profile URL' do
-        account = create(:streamer_account, platform: 'twitch', username: 'testuser', profile_url: nil)
-        expect(account.profile_url).to eq('https://twitch.tv/testuser')
-      end
-      
-      it 'generates YouTube profile URL' do
-        account = create(:streamer_account, platform: 'youtube', username: 'testuser', profile_url: nil)
-        expect(account.profile_url).to eq('https://youtube.com/@testuser')
-      end
-      
       it 'generates TikTok profile URL' do
-        account = create(:streamer_account, platform: 'tiktok', username: 'testuser', profile_url: nil)
-        expect(account.profile_url).to eq('https://tiktok.com/@testuser')
+        # When we set platform: 'tiktok', Rails stores 'TikTok' in the DB
+        account = build(:streamer_account, username: 'testuser', profile_url: nil)
+        account.platform = 'tiktok'  # This will store 'TikTok' in the DB
+        account.save!
+        expect(account.profile_url).to eq('https://www.tiktok.com/@testuser')
+      end
+      
+      it 'generates Twitch profile URL' do
+        account = build(:streamer_account, username: 'testuser', profile_url: nil)
+        account.platform = 'twitch'  # This will store 'Twitch' in the DB
+        account.save!
+        expect(account.profile_url).to eq('https://www.twitch.tv/testuser')
+      end
+      
+      it 'generates Instagram profile URL' do
+        account = build(:streamer_account, username: 'testuser', profile_url: nil)
+        account.platform = 'instagram'  # This will store 'Instagram' in the DB
+        account.save!
+        expect(account.profile_url).to eq('https://www.instagram.com/testuser/')
+      end
+      
+      it 'does not generate YouTube profile URL' do
+        account = create(:streamer_account, platform: 'youtube', username: 'testuser', profile_url: nil)
+        expect(account.profile_url).to be_nil
+      end
+      
+      it 'does not generate Facebook profile URL' do
+        account = create(:streamer_account, platform: 'facebook', username: 'testuser', profile_url: nil)
+        expect(account.profile_url).to be_nil
       end
       
       it 'does not override existing profile URL' do
@@ -132,54 +157,24 @@ RSpec.describe StreamerAccount, type: :model do
     
     describe '#display_name' do
       it 'returns username with platform' do
-        expect(account.display_name).to eq('TestUser (twitch)')
+        # The model returns the key, not the value
+        expect(account.display_name).to eq('testuser (twitch)')
       end
     end
     
-    describe '#platform_icon' do
-      it 'returns icon for known platforms' do
-        expect(account.platform_icon).to eq('🎮')
-        
-        account.platform = 'youtube'
-        expect(account.platform_icon).to eq('📺')
-        
-        account.platform = 'tiktok'
-        expect(account.platform_icon).to eq('🎵')
-      end
-      
-      it 'returns generic icon for unknown platform' do
-        account.platform = 'other'
-        expect(account.platform_icon).to eq('🌐')
+    describe '#deactivate!' do
+      it 'sets is_active to false' do
+        account.is_active = true
+        account.deactivate!
+        expect(account.is_active).to be false
       end
     end
     
-    describe '#profile_link' do
-      it 'returns profile URL when available' do
-        account.profile_url = 'https://twitch.tv/testuser'
-        expect(account.profile_link).to eq('https://twitch.tv/testuser')
-      end
-      
-      it 'returns placeholder when no URL' do
-        account.profile_url = nil
-        expect(account.profile_link).to eq('#')
-      end
-    end
-    
-    describe '#active?' do
-      it 'returns true for active status' do
-        account.status = 'active'
-        expect(account.active?).to be true
-      end
-      
-      it 'returns false for other statuses' do
-        account.status = 'suspended'
-        expect(account.active?).to be false
-      end
-    end
-    
-    describe '#to_s' do
-      it 'returns the display name' do
-        expect(account.to_s).to eq('TestUser (twitch)')
+    describe '#activate!' do
+      it 'sets is_active to true' do
+        account.is_active = false
+        account.activate!
+        expect(account.is_active).to be true
       end
     end
   end

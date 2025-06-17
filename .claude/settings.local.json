@@ -24,7 +24,22 @@
       "Bash(bundle exec rails:*)",
       "Bash(ruby:*)",
       "Bash(mv:*)",
-      "Bash(./bin/rails:*)"
+      "Bash(./bin/rails:*)",
+      "Bash(find:*)",
+      "Bash(bundle show:*)",
+      "WebFetch(domain:)",
+      "Bash(grep:*)",
+      "Bash(RAILS_ENV=test bundle exec rspec --fail-fast)",
+      "Bash(true)",
+      "Bash(RAILS_ENV=test bundle exec rspec spec/models/note_spec.rb --format documentation)",
+      "Bash(rspec:*)",
+      "Bash(bundle update:*)",
+      "Bash(cat:*)",
+      "Bash(rm:*)",
+      "Bash(rg:*)",
+      "Bash(git checkout:*)",
+      "Bash(./bin/docker-test:*)",
+      "Bash(bundle lock:*)"
     ],
     "deny": []
   }

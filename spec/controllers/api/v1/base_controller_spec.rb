@@ -14,9 +14,10 @@ RSpec.describe Api::V1::BaseController, type: :controller do
     
     def paginated_action
       records = User.all
+      paginated_records = paginate(records)
       render json: { 
-        data: paginate(records),
-        meta: pagination_meta(records)
+        data: paginated_records,
+        meta: pagination_meta(paginated_records)
       }
     end
   end

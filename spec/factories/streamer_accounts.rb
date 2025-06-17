@@ -1,23 +1,13 @@
 FactoryBot.define do
   factory :streamer_account do
-    association :streamer
-    platform { StreamerAccount.platforms.keys.sample }
+    streamer
+    platform { 'twitch' } # Default to a specific platform
     username { Faker::Internet.unique.username(separators: ['_']) }
-    profile_url { nil } # Will be auto-generated
-    status { 'active' }
-    is_verified { false }
-    follower_count { rand(100..100000) }
-    
-    trait :verified do
-      is_verified { true }
-    end
-    
-    trait :suspended do
-      status { 'suspended' }
-    end
+    profile_url { nil } # Will be auto-generated in the model
+    is_active { true }
     
     trait :inactive do
-      status { 'inactive' }
+      is_active { false }
     end
     
     trait :twitch do
@@ -36,13 +26,12 @@ FactoryBot.define do
       platform { 'instagram' }
     end
     
-    trait :with_custom_url do
-      profile_url { Faker::Internet.url }
+    trait :facebook do
+      platform { 'facebook' }
     end
     
-    trait :popular do
-      follower_count { rand(500000..5000000) }
-      is_verified { true }
+    trait :with_custom_url do
+      profile_url { Faker::Internet.url }
     end
   end
 end
