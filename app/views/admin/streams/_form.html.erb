@@ -11,6 +11,19 @@
   <% end %>
 
   <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+    <!-- Streamer Selection -->
+    <div class="col-span-full">
+      <%= form.label :streamer_id, "Streamer", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.select :streamer_id, 
+          options_for_select(Streamer.includes(:streamer_accounts).order(:name).map { |s| 
+            platforms = s.platforms.any? ? " (#{s.platforms.join(', ')})" : ""
+            [s.name + platforms, s.id] 
+          }, stream.streamer_id),
+          { include_blank: "Select a streamer..." },
+          class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+      <p class="mt-1 text-xs text-gray-500">Associate this stream with a streamer</p>
+    </div>
+    
     <!-- Required Fields -->
     <div>
       <%= form.label :source, class: "block text-sm font-medium text-gray-700" %>

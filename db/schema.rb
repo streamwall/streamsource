@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_17_013537) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_17_022109) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -28,6 +28,30 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_17_013537) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["feature_key", "key"], name: "index_flipper_gates_on_feature_key_and_key", unique: true
+  end
+
+  create_table "streamer_accounts", force: :cascade do |t|
+    t.bigint "streamer_id", null: false
+    t.string "platform", null: false
+    t.string "username", null: false
+    t.string "profile_url"
+    t.boolean "is_active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["platform"], name: "index_streamer_accounts_on_platform"
+    t.index ["streamer_id", "platform", "username"], name: "idx_streamer_platform_username", unique: true
+    t.index ["streamer_id"], name: "index_streamer_accounts_on_streamer_id"
+  end
+
+  create_table "streamers", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "notes"
+    t.string "posted_by"
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_streamers_on_name"
+    t.index ["user_id"], name: "index_streamers_on_user_id"
   end
 
   create_table "streams", force: :cascade do |t|
@@ -48,12 +72,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_17_013537) do
     t.string "posted_by"
     t.string "orientation"
     t.string "kind", default: "video"
+    t.bigint "streamer_id"
+    t.datetime "started_at"
+    t.datetime "ended_at"
+    t.boolean "is_archived", default: false
+    t.index ["ended_at"], name: "index_streams_on_ended_at"
+    t.index ["is_archived"], name: "index_streams_on_is_archived"
     t.index ["is_pinned"], name: "index_streams_on_is_pinned"
     t.index ["kind"], name: "index_streams_on_kind"
     t.index ["last_checked_at"], name: "index_streams_on_last_checked_at"
     t.index ["last_live_at"], name: "index_streams_on_last_live_at"
     t.index ["platform"], name: "index_streams_on_platform"
+    t.index ["started_at"], name: "index_streams_on_started_at"
     t.index ["status"], name: "index_streams_on_status"
+    t.index ["streamer_id", "is_archived"], name: "index_streams_on_streamer_id_and_is_archived"
+    t.index ["streamer_id"], name: "index_streams_on_streamer_id"
     t.index ["user_id", "created_at"], name: "index_streams_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_streams_on_user_id"
   end
@@ -68,5 +101,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_17_013537) do
     t.index ["role"], name: "index_users_on_role"
   end
 
+  add_foreign_key "streamer_accounts", "streamers"
+  add_foreign_key "streamers", "users"
+  add_foreign_key "streams", "streamers"
   add_foreign_key "streams", "users"
 end

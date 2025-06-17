@@ -41,6 +41,11 @@ Rails.application.routes.draw do
     post 'login', to: 'sessions#create'
     delete 'logout', to: 'sessions#destroy'
     
+    # Define streamers routes with new and edit
+    get 'streamers/new', to: 'streamers#new', as: 'new_streamer'
+    get 'streamers/:id/edit', to: 'streamers#edit', as: 'edit_streamer'
+    resources :streamers
+    
     # Define streams routes with new and edit
     get 'streams/new', to: 'streams#new', as: 'new_stream'
     get 'streams/:id/edit', to: 'streams#edit', as: 'edit_stream'

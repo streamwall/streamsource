@@ -1,0 +1,73 @@
+<tr id="<%= dom_id(streamer) %>" class="hover:bg-gray-50">
+  <td class="px-6 py-4 whitespace-nowrap">
+    <div class="text-sm font-medium text-gray-900"><%= streamer.name %></div>
+    <% if streamer.notes.present? %>
+      <div class="text-xs text-gray-500"><%= truncate(streamer.notes, length: 100) %></div>
+    <% end %>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <% platforms = streamer.platforms %>
+    <% if platforms.any? %>
+      <div class="flex flex-wrap gap-1">
+        <% platforms.each do |platform| %>
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+            <%= platform %>
+          </span>
+        <% end %>
+      </div>
+    <% else %>
+      <span class="text-sm text-gray-400">No accounts</span>
+    <% end %>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <% active_count = streamer.streams.active.count %>
+    <% live_count = streamer.streams.live.not_archived.count %>
+    <div class="text-sm text-gray-900">
+      <% if live_count > 0 %>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <%= live_count %> Live
+        </span>
+      <% else %>
+        <%= active_count %> active
+      <% end %>
+    </div>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+    <%= streamer.streams.count %> total
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <div class="text-sm text-gray-900"><%= streamer.posted_by || streamer.user.email %></div>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+    <%= streamer.created_at.strftime("%b %d, %Y") %>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+    <div class="flex items-center justify-end space-x-2">
+      <%= link_to admin_streamer_path(streamer), 
+          class: "text-gray-600 hover:text-gray-900",
+          title: "View details" do %>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      <% end %>
+      
+      <%= link_to admin_edit_streamer_path(streamer), 
+          class: "text-indigo-600 hover:text-indigo-900",
+          data: { turbo_frame: "modal" } do %>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      <% end %>
+      
+      <%= button_to admin_streamer_path(streamer), 
+          method: :delete,
+          class: "text-red-600 hover:text-red-900",
+          data: { turbo_confirm: "Are you sure? This will delete all streams for this streamer." } do %>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      <% end %>
+    </div>
+  </td>
+</tr>
