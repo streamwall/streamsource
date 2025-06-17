@@ -44,13 +44,17 @@ Rails.application.routes.draw do
     # Define streamers routes with new and edit
     get 'streamers/new', to: 'streamers#new', as: 'new_streamer'
     get 'streamers/:id/edit', to: 'streamers#edit', as: 'edit_streamer'
-    resources :streamers
+    resources :streamers do
+      resources :notes, except: [:index], param: :id, defaults: { notable_type: 'streamer' }
+    end
     
     # Define streams routes with new and edit
     get 'streams/new', to: 'streams#new', as: 'new_stream'
     get 'streams/:id/edit', to: 'streams#edit', as: 'edit_stream'
     patch 'streams/:id/toggle_pin', to: 'streams#toggle_pin', as: 'toggle_pin_stream'
-    resources :streams, only: [:index, :show, :create, :update, :destroy]
+    resources :streams, only: [:index, :show, :create, :update, :destroy] do
+      resources :notes, except: [:index], param: :id, defaults: { notable_type: 'stream' }
+    end
     
     # Define users routes with new and edit
     get 'users/new', to: 'users#new', as: 'new_user'

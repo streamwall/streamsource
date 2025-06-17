@@ -1,47 +1,192 @@
 <% content_for :page_title, "Users" %>
+<% content_for :page_subtitle, "Manage user accounts and permissions" %>
+<% content_for :page_actions do %>
+  <%= link_to admin_new_user_path, 
+      class: "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700",
+      data: { turbo_frame: "modal" } do %>
+    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+    </svg>
+    New User
+  <% end %>
+<% end %>
 
-<div class="bg-white shadow overflow-hidden rounded-lg">
-  <table class="min-w-full divide-y divide-gray-200">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Streams</th>
-        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-      </tr>
-    </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
-      <% @users.each do |user| %>
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900"><%= user.email %></div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= user.admin? ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' %>">
-              <%= user.role %>
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-            <%= user.streams.count %>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-            <%= user.created_at.strftime("%b %d, %Y") %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+<!-- Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-500">Total Users</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= User.count %></p>
+      </div>
+    </div>
+  </div>
   
-  <% if @users.empty? %>
-    <div class="text-center py-12">
-      <h3 class="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-500">Administrators</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= User.where(admin: true).count %></p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-500">Active This Month</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= User.joins(:streams).where(streams: { created_at: 1.month.ago.. }).distinct.count %></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="bg-white rounded-lg shadow mb-6 p-4">
+  <%= form_with url: admin_users_path, method: :get, data: { controller: "search", search_target: "form", turbo_frame: "users_list", turbo_action: "advance" }, class: "flex gap-4" do |form| %>
+    <div class="flex-1">
+      <%= form.text_field :search, 
+          placeholder: "Search users by email...",
+          value: params[:search],
+          data: { action: "input->search#submit" },
+          class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+    </div>
+    
+    <div>
+      <%= form.select :role, 
+          options_for_select([["All Roles", ""], ["Admin", "admin"], ["User", "user"]], params[:role]),
+          {},
+          class: "rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+    </div>
+    
+    <div>
+      <%= form.submit "Search", class: "px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium" %>
+      <%= link_to "Clear", admin_users_path, class: "px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm font-medium" %>
     </div>
   <% end %>
 </div>
 
-<!-- Pagination -->
-<% if @pagy.pages > 1 %>
-  <div class="mt-4">
-    <%== pagy_bootstrap_nav(@pagy) %>
+<!-- Users list -->
+<turbo-frame id="users_list">
+  <div class="bg-white shadow overflow-hidden rounded-lg">
+    <% if @users.empty? %>
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          <% if params[:search].present? %>
+            No users match your search. Try different keywords or 
+            <%= link_to "clear your search", admin_users_path, class: "text-indigo-600 hover:text-indigo-500" %>.
+          <% else %>
+            Get started by creating a new user.
+          <% end %>
+        </p>
+        <div class="mt-6">
+          <%= link_to admin_new_user_path, 
+              class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700",
+              data: { turbo_frame: "modal" } do %>
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Create Your First User
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <!-- Results count -->
+      <div class="bg-gray-50 border-b border-gray-200 px-6 py-3">
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-gray-700">
+            Showing <%= @pagy.offset + 1 %> to <%= [@pagy.offset + @pagy.items, @pagy.count].min %> of <%= @pagy.count %> users
+            <% if params.values.any?(&:present?) %>
+              <span class="text-gray-500">(filtered)</span>
+            <% end %>
+          </p>
+          <% if @pagy.pages > 1 %>
+            <p class="text-sm text-gray-500">Page <%= @pagy.page %> of <%= @pagy.pages %></p>
+          <% end %>
+        </div>
+      </div>
+      
+      <!-- Desktop table -->
+      <div class="hidden md:block">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Streams</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Streamers</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+              <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% @users.each do |user| %>
+              <%= render 'user', user: user %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Mobile cards -->
+      <div class="md:hidden divide-y divide-gray-200">
+        <% @users.each do |user| %>
+          <%= render 'user_card', user: user %>
+        <% end %>
+      </div>
+    <% end %>
   </div>
-<% end %>
+  
+  <!-- Pagination -->
+  <% if @pagy.pages > 1 %>
+    <div class="mt-6 flex items-center justify-between">
+      <div class="flex-1 flex justify-between sm:hidden">
+        <% if @pagy.prev %>
+          <%= link_to "Previous", admin_users_path(page: @pagy.prev, **params.except(:page).permit!), 
+              class: "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+        <% end %>
+        <% if @pagy.next %>
+          <%= link_to "Next", admin_users_path(page: @pagy.next, **params.except(:page).permit!), 
+              class: "ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+        <% end %>
+      </div>
+      <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            Showing <span class="font-medium"><%= @pagy.offset + 1 %></span> to <span class="font-medium"><%= [@pagy.offset + @pagy.items, @pagy.count].min %></span> of <span class="font-medium"><%= @pagy.count %></span> results
+          </p>
+        </div>
+        <div>
+          <%== pagy_bootstrap_nav(@pagy) %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</turbo-frame>
+
+<!-- Modal container -->
+<turbo-frame id="modal" data-controller="modal"></turbo-frame>

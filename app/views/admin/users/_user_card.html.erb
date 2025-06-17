@@ -1,0 +1,82 @@
+<div id="<%= dom_id(user) %>_card" class="p-6">
+  <div class="flex items-start justify-between">
+    <div class="flex-1 min-w-0">
+      <!-- User Info -->
+      <div class="flex items-center mb-3">
+        <div class="flex-shrink-0 h-10 w-10">
+          <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
+            <span class="text-sm font-medium text-white"><%= user.email.first.upcase %></span>
+          </div>
+        </div>
+        <div class="ml-3 flex-1">
+          <h3 class="text-base font-medium text-gray-900 truncate"><%= user.email %></h3>
+          <div class="flex items-center mt-1">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= user.admin? ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' %>">
+              <%= user.admin? ? 'Administrator' : 'User' %>
+            </span>
+            <% if user == current_admin_user %>
+              <span class="ml-2 text-xs text-indigo-600 font-medium">(You)</span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Stats -->
+      <div class="grid grid-cols-2 gap-4 mb-3">
+        <div>
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Streams</p>
+          <p class="text-lg font-semibold text-gray-900">
+            <%= user.streams.count %>
+            <span class="text-sm font-normal text-gray-500">(<%= user.streams.not_archived.count %> active)</span>
+          </p>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Streamers</p>
+          <p class="text-lg font-semibold text-gray-900">
+            <%= user.streamers.count %>
+            <span class="text-sm font-normal text-gray-500">(<%= user.notes.count %> notes)</span>
+          </p>
+        </div>
+      </div>
+      
+      <!-- Meta Info -->
+      <div class="text-xs text-gray-500">
+        <div>
+          <span class="font-medium">ID:</span> <%= user.id %>
+        </div>
+        <div>
+          <span class="font-medium">Created:</span>
+          <%= user.created_at.strftime("%b %d, %Y") %> (<%= time_ago_in_words(user.created_at) %> ago)
+        </div>
+      </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="flex items-center space-x-2 ml-4 flex-shrink-0">
+      <%= link_to admin_user_path(user), class: "text-gray-600 hover:text-gray-900" do %>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      <% end %>
+      
+      <%= link_to admin_edit_user_path(user), 
+          class: "text-indigo-600 hover:text-indigo-900",
+          data: { turbo_frame: "modal" } do %>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      <% end %>
+      
+      <% unless user == current_admin_user %>
+        <%= button_to admin_toggle_admin_user_path(user), 
+            method: :patch,
+            class: "text-purple-600 hover:text-purple-900",
+            title: user.admin? ? "Remove admin" : "Make admin" do %>
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

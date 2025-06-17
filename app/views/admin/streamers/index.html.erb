@@ -1,4 +1,5 @@
 <% content_for :page_title, "Streamers" %>
+<% content_for :page_subtitle, "Manage streamer profiles and platform accounts" %>
 <% content_for :page_actions do %>
   <%= link_to admin_new_streamer_path, 
       class: "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700",
@@ -9,6 +10,57 @@
     New Streamer
   <% end %>
 <% end %>
+
+<!-- Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-500">Total Streamers</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= Streamer.count %></p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-500">Currently Live</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= Streamer.joins(:streams).where(streams: { status: 'Live', is_archived: false }).distinct.count %></p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-500">Platform Accounts</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= StreamerAccount.count %></p>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Search -->
 <div class="bg-white rounded-lg shadow mb-6 p-4">
@@ -22,8 +74,8 @@
     </div>
     
     <div>
-      <%= form.submit "Search", class: "px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700" %>
-      <%= link_to "Clear", admin_streamers_path, class: "px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300" %>
+      <%= form.submit "Search", class: "px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium" %>
+      <%= link_to "Clear", admin_streamers_path, class: "px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm font-medium" %>
     </div>
   <% end %>
 </div>
@@ -31,40 +83,101 @@
 <!-- Streamers list -->
 <turbo-frame id="streamers_list">
   <div class="bg-white shadow overflow-hidden rounded-lg">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Platforms</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active Streams</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Streams</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posted By</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-          <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200" id="streamers">
-        <% @streamers.each do |streamer| %>
-          <%= render 'streamer', streamer: streamer %>
-        <% end %>
-      </tbody>
-    </table>
-    
     <% if @streamers.empty? %>
       <div class="text-center py-12">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
         <h3 class="mt-2 text-sm font-medium text-gray-900">No streamers found</h3>
-        <p class="mt-1 text-sm text-gray-500">Get started by creating a new streamer.</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <% if params[:search].present? %>
+            No streamers match your search. Try different keywords or 
+            <%= link_to "clear your search", admin_streamers_path, class: "text-indigo-600 hover:text-indigo-500" %>.
+          <% else %>
+            Get started by creating a new streamer.
+          <% end %>
+        </p>
+        <div class="mt-6">
+          <%= link_to admin_new_streamer_path, 
+              class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700",
+              data: { turbo_frame: "modal" } do %>
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Create Your First Streamer
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <!-- Results count -->
+      <div class="bg-gray-50 border-b border-gray-200 px-6 py-3">
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-gray-700">
+            Showing <%= @pagy.offset + 1 %> to <%= [@pagy.offset + @pagy.items, @pagy.count].min %> of <%= @pagy.count %> streamers
+            <% if params[:search].present? %>
+              <span class="text-gray-500">(filtered)</span>
+            <% end %>
+          </p>
+          <% if @pagy.pages > 1 %>
+            <p class="text-sm text-gray-500">Page <%= @pagy.page %> of <%= @pagy.pages %></p>
+          <% end %>
+        </div>
+      </div>
+      
+      <!-- Desktop table -->
+      <div class="hidden md:block">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Platforms</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active Streams</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Streams</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posted By</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+              <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200" id="streamers">
+            <% @streamers.each do |streamer| %>
+              <%= render 'streamer', streamer: streamer %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Mobile cards -->
+      <div class="md:hidden divide-y divide-gray-200">
+        <% @streamers.each do |streamer| %>
+          <%= render 'streamer_card', streamer: streamer %>
+        <% end %>
       </div>
     <% end %>
   </div>
   
   <!-- Pagination -->
   <% if @pagy.pages > 1 %>
-    <div class="mt-4">
-      <%== pagy_bootstrap_nav(@pagy) %>
+    <div class="mt-6 flex items-center justify-between">
+      <div class="flex-1 flex justify-between sm:hidden">
+        <% if @pagy.prev %>
+          <%= link_to "Previous", admin_streamers_path(page: @pagy.prev, **params.except(:page).permit!), 
+              class: "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+        <% end %>
+        <% if @pagy.next %>
+          <%= link_to "Next", admin_streamers_path(page: @pagy.next, **params.except(:page).permit!), 
+              class: "ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+        <% end %>
+      </div>
+      <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            Showing <span class="font-medium"><%= @pagy.offset + 1 %></span> to <span class="font-medium"><%= [@pagy.offset + @pagy.items, @pagy.count].min %></span> of <span class="font-medium"><%= @pagy.count %></span> results
+          </p>
+        </div>
+        <div>
+          <%== pagy_bootstrap_nav(@pagy) %>
+        </div>
+      </div>
     </div>
   <% end %>
 </turbo-frame>

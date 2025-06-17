@@ -15,6 +15,7 @@ class Streamer < ApplicationRecord
   belongs_to :user
   has_many :streamer_accounts, dependent: :destroy
   has_many :streams, dependent: :destroy
+  has_many :notes, as: :notable, dependent: :destroy
   
   # Validations
   validates :name, presence: true, uniqueness: { case_sensitive: false }

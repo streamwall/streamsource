@@ -29,6 +29,7 @@ class Stream < ApplicationRecord
   # Associations
   belongs_to :user
   belongs_to :streamer, optional: true # Optional for now during migration
+  has_many :notes, as: :notable, dependent: :destroy
   
   # Enums
   enum :status, {
