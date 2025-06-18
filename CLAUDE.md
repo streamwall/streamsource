@@ -80,11 +80,11 @@ StreamSource is a Rails 8 application providing both a RESTful API and an admin 
 6. Test with system specs
 
 ### Database Changes
-1. Create migration: `bin/rails generate migration AddFieldToModel`
+1. Create migration: `docker-compose exec web bin/rails generate migration AddFieldToModel`
 2. Update model validations and associations
 3. Update serializers if needed
 4. Update tests
-5. Run migration: `bin/rails db:migrate`
+5. Run migration: `docker-compose exec web bin/rails db:migrate`
 
 ### API Endpoint Addition
 1. Add route in `config/routes.rb`
@@ -96,31 +96,35 @@ StreamSource is a Rails 8 application providing both a RESTful API and an admin 
 ## Testing Guidelines
 
 ### Running Tests
+**CRITICAL**: Always use Docker for tests. Never run tests locally.
+
 ```bash
-# All tests (automatically sets RAILS_ENV=test and prepares database)
+# All tests (recommended - uses bin/test wrapper)
 docker-compose exec web bin/test
 
-# Specific file
+# Specific test file
 docker-compose exec web bin/test spec/models/user_spec.rb
 
-# Run tests at specific line
+# Specific test at line number
 docker-compose exec web bin/test spec/models/user_spec.rb:42
 
-# With coverage report
-docker-compose exec web bin/test
+# Alternative: Run RSpec directly (must set RAILS_ENV=test)
+docker-compose exec -e RAILS_ENV=test web bundle exec rspec
 
-# Note: The bin/test wrapper automatically:
-# - Sets RAILS_ENV=test
-# - Prepares the test database
-# - Runs tests with proper configuration
+# Check test coverage (coverage report in coverage/index.html)
+docker-compose exec web bin/test
 ```
 
-### Test Structure
-- Unit tests for models
-- Controller tests for endpoints
-- Request specs for integration
-- Policy specs for authorization
-- Always test edge cases
+**bin/test wrapper does:**
+- Sets `RAILS_ENV=test`
+- Prepares test database with `rails db:prepare`
+- Runs RSpec with all arguments
+
+### Test Types & Coverage
+- **Unit tests**: Models, serializers, policies
+- **Request specs**: Controller endpoints, authentication
+- **System specs**: Full user workflows (when needed)
+- **Target**: 100% line coverage
 
 ## Security Considerations
 
@@ -147,46 +151,60 @@ docker-compose exec web bin/test
 6. **Hotwire conventions** - Use Turbo Frames and Streams appropriately
 7. **Tailwind utilities** - Prefer utility classes over custom CSS
 
-## Essential Docker Commands
+## Development Setup
 
-**Remember**: ALL commands must be run through Docker. Never use local/system tools.
+**CRITICAL**: ALL commands must be run through Docker. Never use local Ruby/Rails/Node.
 
+### Initial Setup
 ```bash
-# Start services (do this first!)
+# Start all services
 docker-compose up -d
 
 # Verify services are running
 docker-compose ps
 
-# Build assets
-docker-compose exec web yarn build
-docker-compose exec web yarn build:css
-
-# Run migrations
+# Run database migrations
 docker-compose exec web bin/rails db:migrate
+```
+
+### Daily Development
+```bash
+# Start services
+docker-compose up -d
+
+# Run tests
+docker-compose exec web bin/test
 
 # Access Rails console
 docker-compose exec web bin/rails console
 
-# Run tests (uses bin/test wrapper)
-docker-compose exec web bin/test
+# Run migrations after changes
+docker-compose exec web bin/rails db:migrate
 
-# Run specific tests
-docker-compose exec web bin/test spec/models/stream_spec.rb
-
-# View logs
+# View application logs
 docker-compose logs -f web
+```
 
-# Rebuild after Gemfile changes
+### Asset Management
+```bash
+# Build JavaScript/CSS (when modified)
+docker-compose exec web yarn build
+docker-compose exec web yarn build:css
+```
+
+### Troubleshooting
+```bash
+# Rebuild after Gemfile/package.json changes
 docker-compose build web
 docker-compose restart web
 
-# Stop all services
-docker-compose down
-
-# Remove all data and start fresh
+# Reset everything (DESTROYS ALL DATA)
 docker-compose down -v
 docker-compose up -d
+docker-compose exec web bin/rails db:migrate
+
+# Stop all services
+docker-compose down
 ```
 
 ## Common Issues & Solutions
@@ -255,12 +273,12 @@ When working on this project:
 
 1. **Prioritize tests** - Always write/update tests for changes
 2. **Follow patterns** - Maintain consistency with existing code
-3. **Document changes** - Update README and inline comments
-4. **Consider security** - Validate input, authorize actions
-5. **Think about performance** - Pagination, caching, indexes
-6. **Use constants** - Add to ApplicationConstants module
-7. **Keep it simple** - Avoid over-engineering
-8. **Always run unit tests before finishing your work**
+3. **Consider security** - Validate input, authorize actions
+4. **Think about performance** - Pagination, caching, indexes
+5. **Use constants** - Add to ApplicationConstants module
+6. **Keep it simple** - Avoid over-engineering
+7. **ALWAYS run tests** - `docker-compose exec web bin/test` before finishing work
+8. **Use Docker** - Never run commands outside Docker containers
 
 ## Migration from Node.js
 
