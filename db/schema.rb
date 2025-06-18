@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_17_024000) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_18_024812) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -90,6 +90,31 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_17_024000) do
     t.index ["user_id"], name: "index_notes_on_user_id"
   end
 
+  create_table "stream_urls", force: :cascade do |t|
+    t.string "url", null: false
+    t.string "url_type", default: "stream"
+    t.string "platform"
+    t.string "title"
+    t.text "notes"
+    t.boolean "is_active", default: true
+    t.bigint "streamer_id", null: false
+    t.string "created_by_type", null: false
+    t.bigint "created_by_id", null: false
+    t.datetime "last_checked_at"
+    t.datetime "expires_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_type", "created_by_id"], name: "index_stream_urls_on_created_by"
+    t.index ["expires_at"], name: "index_stream_urls_on_expires_at"
+    t.index ["is_active"], name: "index_stream_urls_on_is_active"
+    t.index ["last_checked_at"], name: "index_stream_urls_on_last_checked_at"
+    t.index ["platform"], name: "index_stream_urls_on_platform"
+    t.index ["streamer_id", "is_active"], name: "index_stream_urls_on_streamer_id_and_is_active"
+    t.index ["streamer_id"], name: "index_stream_urls_on_streamer_id"
+    t.index ["title"], name: "index_stream_urls_on_title"
+    t.index ["url_type"], name: "index_stream_urls_on_url_type"
+  end
+
   create_table "streamer_accounts", force: :cascade do |t|
     t.bigint "streamer_id", null: false
     t.string "platform", null: false
@@ -136,6 +161,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_17_024000) do
     t.datetime "started_at"
     t.datetime "ended_at"
     t.boolean "is_archived", default: false
+    t.bigint "stream_url_id"
     t.index ["ended_at"], name: "index_streams_on_ended_at"
     t.index ["is_archived"], name: "index_streams_on_is_archived"
     t.index ["is_pinned"], name: "index_streams_on_is_pinned"
@@ -145,6 +171,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_17_024000) do
     t.index ["platform"], name: "index_streams_on_platform"
     t.index ["started_at"], name: "index_streams_on_started_at"
     t.index ["status"], name: "index_streams_on_status"
+    t.index ["stream_url_id"], name: "index_streams_on_stream_url_id"
     t.index ["streamer_id", "is_archived"], name: "index_streams_on_streamer_id_and_is_archived"
     t.index ["streamer_id"], name: "index_streams_on_streamer_id"
     t.index ["user_id", "created_at"], name: "index_streams_on_user_id_and_created_at"
@@ -167,8 +194,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_17_024000) do
   add_foreign_key "annotations", "users"
   add_foreign_key "annotations", "users", column: "resolved_by_user_id"
   add_foreign_key "notes", "users"
+  add_foreign_key "stream_urls", "streamers"
   add_foreign_key "streamer_accounts", "streamers"
   add_foreign_key "streamers", "users"
+  add_foreign_key "streams", "stream_urls"
   add_foreign_key "streams", "streamers"
   add_foreign_key "streams", "users"
 end

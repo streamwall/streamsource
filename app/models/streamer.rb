@@ -14,6 +14,7 @@ class Streamer < ApplicationRecord
   # Associations
   belongs_to :user
   has_many :streamer_accounts, dependent: :destroy
+  has_many :stream_urls, dependent: :destroy
   has_many :streams, dependent: :destroy
   has_many :note_records, as: :notable, class_name: 'Note', dependent: :destroy
   has_many :annotation_streams, through: :streams
@@ -51,6 +52,30 @@ class Streamer < ApplicationRecord
     streamer_accounts.find_by(platform: platform, is_active: true)
   end
   
+  def primary_stream_url
+    stream_urls.active.by_type('permalink').first ||
+    stream_urls.active.by_type('stream').first ||
+    stream_urls.active.first
+  end
+  
+  def active_stream_urls
+    stream_urls.active.recent
+  end
+  
+  def stream_urls_for_platform(platform)
+    stream_urls.active.by_platform(platform)
+  end
+  
+  def add_stream_url!(url, type: 'stream', platform: nil, user: nil)
+    stream_urls.create!(
+      url: url,
+      url_type: type,
+      platform: platform,
+      created_by: user || self.user,
+      is_active: true
+    )
+  end
+
   def create_or_continue_stream!(attributes = {})
     # Check if there's an existing non-archived stream that's still "live" or was recently offline
     recent_stream = streams.not_archived

@@ -30,7 +30,7 @@ module Admin
               turbo_stream.prepend('streamers', partial: 'admin/streamers/streamer', locals: { streamer: @streamer }),
               turbo_stream.replace('flash', partial: 'admin/shared/flash', 
                 locals: { notice: 'Streamer was successfully created.' }),
-              turbo_stream.replace('new_streamer_modal', '')
+              turbo_stream.replace('modal', '')
             ]
           end
         else

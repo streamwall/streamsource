@@ -29,6 +29,7 @@ class Stream < ApplicationRecord
   # Associations
   belongs_to :user
   belongs_to :streamer, optional: true # Optional for now during migration
+  belongs_to :stream_url, optional: true # Optional during migration period
   has_many :note_records, as: :notable, class_name: 'Note', dependent: :destroy
   has_many :annotation_streams, dependent: :destroy
   has_many :annotations, through: :annotation_streams
@@ -130,7 +131,23 @@ class Stream < ApplicationRecord
   before_save :update_last_live_at, if: -> { status_changed? && live? }
   before_save :set_started_at, if: -> { status_changed? && live? && started_at.blank? }
   
+  # Delegates for StreamUrl attributes
+  delegate :url, to: :stream_url, prefix: false, allow_nil: true
+  
   # Instance methods
+  def link
+    # Backward compatibility: prefer stream_url.url, fallback to link attribute
+    stream_url&.url || read_attribute(:link)
+  end
+  
+  def link=(value)
+    # Set both for backward compatibility during migration
+    write_attribute(:link, value)
+    if stream_url.present?
+      stream_url.update(url: value)
+    end
+  end
+  
   def pin!
     update!(is_pinned: true)
   end
