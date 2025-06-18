@@ -5,6 +5,20 @@ if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
   bundle exec rails db:prepare
 fi
 
+# If running rspec, automatically set RAILS_ENV=test
+if [[ "${1}" == "bundle" ]] && [[ "${2}" == "exec" ]] && [[ "${3}" == "rspec" ]]; then
+  export RAILS_ENV=test
+  # Ensure test database is prepared
+  bundle exec rails db:prepare
+fi
+
+# If running bin/rspec, it already sets RAILS_ENV=test
+if [[ "${1}" == "./bin/rspec" ]] || [[ "${1}" == "bin/rspec" ]]; then
+  export RAILS_ENV=test
+  # Ensure test database is prepared
+  bundle exec rails db:prepare
+fi
+
 # If the command starts with ./bin/rails, use bundle exec
 if [[ "${1}" == "./bin/rails" ]]; then
   shift

@@ -78,7 +78,7 @@ RSpec.describe "Admin::Notes", type: :request do
     let(:note) { create(:note, notable: stream, user: admin_user) }
     
     it "returns successful response" do
-      get edit_admin_stream_note_path(stream, note)
+      get admin_stream_edit_note_path(stream, note)
       expect(response).to have_http_status(:success)
     end
   end

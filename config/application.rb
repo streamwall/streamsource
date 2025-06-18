@@ -61,6 +61,9 @@ module Streamsource
           expose: ['Authorization']
       end
     end
+    
+    # Rate limiting with Rack::Attack
+    config.middleware.use Rack::Attack
 
     # Lograge for cleaner logs
     config.lograge.enabled = true

@@ -14,7 +14,7 @@ RSpec.describe 'Streams Workflow', type: :request do
         headers: headers
       
       expect(response).to have_http_status(:created)
-      stream = JSON.parse(response.body)
+      stream = JSON.parse(response.body)['stream']
       stream_id = stream['id']
       expect(stream['source']).to eq('Test Stream')
       expect(stream['status']).to eq('unknown')
@@ -24,7 +24,7 @@ RSpec.describe 'Streams Workflow', type: :request do
       get "/api/v1/streams/#{stream_id}", headers: headers
       
       expect(response).to have_http_status(:success)
-      expect(JSON.parse(response.body)['id']).to eq(stream_id)
+      expect(JSON.parse(response.body)['stream']['id']).to eq(stream_id)
       
       # Update the stream
       patch "/api/v1/streams/#{stream_id}",
@@ -32,7 +32,7 @@ RSpec.describe 'Streams Workflow', type: :request do
         headers: headers
       
       expect(response).to have_http_status(:success)
-      updated = JSON.parse(response.body)
+      updated = JSON.parse(response.body)['stream']
       expect(updated['source']).to eq('Updated Stream')
       expect(updated['status']).to eq('offline')
       
@@ -40,13 +40,13 @@ RSpec.describe 'Streams Workflow', type: :request do
       put "/api/v1/streams/#{stream_id}/pin", headers: headers
       
       expect(response).to have_http_status(:success)
-      expect(JSON.parse(response.body)['is_pinned']).to be true
+      expect(JSON.parse(response.body)['stream']['is_pinned']).to be true
       
       # Unpin the stream
       delete "/api/v1/streams/#{stream_id}/pin", headers: headers
       
       expect(response).to have_http_status(:success)
-      expect(JSON.parse(response.body)['is_pinned']).to be false
+      expect(JSON.parse(response.body)['stream']['is_pinned']).to be false
       
       # Delete the stream
       delete "/api/v1/streams/#{stream_id}", headers: headers

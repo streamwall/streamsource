@@ -172,7 +172,25 @@ class Annotation < ApplicationRecord
   end
   
   def time_ago
-    time_ago_in_words(event_timestamp)
+    return nil unless event_timestamp
+    
+    seconds = Time.current - event_timestamp
+    return "just now" if seconds < 60
+    
+    minutes = (seconds / 60).to_i
+    return "#{minutes} minute#{'s' if minutes != 1} ago" if minutes < 60
+    
+    hours = (minutes / 60).to_i
+    return "#{hours} hour#{'s' if hours != 1} ago" if hours < 24
+    
+    days = (hours / 24).to_i
+    return "#{days} day#{'s' if days != 1} ago" if days < 30
+    
+    months = (days / 30).to_i
+    return "#{months} month#{'s' if months != 1} ago" if months < 12
+    
+    years = (days / 365).to_i
+    "#{years} year#{'s' if years != 1} ago"
   end
   
   def stream_count

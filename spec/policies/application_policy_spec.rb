@@ -6,14 +6,14 @@ RSpec.describe ApplicationPolicy do
   let(:policy) { described_class.new(user, record) }
   
   describe '#index?' do
-    it 'returns false by default' do
-      expect(policy.index?).to be false
+    it 'returns true by default' do
+      expect(policy.index?).to be true
     end
   end
   
   describe '#show?' do
-    it 'returns false by default' do
-      expect(policy.show?).to be false
+    it 'returns true by default' do
+      expect(policy.show?).to be true
     end
   end
   

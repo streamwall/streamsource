@@ -28,7 +28,15 @@ class Rack::Attack
   # Throttle login attempts by email
   throttle('logins/email', limit: ApplicationConstants::RateLimit::LOGIN_ATTEMPTS_PER_PERIOD, period: ApplicationConstants::RateLimit::LOGIN_PERIOD) do |req|
     if req.path == '/api/v1/users/login' && req.post?
-      req.params['email'].to_s.downcase.presence
+      # Parse request body to get email parameter
+      begin
+        body = req.body.read
+        req.body.rewind
+        params = JSON.parse(body) rescue {}
+        params['email'].to_s.downcase.presence
+      rescue
+        nil
+      end
     end
   end
   

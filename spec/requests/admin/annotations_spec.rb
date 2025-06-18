@@ -14,23 +14,15 @@ RSpec.describe "Admin::Annotations", type: :request do
   
   # Helper method to log in admin user
   def login_admin
-    post '/admin/login', params: { email: admin_user.email, password: 'Password123!' }
-    # For request specs, we need to check if login was successful and follow redirect
-    if response.status == 302
-      # Login was successful, session should be set
-      expect(session[:admin_user_id]).to eq(admin_user.id)
-    else
-      puts "Login failed with status: #{response.status}"
-      puts "Response body: #{response.body}"
-      fail "Admin login failed"
-    end
+    setup_admin_auth(admin_user)
   end
   
   describe "GET /admin/annotations" do
     let!(:annotations) { create_list(:annotation, 3, user: admin_user) }
     
+    before { login_admin }
+    
     it "returns successful response" do
-      login_admin
       get admin_annotations_path
       expect(response).to have_http_status(:success)
     end
@@ -77,6 +69,8 @@ RSpec.describe "Admin::Annotations", type: :request do
     let(:annotation) { create(:annotation, user: admin_user) }
     let!(:annotation_stream) { create(:annotation_stream, annotation: annotation) }
     
+    before { login_admin }
+    
     it "returns successful response" do
       get admin_annotation_path(annotation)
       expect(response).to have_http_status(:success)
@@ -95,6 +89,8 @@ RSpec.describe "Admin::Annotations", type: :request do
   end
   
   describe "GET /admin/annotations/new" do
+    before { login_admin }
+    
     it "returns successful response" do
       get new_admin_annotation_path
       expect(response).to have_http_status(:success)
@@ -108,6 +104,8 @@ RSpec.describe "Admin::Annotations", type: :request do
   end
   
   describe "POST /admin/annotations" do
+    before { login_admin }
+    
     let(:valid_params) do
       {
         annotation: {
@@ -166,6 +164,8 @@ RSpec.describe "Admin::Annotations", type: :request do
   describe "GET /admin/annotations/:id/edit" do
     let(:annotation) { create(:annotation, user: admin_user) }
     
+    before { login_admin }
+    
     it "returns successful response" do
       get edit_admin_annotation_path(annotation)
       expect(response).to have_http_status(:success)
@@ -179,6 +179,9 @@ RSpec.describe "Admin::Annotations", type: :request do
   
   describe "PATCH /admin/annotations/:id" do
     let(:annotation) { create(:annotation, user: admin_user) }
+    
+    before { login_admin }
+    
     let(:update_params) do
       {
         annotation: {
@@ -219,6 +222,8 @@ RSpec.describe "Admin::Annotations", type: :request do
   describe "DELETE /admin/annotations/:id" do
     let!(:annotation) { create(:annotation, user: admin_user) }
     
+    before { login_admin }
+    
     it "deletes annotation" do
       expect {
         delete admin_annotation_path(annotation)
@@ -241,6 +246,8 @@ RSpec.describe "Admin::Annotations", type: :request do
   describe "PATCH /admin/annotations/:id/resolve" do
     let(:annotation) { create(:annotation, user: admin_user, review_status: 'pending') }
     
+    before { login_admin }
+    
     it "marks annotation as resolved" do
       patch resolve_admin_annotation_path(annotation), params: { resolution_notes: 'All clear' }
       annotation.reload
@@ -259,6 +266,8 @@ RSpec.describe "Admin::Annotations", type: :request do
   describe "PATCH /admin/annotations/:id/dismiss" do
     let(:annotation) { create(:annotation, user: admin_user, review_status: 'pending') }
     
+    before { login_admin }
+    
     it "marks annotation as dismissed" do
       patch dismiss_admin_annotation_path(annotation), params: { dismissal_notes: 'False alarm' }
       annotation.reload
@@ -276,6 +285,9 @@ RSpec.describe "Admin::Annotations", type: :request do
   describe "POST /admin/annotations/:id/add_stream" do
     let(:annotation) { create(:annotation, user: admin_user) }
     let(:stream) { create(:stream) }
+    
+    before { login_admin }
+    
     let(:params) do
       {
         stream_id: stream.id,
@@ -309,13 +321,8 @@ RSpec.describe "Admin::Annotations", type: :request do
   end
   
   describe "authorization" do
-    before do
-      # Clear session to test authorization
-      reset_session
-      allow(Flipper).to receive(:enabled?).with(ApplicationConstants::Features::MAINTENANCE_MODE).and_return(false)
-    end
-    
     it "redirects non-admin users" do
+      # Don't set up admin auth for this test
       get admin_annotations_path
       expect(response).to redirect_to(admin_login_path)
     end

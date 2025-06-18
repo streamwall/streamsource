@@ -4,18 +4,6 @@ RSpec.describe "Api::V1::Streams", type: :request do
   let(:user) { create(:user, role: 'editor') }
   let(:admin) { create(:user, role: 'admin') }
   let(:default_user) { create(:user, role: 'default') }
-  let(:auth_headers) { { 'Authorization' => "Bearer #{generate_jwt_token(user)}" } }
-  
-  def generate_jwt_token(user)
-    payload = {
-      user_id: user.id,
-      email: user.email,
-      role: user.role,
-      exp: 24.hours.from_now.to_i
-    }
-    
-    JWT.encode(payload, Rails.application.credentials.secret_key_base)
-  end
   
   describe "GET /api/v1/streams" do
     let!(:live_stream) { create(:stream, user: user, status: 'live') }
@@ -24,7 +12,7 @@ RSpec.describe "Api::V1::Streams", type: :request do
     
     context "with valid authentication" do
       it "returns all non-archived streams" do
-        get "/api/v1/streams", headers: auth_headers
+        get "/api/v1/streams", headers: auth_headers(user)
         
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -32,7 +20,7 @@ RSpec.describe "Api::V1::Streams", type: :request do
       end
       
       it "filters by status parameter" do
-        get "/api/v1/streams", params: { status: 'offline' }, headers: auth_headers
+        get "/api/v1/streams", params: { status: 'offline' }, headers: auth_headers(user)
         
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -58,7 +46,7 @@ RSpec.describe "Api::V1::Streams", type: :request do
     context "as editor" do
       it "creates a new stream" do
         expect {
-          post "/api/v1/streams", params: valid_attributes, headers: auth_headers
+          post "/api/v1/streams", params: valid_attributes, headers: auth_headers(user)
         }.to change(Stream, :count).by(1)
         
         expect(response).to have_http_status(:created)
@@ -66,10 +54,8 @@ RSpec.describe "Api::V1::Streams", type: :request do
     end
     
     context "as default user" do
-      let(:auth_headers) { { 'Authorization' => "Bearer #{generate_jwt_token(default_user)}" } }
-      
       it "returns forbidden" do
-        post "/api/v1/streams", params: valid_attributes, headers: auth_headers
+        post "/api/v1/streams", params: valid_attributes, headers: auth_headers(default_user)
         
         expect(response).to have_http_status(:forbidden)
       end

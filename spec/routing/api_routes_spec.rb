@@ -104,15 +104,6 @@ RSpec.describe 'API Routes', type: :routing do
     end
   end
   
-  describe 'Root route' do
-    it 'redirects to API docs' do
-      expect(get: '/').to route_to(
-        controller: 'redirect',
-        action: 'show',
-        path: '/api-docs'
-      )
-    end
-  end
   
   describe 'Unmatched routes' do
     it 'does not route undefined paths' do

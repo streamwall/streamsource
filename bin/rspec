@@ -1,0 +1,5 @@
+#!/bin/bash
+# Script to run RSpec with RAILS_ENV=test automatically
+
+export RAILS_ENV=test
+exec bundle exec rspec "$@"

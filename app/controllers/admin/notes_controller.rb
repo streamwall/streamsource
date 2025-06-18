@@ -30,7 +30,7 @@ module Admin
     
     def create
       @note = @notable.note_records.build(note_params)
-      @note.user = current_user
+      @note.user = current_admin_user
       
       respond_to do |format|
         if @note.save

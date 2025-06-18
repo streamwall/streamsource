@@ -33,8 +33,9 @@ module Api
           streams: ActiveModelSerializers::SerializableResource.new(
             streams,
             each_serializer: StreamSerializer,
-            scope: serialization_scope
-          ),
+            scope: serialization_scope,
+            adapter: :attributes
+          ).as_json,
           meta: pagination_meta(streams)
         }
       end

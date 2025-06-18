@@ -52,10 +52,10 @@ RSpec.shared_context "with sample resources" do
   let(:another_user) { create(:user, :editor) }
   let(:admin) { create(:user, :admin) }
   
-  let!(:user_stream) { create(:stream, user: user) }
+  let!(:user_stream) { create(:stream, :live, user: user) }
   let!(:another_user_stream) { create(:stream, user: another_user) }
   let!(:pinned_stream) { create(:stream, user: user, is_pinned: true) }
-  let!(:offline_stream) { create(:stream, user: user, status: 'offline') }
+  let!(:offline_stream) { create(:stream, user: user, status: 'Offline') }
   
   let!(:user_streamer) { create(:streamer, user: user) }
   let!(:another_user_streamer) { create(:streamer, user: another_user) }

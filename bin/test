@@ -1,0 +1,13 @@
+#!/bin/bash
+# Wrapper script to run tests with proper environment setup
+
+# Set Rails environment to test
+export RAILS_ENV=test
+
+# Ensure test database is prepared
+echo "Preparing test database..."
+bundle exec rails db:prepare
+
+# Run RSpec with all arguments passed to this script
+echo "Running tests..."
+bundle exec rspec "$@"

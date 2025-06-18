@@ -45,7 +45,10 @@ Rails.application.routes.draw do
     get 'streamers/new', to: 'streamers#new', as: 'new_streamer'
     get 'streamers/:id/edit', to: 'streamers#edit', as: 'edit_streamer'
     resources :streamers do
-      resources :notes, except: [:index], param: :id, defaults: { notable_type: 'streamer' }
+      # Manually define note routes
+      get 'notes/new', to: 'notes#new', as: 'new_note'
+      get 'notes/:id/edit', to: 'notes#edit', as: 'edit_note'
+      resources :notes, controller: 'notes', only: [:index, :show, :create, :update, :destroy]
     end
     
     # Define streams routes with new and edit
@@ -53,7 +56,10 @@ Rails.application.routes.draw do
     get 'streams/:id/edit', to: 'streams#edit', as: 'edit_stream'
     patch 'streams/:id/toggle_pin', to: 'streams#toggle_pin', as: 'toggle_pin_stream'
     resources :streams, only: [:index, :show, :create, :update, :destroy] do
-      resources :notes, except: [:index], param: :id, defaults: { notable_type: 'stream' }
+      # Manually define note routes
+      get 'notes/new', to: 'notes#new', as: 'new_note'
+      get 'notes/:id/edit', to: 'notes#edit', as: 'edit_note'
+      resources :notes, controller: 'notes', only: [:index, :show, :create, :update, :destroy]
     end
     
     # Define users routes with new and edit

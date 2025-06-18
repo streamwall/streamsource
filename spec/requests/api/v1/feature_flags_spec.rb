@@ -41,7 +41,8 @@ RSpec.describe 'Feature Flags', type: :request do
         get "/api/v1/streams/#{stream.id}", headers: auth_headers(user)
         
         json = JSON.parse(response.body)
-        expect(json['analytics_url']).to eq("/api/v1/streams/#{stream.id}/analytics")
+        stream_data = json['stream']
+        expect(stream_data['analytics_url']).to eq("/api/v1/streams/#{stream.id}/analytics")
       end
     end
     

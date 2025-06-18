@@ -21,7 +21,7 @@ RSpec.describe 'Authentication Flow', type: :request do
         headers: { 'Authorization' => "Bearer #{signup_response['token']}" }
       
       expect(response).to have_http_status(:created)
-      stream_id = JSON.parse(response.body)['id']
+      stream_id = JSON.parse(response.body)['stream']['id']
       
       # Step 3: Login again
       post '/api/v1/users/login', params: {

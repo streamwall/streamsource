@@ -32,7 +32,7 @@
     <div class="flex items-center space-x-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
       <% if note.owned_by?(current_admin_user) %>
         <% if note.notable_type == 'Stream' %>
-          <%= link_to edit_admin_stream_note_path(note.notable, note), 
+          <%= link_to admin_stream_edit_note_path(note.notable, note), 
               class: "p-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded",
               title: "Edit note",
               data: { turbo_frame: "modal" } do %>
@@ -50,7 +50,7 @@
             </svg>
           <% end %>
         <% else %>
-          <%= link_to edit_admin_streamer_note_path(note.notable, note), 
+          <%= link_to admin_streamer_edit_note_path(note.notable, note), 
               class: "p-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded",
               title: "Edit note",
               data: { turbo_frame: "modal" } do %>

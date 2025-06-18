@@ -79,14 +79,20 @@ StreamSource is a Rails 8 application providing both a RESTful API and an admin 
 
 ### Running Tests
 ```bash
-# All tests
-bundle exec rspec
+# All tests (automatically sets RAILS_ENV=test and prepares database)
+docker-compose exec web ./bin/test
 
 # Specific file
-bundle exec rspec spec/models/user_spec.rb
+docker-compose exec web ./bin/test spec/models/user_spec.rb
 
-# With coverage
-COVERAGE=true bundle exec rspec
+# With specific format
+docker-compose exec web ./bin/test --format progress
+
+# Alternative: Use the dedicated test service
+docker-compose run --rm test
+
+# Legacy method (requires manual RAILS_ENV)
+docker-compose exec -e RAILS_ENV=test web bundle exec rspec
 ```
 
 ### Test Structure
@@ -137,8 +143,8 @@ docker-compose exec web bin/rails db:migrate
 # Access console
 docker-compose exec web bin/rails console
 
-# Run tests
-docker-compose exec web bundle exec rspec
+# Run tests (automatically sets RAILS_ENV=test)
+docker-compose exec web ./bin/test
 
 # View logs
 docker-compose logs -f web

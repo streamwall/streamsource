@@ -1,0 +1,47 @@
+<%= turbo_stream.replace "annotations_list" do %>
+  <turbo-frame id="annotations_list">
+    <div class="bg-white shadow overflow-hidden rounded-lg">
+      <% if @annotations.empty? %>
+        <div class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No annotations found</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            <% if params.values.any?(&:present?) %>
+              Try adjusting your filters or 
+              <%= link_to "clear all filters", admin_annotations_path, class: "text-indigo-600 hover:text-indigo-500" %>.
+            <% else %>
+              Get started by creating a new annotation.
+            <% end %>
+          </p>
+        </div>
+      <% else %>
+        <table class="min-w-full divide-y divide-gray-200">
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% @annotations.each do |annotation| %>
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4">
+                  <%= link_to admin_annotation_path(annotation), class: "block" do %>
+                    <div class="text-sm font-medium text-gray-900">
+                      <%= annotation.title %>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      <%= annotation.event_type.humanize %> • <%= annotation.priority_level.humanize %>
+                    </div>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% end %>
+    </div>
+    
+    <% if @pagy.pages > 1 %>
+      <div class="mt-4">
+        <%= render 'admin/shared/pagination', pagy: @pagy %>
+      </div>
+    <% end %>
+  </turbo-frame>
+<% end %>
