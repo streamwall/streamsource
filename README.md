@@ -68,9 +68,9 @@ A modern Rails 8 application for managing streaming sources with both a RESTful 
 
 ### Prerequisites
 
-Choose one of the following:
-- **Docker and Docker Compose** (recommended)
-- **Local setup**: Ruby 3.3.0, PostgreSQL 15, Redis 7, Node.js 20+, Yarn
+- **Docker and Docker Compose** (required)
+
+> **Important**: This project is designed to run exclusively in Docker containers. Do not attempt to use system Ruby or Bundler - all development tasks should be performed within the Docker environment.
 
 ### Quick Start with Docker
 
@@ -106,36 +106,6 @@ The application will automatically:
 In development mode, a default admin user is created:
 - **Email**: `admin@example.com`
 - **Password**: `password123`
-
-### Local Installation
-
-1. **Install Ruby dependencies**
-```bash
-bundle install
-```
-
-2. **Install JavaScript dependencies**
-```bash
-yarn install
-```
-
-3. **Set up the database**
-```bash
-bin/rails db:create db:migrate db:seed
-```
-
-4. **Build assets**
-```bash
-yarn build
-yarn build:css
-```
-
-5. **Start services**
-```bash
-# In separate terminals:
-redis-server
-bin/rails server
-```
 
 ## Admin Interface
 
@@ -247,19 +217,23 @@ Configuration is centralized in `config/application_constants.rb`:
 
 ### Running Tests
 
+All tests must be run within the Docker container:
+
 ```bash
 # Run all tests
-bundle exec rspec
+docker-compose exec web bin/test
 
 # Run with coverage
-COVERAGE=true bundle exec rspec
-
-# Run in Docker
-docker-compose run --rm web bundle exec rspec
+docker-compose exec web bin/test
 
 # Run specific tests
-bundle exec rspec spec/controllers/api/v1/streams_controller_spec.rb
+docker-compose exec web bin/test spec/controllers/api/v1/streams_controller_spec.rb
+
+# Run tests in a new container (if services aren't running)
+docker-compose run --rm web bin/test
 ```
+
+> **Note**: The `bin/test` script automatically sets `RAILS_ENV=test` and prepares the test database.
 
 ### Test Coverage
 
@@ -274,52 +248,92 @@ The test suite covers:
 
 ## Development
 
-### Code Style
+All development tasks must be performed within the Docker container. Never use system Ruby or Bundler.
 
-The project uses RuboCop with Rails Omakase configuration:
+### Common Docker Commands
+
+```bash
+# Execute commands in the running container
+docker-compose exec web [command]
+
+# Run commands in a new container
+docker-compose run --rm web [command]
+
+# View logs
+docker-compose logs -f web
+
+# Restart services
+docker-compose restart web
+```
+
+### Code Style
 
 ```bash
 # Run linter
-bundle exec rubocop
+docker-compose exec web bundle exec rubocop
 
 # Auto-fix issues
-bundle exec rubocop -A
+docker-compose exec web bundle exec rubocop -A
 ```
 
 ### Asset Development
 
-When modifying JavaScript or CSS:
-
 ```bash
-# Watch and rebuild JavaScript
-yarn build --watch
+# Rebuild JavaScript
+docker-compose exec web yarn build
 
-# Watch and rebuild CSS
-yarn build:css --watch
+# Rebuild CSS
+docker-compose exec web yarn build:css
+
+# Watch mode (run in separate terminals)
+docker-compose exec web yarn build --watch
+docker-compose exec web yarn build:css --watch
 ```
 
 ### Database Tasks
 
 ```bash
-# Create and migrate database
-bin/rails db:setup
-
 # Run migrations
-bin/rails db:migrate
+docker-compose exec web bin/rails db:migrate
 
 # Rollback migration
-bin/rails db:rollback
+docker-compose exec web bin/rails db:rollback
 
 # Reset database (drop, create, migrate, seed)
-bin/rails db:reset
+docker-compose exec web bin/rails db:reset
+
+# Access database console
+docker-compose exec db psql -U streamsource
 ```
 
 ### Debugging
 
-- Use `binding.pry` or `debugger` for breakpoints
-- Access Rails console: `bin/rails console`
-- View logs: `docker-compose logs -f web` or `tail -f log/development.log`
-- Check routes: `bin/rails routes`
+```bash
+# Access Rails console
+docker-compose exec web bin/rails console
+
+# View application logs
+docker-compose logs -f web
+
+# Check routes
+docker-compose exec web bin/rails routes
+
+# Run any Rails command
+docker-compose exec web bin/rails [command]
+```
+
+### Installing New Gems
+
+When adding new gems to the Gemfile:
+
+```bash
+# 1. Edit Gemfile
+# 2. Rebuild the Docker image
+docker-compose build web
+
+# 3. Restart the services
+docker-compose up -d
+```
 
 ## Deployment
 

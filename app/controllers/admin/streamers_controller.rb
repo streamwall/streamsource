@@ -15,12 +15,12 @@ module Admin
     end
     
     def new
-      @streamer = current_user.streamers.build
+      @streamer = current_admin_user.streamers.build
       @users = User.order(:email)
     end
     
     def create
-      @streamer = current_user.streamers.build(streamer_params)
+      @streamer = current_admin_user.streamers.build(streamer_params)
       
       respond_to do |format|
         if @streamer.save

@@ -2,6 +2,24 @@
 
 This document provides context and guidelines for AI assistants (particularly Claude) working on the StreamSource API project.
 
+## 🚨 CRITICAL: Docker-Only Development 🚨
+
+**This project runs EXCLUSIVELY in Docker containers. Do NOT use system Ruby, Bundler, or any host machine tools.**
+
+Quick start:
+```bash
+# Start everything
+docker-compose up -d
+
+# Run any command
+docker-compose exec web [command]
+
+# Examples:
+docker-compose exec web bin/test
+docker-compose exec web bin/rails console
+docker-compose exec web bundle exec rubocop
+```
+
 ## Project Overview
 
 StreamSource is a Rails 8 application providing both a RESTful API and an admin web interface for managing streaming sources. It was migrated from a Node.js/Express application to Rails, implementing modern security practices, comprehensive testing, and a real-time admin interface using Hotwire.
@@ -80,19 +98,21 @@ StreamSource is a Rails 8 application providing both a RESTful API and an admin 
 ### Running Tests
 ```bash
 # All tests (automatically sets RAILS_ENV=test and prepares database)
-docker-compose exec web ./bin/test
+docker-compose exec web bin/test
 
 # Specific file
-docker-compose exec web ./bin/test spec/models/user_spec.rb
+docker-compose exec web bin/test spec/models/user_spec.rb
 
-# With specific format
-docker-compose exec web ./bin/test --format progress
+# Run tests at specific line
+docker-compose exec web bin/test spec/models/user_spec.rb:42
 
-# Alternative: Use the dedicated test service
-docker-compose run --rm test
+# With coverage report
+docker-compose exec web bin/test
 
-# Legacy method (requires manual RAILS_ENV)
-docker-compose exec -e RAILS_ENV=test web bundle exec rspec
+# Note: The bin/test wrapper automatically:
+# - Sets RAILS_ENV=test
+# - Prepares the test database
+# - Runs tests with proper configuration
 ```
 
 ### Test Structure
@@ -127,11 +147,16 @@ docker-compose exec -e RAILS_ENV=test web bundle exec rspec
 6. **Hotwire conventions** - Use Turbo Frames and Streams appropriately
 7. **Tailwind utilities** - Prefer utility classes over custom CSS
 
-## Docker Commands
+## Essential Docker Commands
+
+**Remember**: ALL commands must be run through Docker. Never use local/system tools.
 
 ```bash
-# Start services
+# Start services (do this first!)
 docker-compose up -d
+
+# Verify services are running
+docker-compose ps
 
 # Build assets
 docker-compose exec web yarn build
@@ -140,14 +165,28 @@ docker-compose exec web yarn build:css
 # Run migrations
 docker-compose exec web bin/rails db:migrate
 
-# Access console
+# Access Rails console
 docker-compose exec web bin/rails console
 
-# Run tests (automatically sets RAILS_ENV=test)
-docker-compose exec web ./bin/test
+# Run tests (uses bin/test wrapper)
+docker-compose exec web bin/test
+
+# Run specific tests
+docker-compose exec web bin/test spec/models/stream_spec.rb
 
 # View logs
 docker-compose logs -f web
+
+# Rebuild after Gemfile changes
+docker-compose build web
+docker-compose restart web
+
+# Stop all services
+docker-compose down
+
+# Remove all data and start fresh
+docker-compose down -v
+docker-compose up -d
 ```
 
 ## Common Issues & Solutions
@@ -201,8 +240,8 @@ docker-compose logs -f web
 
 ## Deployment Checklist
 
-1. Run tests: `bundle exec rspec`
-2. Check code style: `rubocop`
+1. Run tests: `docker-compose exec web bin/test`
+2. Check code style: `docker-compose exec web bundle exec rubocop`
 3. Update documentation
 4. Set environment variables
 5. Run migrations in production
@@ -262,5 +301,25 @@ For questions about architectural decisions or patterns used in this project, re
 - Comments in complex code sections
 - This document for high-level guidance
 
-## Project Docker Deployment Notes
-- The project should be run in the docker container and not on the host machine.
+## Critical Docker Requirements
+
+> **MANDATORY**: This project MUST be run exclusively within Docker containers. Do NOT use system Ruby, Bundler, or any host machine development tools. All commands, tests, and development tasks must be executed within the Docker environment.
+
+### Why Docker-Only?
+1. **Consistency**: Ensures all developers use identical environments
+2. **Dependencies**: All services (PostgreSQL, Redis) are containerized
+3. **Ruby Version**: The project uses Ruby 3.3.6 which may not match your system
+4. **Isolation**: Prevents conflicts with other projects on your machine
+
+### Never Do This:
+```bash
+# ❌ WRONG - Don't use system commands
+bundle install
+rails server
+rspec
+
+# ✅ CORRECT - Always use Docker
+docker-compose exec web bundle install
+docker-compose exec web bin/rails server
+docker-compose exec web bin/test
+```

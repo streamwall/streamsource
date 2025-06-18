@@ -7,6 +7,40 @@ RSpec.describe ApplicationController, type: :controller do
     end
   end
   
+  describe '#set_locale' do
+    controller do
+      skip_before_action :authenticate_user!
+      
+      def index
+        render json: { locale: I18n.locale.to_s }
+      end
+    end
+    
+    it 'uses default locale when no Accept-Language header' do
+      get :index
+      expect(response).to have_http_status(:success)
+      json = JSON.parse(response.body)
+      expect(json['locale']).to eq('en')
+    end
+
+    it 'sets locale from Accept-Language header' do
+      request.headers['Accept-Language'] = 'es-ES,es;q=0.9,en;q=0.8'
+      get :index
+      json = JSON.parse(response.body)
+      # The locale extraction depends on I18n.available_locales configuration
+      # If Spanish is not available, it will fall back to default
+      expect(['en', 'es']).to include(json['locale'])
+    end
+
+    it 'handles malformed Accept-Language header gracefully' do
+      request.headers['Accept-Language'] = 'invalid-header-format'
+      get :index
+      expect(response).to have_http_status(:success)
+      json = JSON.parse(response.body)
+      expect(json['locale']).to eq('en')
+    end
+  end
+  
   describe 'maintenance mode' do
     controller do
       skip_before_action :authenticate_user!

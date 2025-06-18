@@ -39,7 +39,16 @@
       "Bash(rg:*)",
       "Bash(git checkout:*)",
       "Bash(./bin/docker-test:*)",
-      "Bash(bundle lock:*)"
+      "Bash(bundle lock:*)",
+      "Bash(COVERAGE=true bundle exec rspec --format json --out /tmp/rspec_results.json 2 >& 1)",
+      "Bash(for init in flipper rswag_api rswag_ui active_model_serializers devise pagy rack_attack)",
+      "Bash(do)",
+      "Bash(if grep -r \"$init\" spec/ --include=\"*.rb\")",
+      "Bash(/dev/null)",
+      "Bash(then)",
+      "Bash(else)",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": []
   }
