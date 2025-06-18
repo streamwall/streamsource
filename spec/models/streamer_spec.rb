@@ -6,6 +6,7 @@ RSpec.describe Streamer, type: :model do
   describe 'associations' do
     it { should belong_to(:user) }
     it { should have_many(:streamer_accounts).dependent(:destroy) }
+    it { should have_many(:stream_urls).dependent(:destroy) }
     it { should have_many(:streams).dependent(:destroy) }
     it { should have_many(:note_records).class_name('Note').dependent(:destroy) }
     it { should have_many(:annotation_streams).through(:streams) }
@@ -216,6 +217,88 @@ RSpec.describe Streamer, type: :model do
         expect {
           streamer.create_or_continue_stream!(link: 'https://twitch.tv/test', source: 'twitch')
         }.to change { streamer.streams.count }.by(1)
+      end
+    end
+    
+    describe 'StreamUrl-related methods' do
+      let(:user) { create(:user) }
+      let(:streamer) { create(:streamer, user: user) }
+      
+      describe '#primary_stream_url' do
+        it 'returns permalink URLs first' do
+          stream_url = create(:stream_url, streamer: streamer, url_type: 'stream')
+          permalink_url = create(:stream_url, :permalink, streamer: streamer)
+          
+          expect(streamer.primary_stream_url).to eq(permalink_url)
+        end
+        
+        it 'returns stream URLs if no permalink exists' do
+          stream_url = create(:stream_url, streamer: streamer, url_type: 'stream')
+          
+          expect(streamer.primary_stream_url).to eq(stream_url)
+        end
+        
+        it 'returns any active URL if no stream or permalink exists' do
+          archive_url = create(:stream_url, :archive, streamer: streamer, is_active: true)
+          
+          expect(streamer.primary_stream_url).to eq(archive_url)
+        end
+        
+        it 'returns nil if no active URLs exist' do
+          create(:stream_url, :inactive, streamer: streamer)
+          
+          expect(streamer.primary_stream_url).to be_nil
+        end
+      end
+      
+      describe '#active_stream_urls' do
+        it 'returns active URLs ordered by creation date' do
+          old_url = create(:stream_url, streamer: streamer, created_at: 1.day.ago)
+          new_url = create(:stream_url, streamer: streamer, created_at: 1.hour.ago)
+          inactive_url = create(:stream_url, :inactive, streamer: streamer)
+          
+          urls = streamer.active_stream_urls
+          expect(urls).to include(old_url, new_url)
+          expect(urls).not_to include(inactive_url)
+          expect(urls.first).to eq(new_url) # Most recent first
+        end
+      end
+      
+      describe '#stream_urls_for_platform' do
+        it 'returns active URLs for specific platform' do
+          tiktok_url = create(:stream_url, streamer: streamer, platform: 'TikTok')
+          twitch_url = create(:stream_url, :twitch, streamer: streamer)
+          inactive_tiktok = create(:stream_url, :inactive, streamer: streamer, platform: 'TikTok')
+          
+          tiktok_urls = streamer.stream_urls_for_platform('TikTok')
+          expect(tiktok_urls).to include(tiktok_url)
+          expect(tiktok_urls).not_to include(twitch_url, inactive_tiktok)
+        end
+      end
+      
+      describe '#add_stream_url!' do
+        it 'creates a new stream URL for the streamer' do
+          expect {
+            streamer.add_stream_url!('https://twitch.tv/test', type: 'stream', platform: 'Twitch', user: user)
+          }.to change { streamer.stream_urls.count }.by(1)
+          
+          stream_url = streamer.stream_urls.last
+          expect(stream_url.url).to eq('https://twitch.tv/test')
+          expect(stream_url.url_type).to eq('stream')
+          expect(stream_url.platform).to eq('Twitch')
+          expect(stream_url.created_by).to eq(user)
+          expect(stream_url.is_active).to be true
+        end
+        
+        it 'defaults to streamer user when no user provided' do
+          stream_url = streamer.add_stream_url!('https://twitch.tv/test')
+          expect(stream_url.created_by).to eq(streamer.user)
+        end
+        
+        it 'defaults to stream type when no type provided' do
+          stream_url = streamer.add_stream_url!('https://twitch.tv/test')
+          expect(stream_url.url_type).to eq('stream')
+        end
       end
     end
   end
