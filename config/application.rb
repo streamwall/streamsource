@@ -45,6 +45,10 @@ module Streamsource
     config.middleware.use ActionDispatch::Cookies
     config.middleware.use ActionDispatch::Session::CookieStore
     config.middleware.use ActionDispatch::Flash
+    
+    # Add custom middleware for Flipper UI authentication
+    require_relative '../app/middleware/admin_flipper_auth'
+    config.middleware.use AdminFlipperAuth
 
     # Use UUIDs by default
     # config.generators do |g|

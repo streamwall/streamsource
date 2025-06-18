@@ -3,7 +3,7 @@ module Admin
     before_action :set_streamer, only: [:show, :edit, :update, :destroy]
     
     def index
-      @streamers = Streamer.includes(:user, :streamer_accounts)
+      @streamers = Streamer.includes(:streamer_accounts)
                           .search(params[:search])
                           .order(created_at: :desc)
       @pagy, @streamers = pagy(@streamers)

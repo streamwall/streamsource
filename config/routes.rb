@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # Mount ActionCable
+  mount ActionCable.server => '/cable'
+  
   # API routes
   namespace :api do
     namespace :v1 do
@@ -86,28 +89,8 @@ Rails.application.routes.draw do
     root to: 'streams#index'
   end
   
-  # Feature flags admin UI (admin only)
-  authenticate :user, ->(u) { u.admin? } do
-    mount Flipper::UI.app(Flipper) => '/admin/flipper'
-  end
-  
-  # Alternative: Use a custom constraint for non-Devise authentication
-  constraints lambda { |request| 
-    token = request.headers['Authorization']&.split(' ')&.last
-    if token
-      begin
-        payload = JWT.decode(token, Rails.application.secret_key_base, true, algorithm: ApplicationConstants::JWT::ALGORITHM)[0]
-        user = User.find_by(id: payload['user_id'])
-        user&.admin?
-      rescue
-        false
-      end
-    else
-      false
-    end
-  } do
-    mount Flipper::UI.app(Flipper) => '/flipper'
-  end
+  # Mount Flipper UI without authentication - we'll handle it via Rack middleware
+  mount Flipper::UI.app(Flipper) => '/admin/flipper'
   
   # Redirect root to API docs
   root to: redirect('/api-docs')

@@ -62,6 +62,11 @@ class Stream < ApplicationRecord
     background: 'background'
   }, default: 'video', prefix: true
   
+  # Callbacks for broadcasting
+  after_create_commit -> { broadcast_prepend_later_to "streams", target: "streams", partial: "admin/streams/stream", locals: { stream: self } }
+  after_update_commit -> { broadcast_replace_later_to "streams", target: "stream_#{id}", partial: "admin/streams/stream", locals: { stream: self } }
+  after_destroy_commit -> { broadcast_remove_to "streams", target: "stream_#{id}" }
+  
   # Validations
   validates :link, presence: true, 
                    format: { 
