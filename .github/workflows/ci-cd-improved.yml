@@ -1,0 +1,389 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, staging]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  RUBY_VERSION: 3.3.6
+  NODE_VERSION: 20
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: streamsource_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: true
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          vendor/bundle
+          node_modules
+          ~/.cache/yarn
+        key: ${{ runner.os }}-deps-${{ hashFiles('**/Gemfile.lock', '**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-deps-
+
+    - name: Install dependencies
+      run: |
+        bundle config set --local deployment 'true'
+        bundle config set --local without 'development'
+        bundle install --jobs 4 --retry 3
+        yarn install --frozen-lockfile
+
+    - name: Build assets
+      run: |
+        yarn build
+        yarn build:css
+        bundle exec rails assets:precompile
+      env:
+        RAILS_ENV: test
+
+    - name: Setup test database
+      env:
+        RAILS_ENV: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/streamsource_test
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        bin/rails db:create
+        bin/rails db:schema:load
+
+    - name: Run tests
+      env:
+        RAILS_ENV: test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/streamsource_test
+        REDIS_URL: redis://localhost:6379/0
+        RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+      run: |
+        bin/test
+        
+    - name: Run security checks
+      run: |
+        bundle exec brakeman -q -w2
+        bundle exec bundler-audit check --update
+
+    - name: Run linters
+      run: |
+        bundle exec rubocop
+        yarn lint
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage
+        path: coverage/
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{date 'YYYYMMDD'}}-
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          RAILS_ENV=production
+          NODE_ENV=production
+
+  deploy-app-platform:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_environment == 'production')
+    environment:
+      name: production-app-platform
+      url: ${{ steps.deploy.outputs.app_url }}
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    - name: Check if using App Platform
+      id: check_platform
+      run: |
+        if [[ -n "${{ secrets.DO_APP_ID }}" ]]; then
+          echo "platform=app" >> $GITHUB_OUTPUT
+        else
+          echo "platform=droplet" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Update App Platform spec
+      if: steps.check_platform.outputs.platform == 'app'
+      run: |
+        # Update app.yaml with new image tag
+        sed -i "s|image:.*|image: ${{ needs.build.outputs.image-tag }}|g" .do/app.yaml
+        
+        # Validate the spec
+        doctl apps spec validate .do/app.yaml
+
+    - name: Deploy to App Platform
+      id: deploy
+      if: steps.check_platform.outputs.platform == 'app'
+      run: |
+        # Update the app
+        doctl apps update ${{ secrets.DO_APP_ID }} --spec .do/app.yaml --wait
+        
+        # Get app URL
+        APP_URL=$(doctl apps get ${{ secrets.DO_APP_ID }} --format DefaultIngress --no-header)
+        echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+
+    - name: Run database migrations
+      if: steps.check_platform.outputs.platform == 'app'
+      run: |
+        doctl apps run ${{ secrets.DO_APP_ID }} web -- bundle exec rails db:migrate RAILS_ENV=production
+
+    - name: Health check
+      if: steps.check_platform.outputs.platform == 'app'
+      run: |
+        sleep 30
+        curl -f https://${{ steps.deploy.outputs.app_url }}/health || exit 1
+
+  deploy-droplets:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.USE_DROPLETS == 'true') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_environment == 'production')
+    environment:
+      name: production-droplets
+      url: https://${{ vars.APP_DOMAIN }}
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install Ansible
+      run: |
+        python -m pip install --upgrade pip
+        pip install ansible ansible-lint
+
+    - name: Get droplet IPs
+      id: get_ips
+      run: |
+        # Get droplets tagged with the app name
+        DROPLET_IPS=$(doctl compute droplet list --tag-name streamsource --format PublicIPv4 --no-header | tr '\n' ',' | sed 's/,$//')
+        echo "droplet_ips=$DROPLET_IPS" >> $GITHUB_OUTPUT
+
+    - name: Create Ansible inventory
+      run: |
+        mkdir -p ansible/inventory
+        cat > ansible/inventory/production.yml << EOF
+        all:
+          vars:
+            app_name: streamsource
+            app_user: rails
+            app_path: /home/rails/streamsource
+            github_repo: ${{ github.server_url }}/${{ github.repository }}.git
+            github_branch: ${{ github.ref_name }}
+            docker_image: ${{ needs.build.outputs.image-tag }}
+            database_url: ${{ secrets.DATABASE_URL }}
+            redis_url: ${{ secrets.REDIS_URL }}
+            secret_key_base: ${{ secrets.SECRET_KEY_BASE }}
+            rails_master_key: ${{ secrets.RAILS_MASTER_KEY }}
+            jwt_secret: ${{ secrets.JWT_SECRET }}
+            app_domain: ${{ vars.APP_DOMAIN }}
+          children:
+            app_servers:
+              hosts:
+        EOF
+        
+        # Add droplet IPs
+        IFS=',' read -ra IPS <<< "${{ steps.get_ips.outputs.droplet_ips }}"
+        for i in "${!IPS[@]}"; do
+          echo "        app-$((i+1)):" >> ansible/inventory/production.yml
+          echo "          ansible_host: ${IPS[$i]}" >> ansible/inventory/production.yml
+        done
+
+    - name: Set up SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ steps.get_ips.outputs.droplet_ips }} >> ~/.ssh/known_hosts
+
+    - name: Run Ansible deployment
+      env:
+        ANSIBLE_HOST_KEY_CHECKING: false
+      run: |
+        cd ansible
+        ansible-playbook site.yml \
+          --inventory inventory/production.yml \
+          --tags app \
+          --extra-vars "force_asset_compile=true"
+
+    - name: Run database migrations
+      run: |
+        cd ansible
+        ansible-playbook site.yml \
+          --inventory inventory/production.yml \
+          --tags migrate \
+          --limit app_servers[0]
+
+    - name: Health check
+      run: |
+        sleep 30
+        IFS=',' read -ra IPS <<< "${{ steps.get_ips.outputs.droplet_ips }}"
+        for ip in "${IPS[@]}"; do
+          curl -f https://$ip/health -k || curl -f http://$ip/health || exit 1
+        done
+
+  deploy-staging:
+    needs: test
+    runs-on: ubuntu-latest
+    if: |
+      github.ref == 'refs/heads/staging' || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_environment == 'staging')
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.app_url }}
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    - name: Deploy to staging
+      id: deploy
+      run: |
+        # Deploy to staging app
+        if [[ -n "${{ secrets.STAGING_APP_ID }}" ]]; then
+          doctl apps update ${{ secrets.STAGING_APP_ID }} --spec .do/app.staging.yaml --wait
+          APP_URL=$(doctl apps get ${{ secrets.STAGING_APP_ID }} --format DefaultIngress --no-header)
+          echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+        fi
+
+  cleanup:
+    needs: [deploy-app-platform, deploy-droplets]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Clean up old images
+      run: |
+        # Keep only the last 5 images
+        echo "Cleaning up old container images..."
+        # Add cleanup logic here
+
+  notify:
+    needs: [test, deploy-app-platform, deploy-droplets]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Send deployment notification
+      run: |
+        # Send notification to Slack/Discord/etc
+        if [[ "${{ needs.deploy-app-platform.result }}" == "success" ]] || [[ "${{ needs.deploy-droplets.result }}" == "success" ]]; then
+          echo "Deployment successful!"
+        else
+          echo "Deployment failed!"
+        fi

@@ -8585,9 +8585,36 @@ var search_controller_default = class extends Controller {
   }
 };
 
+// app/javascript/controllers/mobile_menu_controller.js
+var mobile_menu_controller_default = class extends Controller {
+  static targets = ["menu", "overlay"];
+  connect() {
+    this.menuElement = document.getElementById("mobile-menu");
+    this.overlayElement = document.getElementById("mobile-menu-overlay");
+  }
+  toggle() {
+    if (this.menuElement.classList.contains("-translate-x-full")) {
+      this.open();
+    } else {
+      this.close();
+    }
+  }
+  open() {
+    this.menuElement.classList.remove("-translate-x-full");
+    this.overlayElement.classList.remove("hidden");
+    document.body.classList.add("overflow-hidden");
+  }
+  close() {
+    this.menuElement.classList.add("-translate-x-full");
+    this.overlayElement.classList.add("hidden");
+    document.body.classList.remove("overflow-hidden");
+  }
+};
+
 // app/javascript/controllers/index.js
 application.register("modal", modal_controller_default);
 application.register("search", search_controller_default);
+application.register("mobile-menu", mobile_menu_controller_default);
 /*! Bundled license information:
 
 @hotwired/turbo/dist/turbo.es2017-esm.js:

@@ -1,0 +1,107 @@
+---
+- name: Create application directory
+  file:
+    path: "{{ app_path }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+- name: Clone application repository
+  become_user: "{{ app_user }}"
+  git:
+    repo: "{{ github_repo }}"
+    dest: "{{ app_path }}"
+    version: "{{ github_branch | default('main') }}"
+    force: yes
+  register: git_result
+
+- name: Create required directories
+  become_user: "{{ app_user }}"
+  file:
+    path: "{{ app_path }}/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - tmp/pids
+    - tmp/sockets
+    - log
+    - public/assets
+    - storage
+
+- name: Create environment file
+  template:
+    src: env.j2
+    dest: "{{ app_path }}/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+  notify: restart puma
+
+- name: Create master key file
+  copy:
+    content: "{{ rails_master_key }}"
+    dest: "{{ app_path }}/config/master.key"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+
+- name: Install Ruby dependencies
+  become_user: "{{ app_user }}"
+  shell: |
+    export PATH="$HOME/.rbenv/bin:$PATH"
+    eval "$(rbenv init -)"
+    bundle config set deployment 'true'
+    bundle config set without 'development test'
+    bundle install
+  args:
+    chdir: "{{ app_path }}"
+  environment:
+    RAILS_ENV: production
+
+- name: Install JavaScript dependencies
+  become_user: "{{ app_user }}"
+  command: yarn install --frozen-lockfile
+  args:
+    chdir: "{{ app_path }}"
+
+- name: Compile assets
+  become_user: "{{ app_user }}"
+  shell: |
+    export PATH="$HOME/.rbenv/bin:$PATH"
+    eval "$(rbenv init -)"
+    yarn build
+    yarn build:css
+    bundle exec rails assets:precompile
+  args:
+    chdir: "{{ app_path }}"
+  environment:
+    RAILS_ENV: production
+    SECRET_KEY_BASE: "{{ secret_key_base }}"
+    DATABASE_URL: "{{ database_url }}"
+    REDIS_URL: "{{ redis_url }}"
+  when: git_result.changed or force_asset_compile | default(false) | bool
+
+- name: Create Puma service file
+  template:
+    src: puma.service.j2
+    dest: /etc/systemd/system/puma.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart puma
+
+- name: Start and enable Puma
+  systemd:
+    name: puma
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Create logrotate configuration
+  template:
+    src: logrotate.j2
+    dest: /etc/logrotate.d/streamsource
+    owner: root
+    group: root
+    mode: '0644'

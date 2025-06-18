@@ -1,0 +1,59 @@
+---
+- name: Configure StreamSource Infrastructure
+  hosts: all
+  gather_facts: yes
+  become: yes
+  
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+- name: Configure Application Servers
+  hosts: app_servers
+  become: yes
+  roles:
+    - common
+    - ruby
+    - nodejs
+    - nginx
+    - app
+
+- name: Initialize Database
+  hosts: app_servers
+  become: yes
+  become_user: "{{ app_user }}"
+  run_once: true
+  tasks:
+    - name: Run database migrations
+      command: bundle exec rails db:migrate
+      args:
+        chdir: "{{ app_path }}"
+      environment:
+        RAILS_ENV: production
+        DATABASE_URL: "{{ database_url }}"
+        REDIS_URL: "{{ redis_url }}"
+        SECRET_KEY_BASE: "{{ secret_key_base }}"
+      register: migrations_result
+      changed_when: migrations_result.stdout != ""
+
+    - name: Seed database (if needed)
+      command: bundle exec rails db:seed
+      args:
+        chdir: "{{ app_path }}"
+      environment:
+        RAILS_ENV: production
+        DATABASE_URL: "{{ database_url }}"
+        REDIS_URL: "{{ redis_url }}"
+        SECRET_KEY_BASE: "{{ secret_key_base }}"
+      when: seed_database | default(false) | bool
+
+- name: Configure Monitoring
+  hosts: app_servers
+  become: yes
+  roles:
+    - monitoring
+  tags:
+    - monitoring

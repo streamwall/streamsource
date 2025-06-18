@@ -4,85 +4,86 @@
 <% content_for :page_subtitle, "Manage and monitor all streaming sessions" %>
 <% content_for :page_actions do %>
   <%= link_to admin_new_stream_path, 
-      class: "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700",
+      class: "inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 border border-transparent rounded-md shadow-sm text-xs md:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700",
       data: { turbo_frame: "modal" } do %>
-    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg class="-ml-0.5 mr-1 md:-ml-1 md:mr-2 h-4 w-4 md:h-5 md:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
     </svg>
-    New Stream
+    <span class="hidden sm:inline">New Stream</span>
+    <span class="sm:hidden">New</span>
   <% end %>
 <% end %>
 
 <!-- Quick Stats -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-  <div class="bg-white rounded-lg shadow p-6">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-6">
+  <div class="bg-white rounded-lg shadow p-3 md:p-6">
     <div class="flex items-center">
       <div class="flex-shrink-0">
-        <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+        <div class="w-6 h-6 md:w-8 md:h-8 bg-green-500 rounded-md flex items-center justify-center">
+          <svg class="w-4 h-4 md:w-5 md:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"></path>
           </svg>
         </div>
       </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Live Streams</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= Stream.live.count %></p>
+      <div class="ml-2 md:ml-4">
+        <p class="text-xs md:text-sm font-medium text-gray-500">Live</p>
+        <p class="text-lg md:text-2xl font-semibold text-gray-900"><%= Stream.live.count %></p>
       </div>
     </div>
   </div>
   
-  <div class="bg-white rounded-lg shadow p-6">
+  <div class="bg-white rounded-lg shadow p-3 md:p-6">
     <div class="flex items-center">
       <div class="flex-shrink-0">
-        <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+        <div class="w-6 h-6 md:w-8 md:h-8 bg-blue-500 rounded-md flex items-center justify-center">
+          <svg class="w-4 h-4 md:w-5 md:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm12 12V6H4v10h12z" clip-rule="evenodd"></path>
           </svg>
         </div>
       </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Active Streams</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= Stream.not_archived.count %></p>
+      <div class="ml-2 md:ml-4">
+        <p class="text-xs md:text-sm font-medium text-gray-500">Active</p>
+        <p class="text-lg md:text-2xl font-semibold text-gray-900"><%= Stream.not_archived.count %></p>
       </div>
     </div>
   </div>
   
-  <div class="bg-white rounded-lg shadow p-6">
+  <div class="bg-white rounded-lg shadow p-3 md:p-6">
     <div class="flex items-center">
       <div class="flex-shrink-0">
-        <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+        <div class="w-6 h-6 md:w-8 md:h-8 bg-purple-500 rounded-md flex items-center justify-center">
+          <svg class="w-4 h-4 md:w-5 md:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
           </svg>
         </div>
       </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Archived</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= Stream.archived.count %></p>
+      <div class="ml-2 md:ml-4">
+        <p class="text-xs md:text-sm font-medium text-gray-500">Archived</p>
+        <p class="text-lg md:text-2xl font-semibold text-gray-900"><%= Stream.archived.count %></p>
       </div>
     </div>
   </div>
   
-  <div class="bg-white rounded-lg shadow p-6">
+  <div class="bg-white rounded-lg shadow p-3 md:p-6">
     <div class="flex items-center">
       <div class="flex-shrink-0">
-        <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+        <div class="w-6 h-6 md:w-8 md:h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+          <svg class="w-4 h-4 md:w-5 md:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
           </svg>
         </div>
       </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Total</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= Stream.count %></p>
+      <div class="ml-2 md:ml-4">
+        <p class="text-xs md:text-sm font-medium text-gray-500">Total</p>
+        <p class="text-lg md:text-2xl font-semibold text-gray-900"><%= Stream.count %></p>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Filters -->
-<div class="bg-white rounded-lg shadow mb-6 p-4">
-  <%= form_with url: admin_streams_path, method: :get, data: { controller: "search", search_target: "form", turbo_frame: "streams_list", turbo_action: "advance" }, class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" do |form| %>
+<div class="bg-white rounded-lg shadow mb-4 md:mb-6 p-3 md:p-4">
+  <%= form_with url: admin_streams_path, method: :get, data: { controller: "search", search_target: "form", turbo_frame: "streams_list", turbo_action: "advance" }, class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4" do |form| %>
     <div class="col-span-full xl:col-span-1">
       <%= form.text_field :search, 
           placeholder: "Search streams...",

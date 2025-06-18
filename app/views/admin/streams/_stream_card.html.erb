@@ -1,105 +1,106 @@
-<div id="<%= dom_id(stream) %>_card" class="p-6">
-  <div class="flex items-start justify-between">
-    <div class="flex-1 min-w-0">
-      <!-- Streamer -->
-      <div class="flex items-center mb-2">
+<div id="<%= dom_id(stream) %>_card" class="p-4 relative">
+  <!-- Main content -->
+  <div class="flex flex-col space-y-2">
+    <!-- Top row: Streamer, Status, Pin -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center flex-1 min-w-0">
         <% if stream.streamer.present? %>
-          <%= link_to admin_streamer_path(stream.streamer), class: "text-sm font-medium text-indigo-600 hover:text-indigo-900" do %>
+          <%= link_to admin_streamer_path(stream.streamer), class: "text-sm font-medium text-indigo-600 hover:text-indigo-900 truncate" do %>
             <%= stream.streamer.name %>
           <% end %>
         <% else %>
           <span class="text-sm text-gray-400 italic">No streamer</span>
         <% end %>
         <% if stream.is_pinned? %>
-          <svg class="h-4 w-4 text-yellow-400 ml-2" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="h-3 w-3 text-yellow-400 ml-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
         <% end %>
       </div>
       
-      <!-- Source and Title -->
-      <h3 class="text-base font-medium text-gray-900 truncate"><%= stream.source %></h3>
-      <% if stream.title.present? %>
-        <p class="text-sm text-gray-500 truncate"><%= stream.title %></p>
-      <% end %>
-      
-      <!-- Platform and Status -->
-      <div class="flex items-center mt-2 space-x-2">
-        <% if stream.platform.present? %>
-          <span class="text-sm text-gray-600"><%= stream.platform %></span>
-          <span class="text-gray-300">•</span>
-        <% end %>
-        
+      <div class="flex items-center space-x-1 ml-2">
         <% badge_color = case stream.status
            when 'Live' then 'bg-green-100 text-green-800'
            when 'Offline' then 'bg-gray-100 text-gray-800'
            else 'bg-yellow-100 text-yellow-800'
            end %>
-        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= badge_color %>">
+        <span class="px-2 inline-flex text-xs leading-4 font-semibold rounded-full <%= badge_color %>">
           <%= stream.status %>
         </span>
         
         <% if stream.is_archived? %>
-          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+          <span class="px-2 inline-flex text-xs leading-4 font-semibold rounded-full bg-purple-100 text-purple-800">
             Archived
           </span>
         <% end %>
       </div>
-      
-      <!-- Duration and Last Live -->
-      <div class="flex items-center mt-2 text-xs text-gray-500 space-x-4">
-        <% if stream.started_at.present? %>
-          <div>
-            <span class="font-medium">Duration:</span>
-            <% if stream.is_archived? %>
-              <%= stream.duration_in_words || "—" %>
-            <% else %>
-              <%= time_ago_in_words(stream.started_at) %> ago
-            <% end %>
-          </div>
-        <% end %>
-        
-        <% if stream.last_live_at.present? %>
-          <div>
-            <span class="font-medium">Last live:</span>
-            <%= time_ago_in_words(stream.last_live_at) %> ago
-          </div>
-        <% end %>
-      </div>
     </div>
     
-    <!-- Actions -->
-    <div class="flex items-center space-x-2 ml-4 flex-shrink-0">
-      <a href="<%= stream.link %>" target="_blank" class="text-blue-600 hover:text-blue-900" title="View stream">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- Source and Platform -->
+    <div class="flex items-center justify-between">
+      <h3 class="text-sm font-medium text-gray-900 truncate flex-1"><%= stream.source %></h3>
+      <% if stream.platform.present? %>
+        <span class="text-xs text-gray-500 ml-2"><%= stream.platform %></span>
+      <% end %>
+    </div>
+    
+    <% if stream.title.present? %>
+      <p class="text-xs text-gray-500 truncate"><%= stream.title %></p>
+    <% end %>
+    
+    <!-- Time info -->
+    <div class="flex items-center justify-between text-xs text-gray-500">
+      <% if stream.started_at.present? %>
+        <span>
+          <% if stream.is_archived? %>
+            <%= stream.duration_in_words || "—" %>
+          <% else %>
+            Started <%= time_ago_in_words(stream.started_at) %> ago
+          <% end %>
+        </span>
+      <% else %>
+        <span>Not started</span>
+      <% end %>
+    </div>
+    
+    <!-- Actions row -->
+    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+      <a href="<%= stream.link %>" target="_blank" class="text-xs text-blue-600 hover:text-blue-900 flex items-center">
+        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
+        View
       </a>
       
-      <% unless stream.is_archived? %>
-        <%= button_to admin_toggle_pin_stream_path(stream), 
-            method: :patch,
-            class: "text-gray-400 hover:text-gray-600",
-            title: stream.is_pinned? ? "Unpin" : "Pin" do %>
-          <svg class="h-5 w-5" fill="<%= stream.is_pinned? ? 'currentColor' : 'none' %>" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      <div class="flex items-center space-x-2">
+        <% unless stream.is_archived? %>
+          <%= button_to admin_toggle_pin_stream_path(stream), 
+              method: :patch,
+              class: "text-gray-400 hover:text-gray-600 p-1",
+              title: stream.is_pinned? ? "Unpin" : "Pin" do %>
+            <svg class="h-4 w-4" fill="<%= stream.is_pinned? ? 'currentColor' : 'none' %>" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+          <% end %>
+        <% end %>
+        
+        <%= link_to admin_edit_stream_path(stream), 
+            class: "text-indigo-600 hover:text-indigo-900 p-1",
+            data: { turbo_frame: "modal" } do %>
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
         <% end %>
-      <% end %>
-      
-      <%= link_to admin_stream_path(stream), class: "text-gray-600 hover:text-gray-900" do %>
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      <% end %>
-      
-      <%= link_to admin_edit_stream_path(stream), 
-          class: "text-indigo-600 hover:text-indigo-900",
-          data: { turbo_frame: "modal" } do %>
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-      <% end %>
+        
+        <%= button_to admin_stream_path(stream), 
+            method: :delete,
+            class: "text-red-600 hover:text-red-900 p-1",
+            data: { turbo_confirm: "Delete this stream?" } do %>
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        <% end %>
+      </div>
     </div>
   </div>
 </div>

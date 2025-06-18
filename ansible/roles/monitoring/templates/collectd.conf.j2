@@ -1,0 +1,32 @@
+Hostname "{{ ansible_hostname }}"
+FQDNLookup false
+Interval 60
+
+LoadPlugin syslog
+LoadPlugin cpu
+LoadPlugin df
+LoadPlugin disk
+LoadPlugin interface
+LoadPlugin load
+LoadPlugin memory
+LoadPlugin processes
+LoadPlugin swap
+LoadPlugin uptime
+LoadPlugin users
+
+<Plugin df>
+    MountPoint "/"
+    IgnoreSelected false
+</Plugin>
+
+<Plugin interface>
+    Interface "lo"
+    IgnoreSelected true
+</Plugin>
+
+<Plugin processes>
+    Process "puma"
+    Process "nginx"
+    Process "postgres"
+    Process "redis"
+</Plugin>

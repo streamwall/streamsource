@@ -1,0 +1,77 @@
+---
+- name: Rollback StreamSource Deployment
+  hosts: app_servers
+  become: yes
+  become_user: "{{ app_user }}"
+  gather_facts: yes
+  
+  tasks:
+    - name: Get current release
+      stat:
+        path: "{{ app_path }}/current"
+      register: current_release
+
+    - name: Get list of releases
+      find:
+        paths: "{{ app_path }}/releases"
+        file_type: directory
+      register: releases
+
+    - name: Sort releases by modification time
+      set_fact:
+        sorted_releases: "{{ releases.files | sort(attribute='mtime', reverse=True) }}"
+
+    - name: Identify previous release
+      set_fact:
+        previous_release: "{{ sorted_releases[1].path if sorted_releases | length > 1 else None }}"
+
+    - name: Fail if no previous release found
+      fail:
+        msg: "No previous release found to rollback to"
+      when: previous_release is none
+
+    - name: Display rollback information
+      debug:
+        msg: |
+          Current release: {{ current_release.stat.lnk_source | basename }}
+          Rolling back to: {{ previous_release | basename }}
+
+    - name: Update current symlink to previous release
+      file:
+        src: "{{ previous_release }}"
+        dest: "{{ app_path }}/current"
+        state: link
+        force: yes
+      become: yes
+      become_user: root
+
+    - name: Restart Puma
+      systemd:
+        name: puma
+        state: restarted
+      become: yes
+      become_user: root
+
+    - name: Wait for application to start
+      wait_for:
+        port: 3000
+        delay: 5
+        timeout: 60
+
+    - name: Verify rollback health
+      uri:
+        url: "http://localhost:3000/health"
+        status_code: 200
+      retries: 5
+      delay: 10
+
+    - name: Mark failed release
+      file:
+        path: "{{ current_release.stat.lnk_source }}.failed"
+        state: touch
+      when: current_release.stat.lnk_source != previous_release
+
+  post_tasks:
+    - name: Rollback summary
+      debug:
+        msg: "Successfully rolled back to release: {{ previous_release | basename }}"

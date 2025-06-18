@@ -1,0 +1,31 @@
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to version control
+
+do_token = "your-digitalocean-api-token"
+
+app_name = "streamsource"
+region   = "nyc3"
+
+# Database configuration
+db_size    = "db-s-1vcpu-1gb"  # Smallest production DB
+redis_size = "db-s-1vcpu-1gb"  # Smallest Redis instance
+
+# App configuration
+app_instance_count = 1
+app_instance_size  = "basic-xxs"  # $5/month instance
+
+# GitHub configuration
+github_repo   = "https://github.com/your-username/streamsource.git"
+github_branch = "main"
+
+# Secrets (generate these with: rails secret)
+secret_key_base = "your-rails-secret-key-base"
+jwt_secret      = "your-jwt-secret"
+rails_master_key = "your-rails-master-key"  # Copy from config/master.key
+
+# Performance tuning (optional)
+rails_max_threads = "5"   # Database connection pool size
+web_concurrency   = "2"   # Number of Puma workers
+
+# Custom domain (optional)
+app_domain = ""  # Leave empty to use DigitalOcean's default domain

@@ -29,12 +29,12 @@ require 'uri'
 # API configuration
 API_BASE_URL = 'http://localhost:3000/api/v1'
 API_EMAIL = 'test@example.com'
-API_PASSWORD = 'password'
+API_PASSWORD = 'Password123!'
 
 # Helper method to make API requests
 def api_request(method, path, body = nil, token = nil)
   uri = URI("#{API_BASE_URL}#{path}")
-  
+
   case method
   when :post
     request = Net::HTTP::Post.new(uri)
@@ -45,15 +45,15 @@ def api_request(method, path, body = nil, token = nil)
   else
     request = Net::HTTP::Get.new(uri)
   end
-  
+
   request['Content-Type'] = 'application/json'
   request['Authorization'] = "Bearer #{token}" if token
   request.body = body.to_json if body
-  
+
   response = Net::HTTP.start(uri.hostname, uri.port) do |http|
     http.request(request)
   end
-  
+
   JSON.parse(response.body) if response.body && !response.body.empty?
 end
 

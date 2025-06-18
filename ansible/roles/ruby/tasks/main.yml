@@ -1,0 +1,63 @@
+---
+- name: Install Ruby dependencies
+  apt:
+    name:
+      - autoconf
+      - bison
+      - build-essential
+      - libssl-dev
+      - libyaml-dev
+      - libreadline6-dev
+      - zlib1g-dev
+      - libncurses5-dev
+      - libffi-dev
+      - libgdbm6
+      - libgdbm-dev
+      - libdb-dev
+      - libpq-dev
+      - libvips
+      - imagemagick
+    state: present
+
+- name: Install rbenv
+  become_user: "{{ app_user }}"
+  git:
+    repo: https://github.com/rbenv/rbenv.git
+    dest: "/home/{{ app_user }}/.rbenv"
+    version: master
+
+- name: Install ruby-build
+  become_user: "{{ app_user }}"
+  git:
+    repo: https://github.com/rbenv/ruby-build.git
+    dest: "/home/{{ app_user }}/.rbenv/plugins/ruby-build"
+    version: master
+
+- name: Configure rbenv in bashrc
+  become_user: "{{ app_user }}"
+  blockinfile:
+    path: "/home/{{ app_user }}/.bashrc"
+    block: |
+      export PATH="$HOME/.rbenv/bin:$PATH"
+      eval "$(rbenv init -)"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - rbenv"
+
+- name: Install Ruby {{ ruby_version }}
+  become_user: "{{ app_user }}"
+  shell: |
+    export PATH="$HOME/.rbenv/bin:$PATH"
+    eval "$(rbenv init -)"
+    rbenv install -s {{ ruby_version }}
+    rbenv global {{ ruby_version }}
+  args:
+    creates: "/home/{{ app_user }}/.rbenv/versions/{{ ruby_version }}"
+
+- name: Install bundler
+  become_user: "{{ app_user }}"
+  shell: |
+    export PATH="$HOME/.rbenv/bin:$PATH"
+    eval "$(rbenv init -)"
+    gem install bundler
+    rbenv rehash
+  args:
+    creates: "/home/{{ app_user }}/.rbenv/shims/bundle"
