@@ -16,13 +16,13 @@ Thank you for your interest in contributing to StreamSource! This guide will hel
 
 2. **Start Docker Services**
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. **Verify Everything is Running**
    ```bash
-   docker-compose ps
-   docker-compose logs -f web
+   docker compose ps
+   docker compose logs -f web
    ```
 
 ## Development Workflow
@@ -47,33 +47,33 @@ All tests must pass before submitting a PR:
 
 ```bash
 # Run all tests
-docker-compose exec web bin/test
+docker compose exec web bin/test
 
 # Run specific test file
-docker-compose exec web bin/test spec/models/stream_spec.rb
+docker compose exec web bin/test spec/models/stream_spec.rb
 
 # Run tests with specific line number
-docker-compose exec web bin/test spec/models/stream_spec.rb:42
+docker compose exec web bin/test spec/models/stream_spec.rb:42
 ```
 
 ### 4. Check Code Style
 
 ```bash
 # Run RuboCop
-docker-compose exec web bundle exec rubocop
+docker compose exec web bundle exec rubocop
 
 # Auto-fix issues
-docker-compose exec web bundle exec rubocop -A
+docker compose exec web bundle exec rubocop -A
 ```
 
 ### 5. Test Your Changes Manually
 
 ```bash
 # Access Rails console
-docker-compose exec web bin/rails console
+docker compose exec web bin/rails console
 
 # View logs
-docker-compose logs -f web
+docker compose logs -f web
 
 # Access the application
 # API: http://localhost:3000
@@ -88,24 +88,24 @@ docker-compose logs -f web
 1. Edit the `Gemfile`
 2. Rebuild the Docker image:
    ```bash
-   docker-compose build web
+   docker compose build web
    ```
 3. Restart services:
    ```bash
-   docker-compose restart web
+   docker compose restart web
    ```
 
 ### Running Database Migrations
 
 ```bash
 # Create a new migration
-docker-compose exec web bin/rails generate migration AddFieldToModel field:type
+docker compose exec web bin/rails generate migration AddFieldToModel field:type
 
 # Run migrations
-docker-compose exec web bin/rails db:migrate
+docker compose exec web bin/rails db:migrate
 
 # Rollback if needed
-docker-compose exec web bin/rails db:rollback
+docker compose exec web bin/rails db:rollback
 ```
 
 ### Debugging
@@ -116,21 +116,21 @@ docker-compose exec web bin/rails db:rollback
 docker attach streamsource_web_1
 
 # Or view logs
-docker-compose logs -f web
+docker compose logs -f web
 ```
 
 ### Working with Assets
 
 ```bash
 # Rebuild JavaScript
-docker-compose exec web yarn build
+docker compose exec web yarn build
 
 # Rebuild CSS
-docker-compose exec web yarn build:css
+docker compose exec web yarn build:css
 
 # Watch mode for development
-docker-compose exec web yarn build --watch
-docker-compose exec web yarn build:css --watch
+docker compose exec web yarn build --watch
+docker compose exec web yarn build:css --watch
 ```
 
 ## Testing Guidelines
@@ -147,13 +147,13 @@ docker-compose exec web yarn build:css --watch
 
 ```bash
 # Model tests only
-docker-compose exec web bin/test spec/models
+docker compose exec web bin/test spec/models
 
 # Controller tests only
-docker-compose exec web bin/test spec/controllers
+docker compose exec web bin/test spec/controllers
 
 # Request tests only
-docker-compose exec web bin/test spec/requests
+docker compose exec web bin/test spec/requests
 ```
 
 ## Code Style Guide
@@ -169,12 +169,12 @@ docker-compose exec web bin/test spec/requests
 
 1. **Ensure all tests pass**
    ```bash
-   docker-compose exec web bin/test
+   docker compose exec web bin/test
    ```
 
 2. **Check code style**
    ```bash
-   docker-compose exec web bundle exec rubocop
+   docker compose exec web bundle exec rubocop
    ```
 
 3. **Update documentation**
@@ -232,18 +232,18 @@ docker-compose exec web bin/test spec/requests
 ### Container won't start
 ```bash
 # Check logs
-docker-compose logs web
+docker compose logs web
 
 # Rebuild from scratch
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ### Permission issues
 ```bash
 # Fix ownership if needed
-docker-compose exec web chown -R $(id -u):$(id -g) .
+docker compose exec web chown -R $(id -u):$(id -g) .
 ```
 
 ### Out of space

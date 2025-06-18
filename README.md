@@ -82,12 +82,12 @@ cd streamsource
 
 2. **Start the application**
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 3. **View logs** (optional)
 ```bash
-docker-compose logs -f web
+docker compose logs -f web
 ```
 
 The application will automatically:
@@ -221,16 +221,16 @@ All tests must be run within the Docker container:
 
 ```bash
 # Run all tests
-docker-compose exec web bin/test
+docker compose exec web bin/test
 
 # Run with coverage
-docker-compose exec web bin/test
+docker compose exec web bin/test
 
 # Run specific tests
-docker-compose exec web bin/test spec/controllers/api/v1/streams_controller_spec.rb
+docker compose exec web bin/test spec/controllers/api/v1/streams_controller_spec.rb
 
 # Run tests in a new container (if services aren't running)
-docker-compose run --rm web bin/test
+docker compose run --rm web bin/test
 ```
 
 > **Note**: The `bin/test` script automatically sets `RAILS_ENV=test` and prepares the test database.
@@ -254,72 +254,72 @@ All development tasks must be performed within the Docker container. Never use s
 
 ```bash
 # Execute commands in the running container
-docker-compose exec web [command]
+docker compose exec web [command]
 
 # Run commands in a new container
-docker-compose run --rm web [command]
+docker compose run --rm web [command]
 
 # View logs
-docker-compose logs -f web
+docker compose logs -f web
 
 # Restart services
-docker-compose restart web
+docker compose restart web
 ```
 
 ### Code Style
 
 ```bash
 # Run linter
-docker-compose exec web bundle exec rubocop
+docker compose exec web bundle exec rubocop
 
 # Auto-fix issues
-docker-compose exec web bundle exec rubocop -A
+docker compose exec web bundle exec rubocop -A
 ```
 
 ### Asset Development
 
 ```bash
 # Rebuild JavaScript
-docker-compose exec web yarn build
+docker compose exec web yarn build
 
 # Rebuild CSS
-docker-compose exec web yarn build:css
+docker compose exec web yarn build:css
 
 # Watch mode (run in separate terminals)
-docker-compose exec web yarn build --watch
-docker-compose exec web yarn build:css --watch
+docker compose exec web yarn build --watch
+docker compose exec web yarn build:css --watch
 ```
 
 ### Database Tasks
 
 ```bash
 # Run migrations
-docker-compose exec web bin/rails db:migrate
+docker compose exec web bin/rails db:migrate
 
 # Rollback migration
-docker-compose exec web bin/rails db:rollback
+docker compose exec web bin/rails db:rollback
 
 # Reset database (drop, create, migrate, seed)
-docker-compose exec web bin/rails db:reset
+docker compose exec web bin/rails db:reset
 
 # Access database console
-docker-compose exec db psql -U streamsource
+docker compose exec db psql -U streamsource
 ```
 
 ### Debugging
 
 ```bash
 # Access Rails console
-docker-compose exec web bin/rails console
+docker compose exec web bin/rails console
 
 # View application logs
-docker-compose logs -f web
+docker compose logs -f web
 
 # Check routes
-docker-compose exec web bin/rails routes
+docker compose exec web bin/rails routes
 
 # Run any Rails command
-docker-compose exec web bin/rails [command]
+docker compose exec web bin/rails [command]
 ```
 
 ### Installing New Gems
@@ -329,10 +329,10 @@ When adding new gems to the Gemfile:
 ```bash
 # 1. Edit Gemfile
 # 2. Rebuild the Docker image
-docker-compose build web
+docker compose build web
 
 # 3. Restart the services
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Deployment

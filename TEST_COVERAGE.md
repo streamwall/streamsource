@@ -153,8 +153,8 @@ bundle exec rspec
 To run tests in Docker:
 ```bash
 # Create a test-specific Docker setup
-docker-compose -f docker-compose.test.yml build
-docker-compose -f docker-compose.test.yml run --rm test
+docker compose -f docker compose.test.yml build
+docker compose -f docker compose.test.yml run --rm test
 ```
 
 ## Coverage Report

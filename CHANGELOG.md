@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Docker runtime issues with gem loading
 - Bundle path configuration conflicts between host and container
-- PostgreSQL health check in docker-compose.yml
+- PostgreSQL health check in docker compose.yml
 - Flash message handling in Rails API mode
 - Route helper generation for admin resources
 

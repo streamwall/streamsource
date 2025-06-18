@@ -6,77 +6,77 @@
 
 ```bash
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f web
+docker compose logs -f web
 
 # Access Rails console
-docker-compose exec web bundle exec rails console
+docker compose exec web bundle exec rails console
 
 # Run migrations
-docker-compose exec web bundle exec rails db:migrate
+docker compose exec web bundle exec rails db:migrate
 
 # Run tests
-docker-compose exec web bundle exec rspec
+docker compose exec web bundle exec rspec
 
 # Build assets
-docker-compose exec web yarn build
-docker-compose exec web yarn build:css
+docker compose exec web yarn build
+docker compose exec web yarn build:css
 
 # Stop all services
-docker-compose down
+docker compose down
 ```
 
 ### Database Operations
 
 ```bash
 # Create and setup database
-docker-compose exec web bundle exec rails db:setup
+docker compose exec web bundle exec rails db:setup
 
 # Run migrations
-docker-compose exec web bundle exec rails db:migrate
+docker compose exec web bundle exec rails db:migrate
 
 # Rollback migration
-docker-compose exec web bundle exec rails db:rollback
+docker compose exec web bundle exec rails db:rollback
 
 # Reset database (drop, create, migrate, seed)
-docker-compose exec web bundle exec rails db:reset
+docker compose exec web bundle exec rails db:reset
 
 # Access PostgreSQL console
-docker-compose exec db psql -U streamsource streamsource_development
+docker compose exec db psql -U streamsource streamsource_development
 ```
 
 ### Testing
 
 ```bash
 # Run all tests
-docker-compose exec web bundle exec rspec
+docker compose exec web bundle exec rspec
 
 # Run specific test file
-docker-compose exec web bundle exec rspec spec/models/user_spec.rb
+docker compose exec web bundle exec rspec spec/models/user_spec.rb
 
 # Run with coverage
-docker-compose exec web COVERAGE=true bundle exec rspec
+docker compose exec web COVERAGE=true bundle exec rspec
 
 # Run specific test by line number
-docker-compose exec web bundle exec rspec spec/models/user_spec.rb:42
+docker compose exec web bundle exec rspec spec/models/user_spec.rb:42
 ```
 
 ### Code Quality
 
 ```bash
 # Run linter
-docker-compose exec web bundle exec rubocop
+docker compose exec web bundle exec rubocop
 
 # Auto-fix linting issues
-docker-compose exec web bundle exec rubocop -A
+docker compose exec web bundle exec rubocop -A
 
 # Security audit
-docker-compose exec web bundle audit
+docker compose exec web bundle audit
 
 # Check for outdated gems
-docker-compose exec web bundle outdated
+docker compose exec web bundle outdated
 ```
 
 ## API Endpoints
@@ -140,22 +140,22 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/streams
 ### View Rails Routes
 ```bash
 # All routes
-docker-compose exec web bundle exec rails routes
+docker compose exec web bundle exec rails routes
 
 # Filter routes
-docker-compose exec web bundle exec rails routes | grep stream
+docker compose exec web bundle exec rails routes | grep stream
 
 # Routes for specific controller
-docker-compose exec web bundle exec rails routes -c streams
+docker compose exec web bundle exec rails routes -c streams
 ```
 
 ### Clear Rate Limits
 ```bash
 # In development (restart to clear memory store)
-docker-compose restart web
+docker compose restart web
 
 # In production (clear Redis)
-docker-compose exec redis redis-cli
+docker compose exec redis redis-cli
 > KEYS rack::attack* | xargs DEL
 ```
 
@@ -191,63 +191,63 @@ Stimulus.controllers.find(c => c.constructor.name === "ModalController")
 ### Container Issues
 ```bash
 # Rebuild containers
-docker-compose build --no-cache web
+docker compose build --no-cache web
 
 # Remove all containers and volumes
-docker-compose down -v
+docker compose down -v
 
 # Check container logs
-docker-compose logs web | tail -100
+docker compose logs web | tail -100
 ```
 
 ### Asset Problems
 ```bash
 # Rebuild all assets
-docker-compose exec web yarn build
-docker-compose exec web yarn build:css
+docker compose exec web yarn build
+docker compose exec web yarn build:css
 
 # Check asset files
-docker-compose exec web ls -la public/assets/
+docker compose exec web ls -la public/assets/
 
 # Clear asset cache
-docker-compose exec web rm -rf app/assets/builds/*
-docker-compose exec web yarn build && yarn build:css
+docker compose exec web rm -rf app/assets/builds/*
+docker compose exec web yarn build && yarn build:css
 ```
 
 ### Database Connection Error
 ```bash
 # Check PostgreSQL is running
-docker-compose ps db
+docker compose ps db
 
 # Test connection
-docker-compose exec db pg_isready -U streamsource
+docker compose exec db pg_isready -U streamsource
 
 # Check database exists
-docker-compose exec db psql -U streamsource -l
+docker compose exec db psql -U streamsource -l
 ```
 
 ### Bundle/Gem Issues
 ```bash
 # Install missing gems
-docker-compose exec web bundle install
+docker compose exec web bundle install
 
 # Update gems
-docker-compose exec web bundle update
+docker compose exec web bundle update
 
 # Check gem location
-docker-compose exec web bundle show <gem-name>
+docker compose exec web bundle show <gem-name>
 ```
 
 ### Tests Failing
 ```bash
 # Reset test database
-docker-compose exec web RAILS_ENV=test bundle exec rails db:reset
+docker compose exec web RAILS_ENV=test bundle exec rails db:reset
 
 # Run single test with details
-docker-compose exec web bundle exec rspec path/to/spec.rb --format documentation
+docker compose exec web bundle exec rspec path/to/spec.rb --format documentation
 
 # Check test logs
-docker-compose exec web tail -f log/test.log
+docker compose exec web tail -f log/test.log
 ```
 
 ## Performance Tips
@@ -304,8 +304,8 @@ Rails.cache.clear
 git checkout -b feature/your-feature
 
 # Run tests before committing
-docker-compose exec web bundle exec rspec
-docker-compose exec web bundle exec rubocop
+docker compose exec web bundle exec rspec
+docker compose exec web bundle exec rubocop
 
 # Commit with descriptive message
 git add .
@@ -319,10 +319,10 @@ git push origin feature/your-feature
 
 ```bash
 # Generate migration
-docker-compose exec web bundle exec rails generate migration AddFieldToModel field:type
+docker compose exec web bundle exec rails generate migration AddFieldToModel field:type
 
 # Generate model
-docker-compose exec web bundle exec rails generate model ModelName field:type
+docker compose exec web bundle exec rails generate model ModelName field:type
 
 # Rails console shortcuts
 # c - continue
@@ -331,8 +331,8 @@ docker-compose exec web bundle exec rails generate model ModelName field:type
 # reload! - reload console
 
 # View middleware stack
-docker-compose exec web bundle exec rails middleware
+docker compose exec web bundle exec rails middleware
 
 # View initializers
-docker-compose exec web bundle exec rails initializers
+docker compose exec web bundle exec rails initializers
 ```

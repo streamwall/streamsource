@@ -33,13 +33,13 @@ rvm use 3.3.0 --default
 ### Option 3: Using Docker (No Ruby Installation Required)
 ```bash
 # Start all services with Docker Compose
-docker-compose up
+docker compose up
 
 # In another terminal, run migrations
-docker-compose exec web rails db:create db:migrate db:seed
+docker compose exec web rails db:create db:migrate db:seed
 
 # Run tests
-docker-compose exec web rspec
+docker compose exec web rspec
 ```
 
 ## Rails Setup
@@ -93,7 +93,7 @@ I've manually created a complete Rails 8 API application with:
 
 ### Deployment
 - Dockerfile for production builds
-- docker-compose.yml for local development
+- docker compose.yml for local development
 - Environment-specific configurations
 
 ## API Endpoints

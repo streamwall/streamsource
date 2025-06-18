@@ -9,7 +9,7 @@ echo "Setting up test environment..."
 # Build image if needed
 if [[ "$1" == "--build" ]]; then
   echo "Building test image..."
-  docker-compose build test
+  docker compose build test
   shift
 fi
 
@@ -17,10 +17,10 @@ fi
 echo "Running tests..."
 if [[ -n "$1" ]]; then
   # Run specific test file if provided
-  docker-compose run --rm test bundle exec rspec "$@"
+  docker compose run --rm test bundle exec rspec "$@"
 else
   # Run all tests
-  docker-compose run --rm test
+  docker compose run --rm test
 fi
 
 echo "Test run complete!"

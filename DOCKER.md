@@ -14,7 +14,7 @@ Production-ready multi-stage build that:
 - Runs as non-root user for security
 - Includes health check configuration
 
-### `docker-compose.yml`
+### `docker compose.yml`
 Development environment configuration with:
 - PostgreSQL 15 database
 - Redis 7 for caching and sessions
@@ -34,27 +34,27 @@ Entrypoint script that:
 
 1. **Start all services**
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 2. **View logs**
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Specific service
-docker-compose logs -f web
+docker compose logs -f web
 ```
 
 3. **Stop services**
 ```bash
-docker-compose down
+docker compose down
 ```
 
 4. **Reset everything**
 ```bash
-docker-compose down -v  # Also removes volumes
-docker-compose up -d --build  # Rebuild and start
+docker compose down -v  # Also removes volumes
+docker compose up -d --build  # Rebuild and start
 ```
 
 ## Service Details
@@ -92,16 +92,16 @@ docker-compose up -d --build  # Rebuild and start
 
 ```bash
 # List running containers
-docker-compose ps
+docker compose ps
 
 # Execute commands in container
-docker-compose exec web bash
-docker-compose exec web bundle exec rails console
-docker-compose exec web bundle exec rails db:migrate
+docker compose exec web bash
+docker compose exec web bundle exec rails console
+docker compose exec web bundle exec rails db:migrate
 
 # Run one-off commands
-docker-compose run --rm web bundle exec rspec
-docker-compose run --rm web bundle exec rubocop
+docker compose run --rm web bundle exec rspec
+docker compose run --rm web bundle exec rubocop
 
 # View container resource usage
 docker stats
@@ -111,36 +111,36 @@ docker stats
 
 ```bash
 # Create database
-docker-compose exec web bundle exec rails db:create
+docker compose exec web bundle exec rails db:create
 
 # Run migrations
-docker-compose exec web bundle exec rails db:migrate
+docker compose exec web bundle exec rails db:migrate
 
 # Seed database
-docker-compose exec web bundle exec rails db:seed
+docker compose exec web bundle exec rails db:seed
 
 # Reset database
-docker-compose exec web bundle exec rails db:reset
+docker compose exec web bundle exec rails db:reset
 
 # Access PostgreSQL console
-docker-compose exec db psql -U streamsource streamsource_development
+docker compose exec db psql -U streamsource streamsource_development
 ```
 
 ### Asset Management
 
 ```bash
 # Build JavaScript
-docker-compose exec web yarn build
+docker compose exec web yarn build
 
 # Build CSS
-docker-compose exec web yarn build:css
+docker compose exec web yarn build:css
 
 # Install new JavaScript packages
-docker-compose exec web yarn add <package-name>
+docker compose exec web yarn add <package-name>
 
 # Install new gems
-docker-compose exec web bundle add <gem-name>
-docker-compose exec web bundle install
+docker compose exec web bundle add <gem-name>
+docker compose exec web bundle install
 ```
 
 ## Troubleshooting
@@ -149,32 +149,32 @@ docker-compose exec web bundle install
 
 1. **Check logs**
 ```bash
-docker-compose logs web
+docker compose logs web
 ```
 
 2. **Common issues**:
    - Port already in use: `lsof -i :3000` and kill the process
    - Database not ready: Wait or check DB logs
-   - Bundle issues: Rebuild with `docker-compose build web`
+   - Bundle issues: Rebuild with `docker compose build web`
 
 ### Database Connection Issues
 
 1. **Verify database is running**
 ```bash
-docker-compose ps db
-docker-compose logs db
+docker compose ps db
+docker compose logs db
 ```
 
 2. **Test connection**
 ```bash
-docker-compose exec db pg_isready -U streamsource
+docker compose exec db pg_isready -U streamsource
 ```
 
 3. **Reset database**
 ```bash
-docker-compose down -v
-docker-compose up -d
-docker-compose exec web bundle exec rails db:setup
+docker compose down -v
+docker compose up -d
+docker compose exec web bundle exec rails db:setup
 ```
 
 ### Gem/Bundle Issues
@@ -182,18 +182,18 @@ docker-compose exec web bundle exec rails db:setup
 1. **Gems not found**
 ```bash
 # Rebuild without cache
-docker-compose build --no-cache web
+docker compose build --no-cache web
 
 # Or remove bundle volume and rebuild
-docker-compose down -v
-docker-compose up -d --build
+docker compose down -v
+docker compose up -d --build
 ```
 
 2. **Bundle config conflicts**
 ```bash
 # Remove local bundle config
 rm -rf .bundle
-docker-compose build web
+docker compose build web
 ```
 
 ### Asset Compilation Issues
@@ -201,18 +201,18 @@ docker-compose build web
 1. **JavaScript/CSS not updating**
 ```bash
 # Rebuild assets
-docker-compose exec web yarn build
-docker-compose exec web yarn build:css
+docker compose exec web yarn build
+docker compose exec web yarn build:css
 
 # Check asset paths
-docker-compose exec web ls -la public/assets/
+docker compose exec web ls -la public/assets/
 ```
 
 2. **Node modules issues**
 ```bash
 # Reinstall dependencies
-docker-compose exec web rm -rf node_modules
-docker-compose exec web yarn install
+docker compose exec web rm -rf node_modules
+docker compose exec web yarn install
 ```
 
 ## Production Deployment
@@ -246,7 +246,7 @@ docker run -d \
 
 ### Docker Compose Production
 
-Create `docker-compose.production.yml`:
+Create `docker compose.production.yml`:
 
 ```yaml
 version: '3.8'
@@ -271,7 +271,7 @@ services:
 
 Run with:
 ```bash
-docker-compose -f docker-compose.production.yml up -d
+docker compose -f docker compose.production.yml up -d
 ```
 
 ## Best Practices
@@ -279,7 +279,7 @@ docker-compose -f docker-compose.production.yml up -d
 ### Development
 
 1. **Use cached volumes** for better performance on macOS
-2. **Don't store secrets** in docker-compose.yml
+2. **Don't store secrets** in docker compose.yml
 3. **Use .dockerignore** to exclude unnecessary files
 4. **Regularly update base images** for security
 
@@ -326,7 +326,7 @@ Current Dockerfile uses multi-stage build to:
 
 3. **Parallel builds**
 ```bash
-docker-compose build --parallel
+docker compose build --parallel
 ```
 
 ### Runtime Performance
@@ -349,7 +349,7 @@ docker-compose build --parallel
 
 ```bash
 # Check health status
-docker-compose ps
+docker compose ps
 
 # View health check logs
 docker inspect streamsource-web-1 | jq '.[0].State.Health'
@@ -369,13 +369,13 @@ docker stats --no-stream
 
 ```bash
 # View logs with timestamps
-docker-compose logs -f --timestamps web
+docker compose logs -f --timestamps web
 
 # Save logs to file
-docker-compose logs web > web.log
+docker compose logs web > web.log
 
 # Filter logs
-docker-compose logs web | grep ERROR
+docker compose logs web | grep ERROR
 ```
 
 ## Kubernetes Migration

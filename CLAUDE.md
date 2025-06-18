@@ -9,15 +9,15 @@ This document provides context and guidelines for AI assistants (particularly Cl
 Quick start:
 ```bash
 # Start everything
-docker-compose up -d
+docker compose up -d
 
 # Run any command
-docker-compose exec web [command]
+docker compose exec web [command]
 
 # Examples:
-docker-compose exec web bin/test
-docker-compose exec web bin/rails console
-docker-compose exec web bundle exec rubocop
+docker compose exec web bin/test
+docker compose exec web bin/rails console
+docker compose exec web bundle exec rubocop
 ```
 
 ## Project Overview
@@ -80,11 +80,11 @@ StreamSource is a Rails 8 application providing both a RESTful API and an admin 
 6. Test with system specs
 
 ### Database Changes
-1. Create migration: `docker-compose exec web bin/rails generate migration AddFieldToModel`
+1. Create migration: `docker compose exec web bin/rails generate migration AddFieldToModel`
 2. Update model validations and associations
 3. Update serializers if needed
 4. Update tests
-5. Run migration: `docker-compose exec web bin/rails db:migrate`
+5. Run migration: `docker compose exec web bin/rails db:migrate`
 
 ### API Endpoint Addition
 1. Add route in `config/routes.rb`
@@ -100,19 +100,19 @@ StreamSource is a Rails 8 application providing both a RESTful API and an admin 
 
 ```bash
 # All tests (recommended - uses bin/test wrapper)
-docker-compose exec web bin/test
+docker compose exec web bin/test
 
 # Specific test file
-docker-compose exec web bin/test spec/models/user_spec.rb
+docker compose exec web bin/test spec/models/user_spec.rb
 
 # Specific test at line number
-docker-compose exec web bin/test spec/models/user_spec.rb:42
+docker compose exec web bin/test spec/models/user_spec.rb:42
 
 # Alternative: Run RSpec directly (must set RAILS_ENV=test)
-docker-compose exec -e RAILS_ENV=test web bundle exec rspec
+docker compose exec -e RAILS_ENV=test web bundle exec rspec
 
 # Check test coverage (coverage report in coverage/index.html)
-docker-compose exec web bin/test
+docker compose exec web bin/test
 ```
 
 **bin/test wrapper does:**
@@ -158,53 +158,53 @@ docker-compose exec web bin/test
 ### Initial Setup
 ```bash
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Verify services are running
-docker-compose ps
+docker compose ps
 
 # Run database migrations
-docker-compose exec web bin/rails db:migrate
+docker compose exec web bin/rails db:migrate
 ```
 
 ### Daily Development
 ```bash
 # Start services
-docker-compose up -d
+docker compose up -d
 
 # Run tests
-docker-compose exec web bin/test
+docker compose exec web bin/test
 
 # Access Rails console
-docker-compose exec web bin/rails console
+docker compose exec web bin/rails console
 
 # Run migrations after changes
-docker-compose exec web bin/rails db:migrate
+docker compose exec web bin/rails db:migrate
 
 # View application logs
-docker-compose logs -f web
+docker compose logs -f web
 ```
 
 ### Asset Management
 ```bash
 # Build JavaScript/CSS (when modified)
-docker-compose exec web yarn build
-docker-compose exec web yarn build:css
+docker compose exec web yarn build
+docker compose exec web yarn build:css
 ```
 
 ### Troubleshooting
 ```bash
 # Rebuild after Gemfile/package.json changes
-docker-compose build web
-docker-compose restart web
+docker compose build web
+docker compose restart web
 
 # Reset everything (DESTROYS ALL DATA)
-docker-compose down -v
-docker-compose up -d
-docker-compose exec web bin/rails db:migrate
+docker compose down -v
+docker compose up -d
+docker compose exec web bin/rails db:migrate
 
 # Stop all services
-docker-compose down
+docker compose down
 ```
 
 ## Common Issues & Solutions
@@ -217,7 +217,7 @@ docker-compose down
 ### Rate Limiting
 - Development uses memory store
 - Production uses Redis
-- Clear with: `docker-compose exec redis redis-cli FLUSHALL`
+- Clear with: `docker compose exec redis redis-cli FLUSHALL`
 
 ### Database Connection
 - Ensure PostgreSQL is running
@@ -258,8 +258,8 @@ docker-compose down
 
 ## Deployment Checklist
 
-1. Run tests: `docker-compose exec web bin/test`
-2. Check code style: `docker-compose exec web bundle exec rubocop`
+1. Run tests: `docker compose exec web bin/test`
+2. Check code style: `docker compose exec web bundle exec rubocop`
 3. Update documentation
 4. Set environment variables
 5. Run migrations in production
@@ -277,7 +277,7 @@ When working on this project:
 4. **Think about performance** - Pagination, caching, indexes
 5. **Use constants** - Add to ApplicationConstants module
 6. **Keep it simple** - Avoid over-engineering
-7. **ALWAYS run tests** - `docker-compose exec web bin/test` before finishing work
+7. **ALWAYS run tests** - `docker compose exec web bin/test` before finishing work
 8. **Use Docker** - Never run commands outside Docker containers
 
 ## Migration from Node.js
@@ -337,7 +337,7 @@ rails server
 rspec
 
 # ✅ CORRECT - Always use Docker
-docker-compose exec web bundle install
-docker-compose exec web bin/rails server
-docker-compose exec web bin/test
+docker compose exec web bundle install
+docker compose exec web bin/rails server
+docker compose exec web bin/test
 ```

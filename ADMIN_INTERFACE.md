@@ -267,7 +267,7 @@ Stimulus.controllers
 
 3. **Rails logs**
 ```bash
-docker-compose logs -f web
+docker compose logs -f web
 tail -f log/development.log
 ```
 
