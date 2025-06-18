@@ -4,7 +4,7 @@ module Admin
     
     def index
       @pagy, @streams = pagy(
-        Stream.includes(:streamer)
+        Stream.includes(:streamer, :stream_url)
               .filtered(filter_params)
               .ordered,
         items: 20
