@@ -46,6 +46,24 @@ services:
     stdin_open: true
     tty: true
 
+  js:
+    build: .
+    command: yarn build --watch
+    volumes:
+      - .:/rails:cached
+    working_dir: /rails
+    profiles:
+      - assets
+
+  css:
+    build: .
+    command: yarn build:css --watch
+    volumes:
+      - .:/rails:cached
+    working_dir: /rails
+    profiles:
+      - assets
+
   test:
     build:
       context: .
@@ -63,12 +81,14 @@ services:
       DATABASE_URL: postgres://streamsource:streamsource_password@db:5432/streamsource_test
       REDIS_URL: redis://redis:6379/1
       RAILS_LOG_TO_STDOUT: "true"
+    profiles:
+      - test
     command: >
       sh -c "
         bundle exec rails db:create 2>/dev/null || true &&
         bundle exec rails db:schema:load 2>/dev/null || true &&
         bundle exec rails db:migrate &&
-        bundle exec rspec
+        sleep infinity
       "
 
 volumes:

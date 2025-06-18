@@ -3,7 +3,10 @@ module Admin
     before_action :set_user, only: [:show, :edit, :update, :destroy, :toggle_admin]
     
     def index
-      @pagy, @users = pagy(User.all.order(:email))
+      @pagy, @users = pagy(
+        User.includes(:streams, :streamers, :notes)
+            .order(:email)
+      )
     end
     
     def show

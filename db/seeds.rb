@@ -39,7 +39,7 @@ if Rails.env.development? || Rails.env.test?
   else
     puts "Default user already exists: #{default_user.email}"
   end
-  
+
   puts "\n========================================"
   puts "Development Admin Login Credentials:"
   puts "Email: admin@example.com"
@@ -53,7 +53,7 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
   admin = User.find_by(email: 'admin@example.com')
   editor = User.find_by(email: 'editor@example.com')
   default_user = User.find_by(email: 'user@example.com')
-  
+
   unless admin && editor && default_user
     puts "Skipping stream creation - users not found"
     return
@@ -128,7 +128,7 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       kind: "video"
     }
   ]
-  
+
   sample_streams.each do |stream_data|
     stream = Stream.create!(
       **stream_data,
@@ -137,9 +137,9 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       last_live_at: stream_data[:status] == "live" ? rand(1..6).hours.ago : rand(1..30).days.ago
     )
   end
-  
+
   puts "Created #{sample_streams.count} sample streams for admin user"
-  
+
   # Create sample streams for editor
   editor_streams = [
     {
@@ -182,7 +182,7 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       kind: "web"
     }
   ]
-  
+
   editor_streams.each do |stream_data|
     stream = Stream.create!(
       **stream_data,
@@ -191,9 +191,9 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       last_live_at: stream_data[:status] == "live" ? rand(1..12).hours.ago : nil
     )
   end
-  
+
   puts "Created #{editor_streams.count} sample streams for editor user"
-  
+
   # Create a stream for the default user
   Stream.create!(
     source: "user_stream",
@@ -210,7 +210,7 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
     user: default_user,
     last_checked_at: 1.week.ago
   )
-  
+
   puts "Created 1 sample stream for default user"
 end
 

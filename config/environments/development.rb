@@ -76,6 +76,6 @@ Rails.application.configure do
     
     # Bullet.raise = true  # Uncomment to raise errors in development
     # Bullet.unused_eager_loading_enable = false  # Set to true to detect unused eager loading
-    # Bullet.counter_cache_enable = false  # Set to true to detect counter cache opportunities
+    Bullet.counter_cache_enable = false  # Disable counter cache suggestions
   end
 end
