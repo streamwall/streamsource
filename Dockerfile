@@ -46,7 +46,7 @@ RUN if [ -f "package.json" ]; then \
       yarn install; \
     fi
 
-# Precompile bootsnap code for faster boot times  
+# Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
 
 # Final stage for app image

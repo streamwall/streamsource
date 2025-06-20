@@ -9,7 +9,7 @@
 This project uses:
 - Ruby 3.3.6
 - Rails 8.0.x
-- PostgreSQL 15
+- PostgreSQL 17
 - Redis 7
 - Node.js 20
 
@@ -114,12 +114,6 @@ The StreamSource Rails 8 application includes:
 - **JavaScript**: ESBuild bundler
 - **CSS**: Tailwind CSS via cssbundling-rails
 - **Watch Mode**: Separate Docker services for development
-
-### Deployment
-- **Docker**: Multi-stage Dockerfile for production
-- **Health Checks**: Kubernetes-ready endpoints
-- **Environment Config**: 12-factor app principles
-- **Database**: Automatic migrations on startup
 
 ## Key API Endpoints
 

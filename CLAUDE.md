@@ -31,7 +31,7 @@ The application now includes advanced features for managing streamers, their pla
 ### Architecture
 - **Rails 8.0.x** with API + Admin interface
 - **Ruby 3.3.6** runtime
-- **PostgreSQL 15** for data persistence
+- **PostgreSQL 17.5** for data persistence
 - **Redis 7** for caching, sessions, and rate limiting
 - **JWT** for API authentication (custom implementation using bcrypt)
 - **Session-based auth** for admin interface
@@ -189,7 +189,7 @@ docker compose exec web bin/test
 
 ### Services in Docker Compose
 - **web**: Main Rails application
-- **db**: PostgreSQL 15 database
+- **db**: PostgreSQL 17.5 database
 - **redis**: Redis 7 for caching and sessions
 - **js**: JavaScript build watcher (profile: donotstart)
 - **css**: CSS build watcher (profile: donotstart)
@@ -308,17 +308,6 @@ docker compose down
   }
 }
 ```
-
-## Deployment Checklist
-
-1. Run tests: `docker compose exec web bin/test`
-2. Check code style: `docker compose exec web bundle exec rubocop`
-3. Update documentation
-4. Set environment variables
-5. Run migrations in production
-6. Verify health checks work
-7. Monitor rate limiting
-8. Check error tracking
 
 ## AI Assistant Guidelines
 

@@ -15,7 +15,6 @@ A modern Rails 8 application for managing streamers and streaming sources with b
 - [Configuration](#configuration)
 - [Testing](#testing)
 - [Development](#development)
-- [Deployment](#deployment)
 - [Contributing](#contributing)
 
 ## Features
@@ -47,7 +46,7 @@ A modern Rails 8 application for managing streamers and streaming sources with b
 ### Backend
 - **Framework**: Rails 8.0.x (API + Admin interface)
 - **Language**: Ruby 3.3.6
-- **Database**: PostgreSQL 15
+- **Database**: PostgreSQL 17
 - **Cache/Sessions**: Redis 7
 - **Background Jobs**: Sidekiq (ready for expansion)
 
@@ -367,43 +366,6 @@ docker compose build web
 # 3. Restart the services
 docker compose up -d
 ```
-
-## Deployment
-
-### Production Docker Build
-
-```bash
-# Build production image
-docker build -t streamsource:latest .
-
-# Run with environment variables
-docker run -d \
-  -p 3000:3000 \
-  -e DATABASE_URL=postgres://... \
-  -e REDIS_URL=redis://... \
-  -e SECRET_KEY_BASE=... \
-  -e RAILS_ENV=production \
-  streamsource:latest
-```
-
-### Kubernetes Deployment
-
-The application includes health checks for Kubernetes:
-- Liveness probe: `/health/live`
-- Readiness probe: `/health/ready`
-
-### Production Checklist
-
-1. Set strong `SECRET_KEY_BASE`
-2. Configure production database
-3. Set up Redis for caching and sessions
-4. Configure email delivery (if needed)
-5. Set up monitoring (New Relic, AppSignal, etc.)
-6. Configure log aggregation
-7. Set up SSL/TLS termination
-8. Configure CORS for your domains
-9. Review and adjust rate limiting
-10. Set production feature flags
 
 ## Contributing
 

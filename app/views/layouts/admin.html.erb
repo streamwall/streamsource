@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-    
+
     <%= stylesheet_link_tag "/assets/application", "data-turbo-track": "reload" %>
     <%= javascript_include_tag "/assets/application", "data-turbo-track": "reload", type: "module" %>
   </head>
@@ -15,7 +15,7 @@
     <div id="mobile-menu-overlay" class="fixed inset-0 z-40 lg:hidden hidden">
       <div class="fixed inset-0 bg-black bg-opacity-50" data-action="click->mobile-menu#close"></div>
     </div>
-    
+
     <div class="flex h-screen overflow-hidden">
       <!-- Desktop Sidebar -->
       <nav class="bg-gray-900 text-white w-64 flex-shrink-0 hidden lg:block" id="desktop-sidebar">
@@ -24,7 +24,7 @@
             <h1 class="text-2xl font-bold">StreamSource</h1>
             <p class="text-gray-400 text-sm">Admin Panel</p>
           </div>
-          
+
           <ul class="space-y-2 flex-1 overflow-y-auto">
             <li>
               <%= link_to admin_streams_path, class: "flex items-center px-3 py-2 rounded hover:bg-gray-800 transition #{'bg-gray-800' if controller_name == 'streams'}" do %>
@@ -53,7 +53,7 @@
             <li>
               <%= link_to admin_users_path, class: "flex items-center px-3 py-2 rounded hover:bg-gray-800 transition #{'bg-gray-800' if controller_name == 'users'}" do %>
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.3.3.6 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                 </svg>
                 Users
               <% end %>
@@ -67,7 +67,7 @@
               <% end %>
             </li>
           </ul>
-          
+
           <div class="border-t border-gray-700 pt-4 mt-4">
             <div class="flex items-center mb-3">
               <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-sm font-medium">
@@ -87,7 +87,7 @@
           </div>
         </div>
       </nav>
-      
+
       <!-- Mobile sidebar -->
       <nav class="bg-gray-900 text-white w-64 flex-shrink-0 fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-in-out lg:hidden -translate-x-full" id="mobile-menu">
         <div class="h-full overflow-y-auto px-4 py-6 flex flex-col">
@@ -95,7 +95,7 @@
             <h1 class="text-2xl font-bold">StreamSource</h1>
             <p class="text-gray-400 text-sm">Admin Panel</p>
           </div>
-          
+
           <ul class="space-y-2 flex-1 overflow-y-auto">
             <li>
               <%= link_to admin_streams_path, class: "flex items-center px-3 py-2 rounded hover:bg-gray-800 transition #{'bg-gray-800' if controller_name == 'streams'}" do %>
@@ -124,7 +124,7 @@
             <li>
               <%= link_to admin_users_path, class: "flex items-center px-3 py-2 rounded hover:bg-gray-800 transition #{'bg-gray-800' if controller_name == 'users'}" do %>
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.3.3.6 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                 </svg>
                 Users
               <% end %>
@@ -138,7 +138,7 @@
               <% end %>
             </li>
           </ul>
-          
+
           <div class="border-t border-gray-700 pt-4 mt-4">
             <div class="flex items-center mb-3">
               <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-sm font-medium">
@@ -158,8 +158,8 @@
           </div>
         </div>
       </nav>
-      
-      
+
+
       <!-- Main content -->
       <main class="flex-1 flex flex-col overflow-hidden">
         <!-- Page header -->
@@ -190,7 +190,7 @@
             </div>
           </div>
         </header>
-        
+
         <div class="flex-1 overflow-y-auto">
           <div class="px-3 sm:px-6 lg:px-8 py-4 md:py-6">
           <!-- Flash messages -->
@@ -203,7 +203,7 @@
                 <p class="text-sm"><%= flash[:notice] %></p>
               </div>
             <% end %>
-            
+
             <% if flash[:alert].present? %>
               <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6 flex items-center" data-turbo-temporary>
                 <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -213,7 +213,7 @@
               </div>
             <% end %>
           </div>
-          
+
             <%= yield %>
           </div>
         </div>

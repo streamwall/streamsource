@@ -1,7 +1,7 @@
 <% content_for :page_title, "Users" %>
 <% content_for :page_subtitle, "Manage user accounts and permissions" %>
 <% content_for :page_actions do %>
-  <%= link_to admin_new_user_path, 
+  <%= link_to admin_new_user_path,
       class: "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700",
       data: { turbo_frame: "modal" } do %>
     <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,7 +28,7 @@
       </div>
     </div>
   </div>
-  
+
   <div class="bg-white rounded-lg shadow p-6">
     <div class="flex items-center">
       <div class="flex-shrink-0">
@@ -44,7 +44,7 @@
       </div>
     </div>
   </div>
-  
+
   <div class="bg-white rounded-lg shadow p-6">
     <div class="flex items-center">
       <div class="flex-shrink-0">
@@ -66,20 +66,20 @@
 <div class="bg-white rounded-lg shadow mb-6 p-4">
   <%= form_with url: admin_users_path, method: :get, data: { controller: "search", search_target: "form", turbo_frame: "users_list", turbo_action: "advance" }, class: "flex gap-4" do |form| %>
     <div class="flex-1">
-      <%= form.text_field :search, 
+      <%= form.text_field :search,
           placeholder: "Search users by email...",
           value: params[:search],
           data: { action: "input->search#submit" },
           class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
     </div>
-    
+
     <div>
-      <%= form.select :role, 
+      <%= form.select :role,
           options_for_select([["All Roles", ""], ["Admin", "admin"], ["User", "user"]], params[:role]),
           {},
           class: "rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
     </div>
-    
+
     <div>
       <%= form.submit "Search", class: "px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium" %>
       <%= link_to "Clear", admin_users_path, class: "px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm font-medium" %>
@@ -93,19 +93,19 @@
     <% if @users.empty? %>
       <div class="text-center py-12">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.3.3.6 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
         </svg>
         <h3 class="mt-2 text-sm font-medium text-gray-900">No users found</h3>
         <p class="mt-1 text-sm text-gray-500">
           <% if params[:search].present? %>
-            No users match your search. Try different keywords or 
+            No users match your search. Try different keywords or
             <%= link_to "clear your search", admin_users_path, class: "text-indigo-600 hover:text-indigo-500" %>.
           <% else %>
             Get started by creating a new user.
           <% end %>
         </p>
         <div class="mt-6">
-          <%= link_to admin_new_user_path, 
+          <%= link_to admin_new_user_path,
               class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700",
               data: { turbo_frame: "modal" } do %>
             <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,7 +130,7 @@
           <% end %>
         </div>
       </div>
-      
+
       <!-- Desktop table -->
       <div class="hidden md:block">
         <table class="min-w-full divide-y divide-gray-200">
@@ -151,7 +151,7 @@
           </tbody>
         </table>
       </div>
-      
+
       <!-- Mobile cards -->
       <div class="md:hidden divide-y divide-gray-200">
         <% @users.each do |user| %>
@@ -160,17 +160,17 @@
       </div>
     <% end %>
   </div>
-  
+
   <!-- Pagination -->
   <% if @pagy.pages > 1 %>
     <div class="mt-6 flex items-center justify-between">
       <div class="flex-1 flex justify-between sm:hidden">
         <% if @pagy.prev %>
-          <%= link_to "Previous", admin_users_path(page: @pagy.prev, **params.except(:page).permit!), 
+          <%= link_to "Previous", admin_users_path(page: @pagy.prev, **params.except(:page).permit!),
               class: "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
         <% end %>
         <% if @pagy.next %>
-          <%= link_to "Next", admin_users_path(page: @pagy.next, **params.except(:page).permit!), 
+          <%= link_to "Next", admin_users_path(page: @pagy.next, **params.except(:page).permit!),
               class: "ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
         <% end %>
       </div>

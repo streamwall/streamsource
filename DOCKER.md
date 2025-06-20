@@ -18,7 +18,7 @@ Production-ready multi-stage build that:
 
 ### `docker compose.yml`
 Development environment configuration with:
-- PostgreSQL 15 database
+- PostgreSQL 17.5 database
 - Redis 7 for caching and sessions (with separate test database)
 - Rails web application with automatic database preparation
 - JavaScript and CSS build watchers (using profiles)
@@ -65,7 +65,7 @@ docker compose up -d --build  # Rebuild and start
 ## Service Details
 
 ### PostgreSQL Database
-- **Image**: postgres:15-alpine
+- **Image**: postgres:17-alpine
 - **Port**: 5432
 - **Credentials**:
   - Username: `streamsource`
@@ -250,65 +250,6 @@ docker compose exec web rm -rf node_modules
 docker compose exec web yarn install
 ```
 
-## Production Deployment
-
-### Building Production Image
-
-```bash
-# Build production image
-docker build -t streamsource:latest .
-
-# Tag for registry
-docker tag streamsource:latest your-registry.com/streamsource:latest
-
-# Push to registry
-docker push your-registry.com/streamsource:latest
-```
-
-### Running in Production
-
-```bash
-docker run -d \
-  --name streamsource \
-  -p 3000:3000 \
-  -e RAILS_ENV=production \
-  -e DATABASE_URL="postgres://user:pass@host:5432/streamsource_production" \
-  -e REDIS_URL="redis://redis-host:6379/0" \
-  -e SECRET_KEY_BASE="your-secret-key" \
-  -e RAILS_LOG_TO_STDOUT=true \
-  streamsource:latest
-```
-
-### Docker Compose Production
-
-Create `docker compose.production.yml`:
-
-```yaml
-version: '3.8'
-
-services:
-  web:
-    image: streamsource:latest
-    ports:
-      - "3000:3000"
-    environment:
-      RAILS_ENV: production
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-```
-
-Run with:
-```bash
-docker compose -f docker compose.production.yml up -d
-```
-
 ## Best Practices
 
 ### Development
@@ -418,18 +359,6 @@ docker compose logs web > web.log
 # Filter logs
 docker compose logs web | grep ERROR
 ```
-
-## Kubernetes Migration
-
-The application is Kubernetes-ready with:
-
-1. **Health checks** for liveness and readiness probes
-2. **12-factor app** principles
-3. **Stateless design** (state in PostgreSQL/Redis)
-4. **Environment-based configuration**
-5. **Horizontal scaling support**
-
-Example Kubernetes deployment available in `/k8s` directory (if needed).
 
 ## Advanced Features
 
