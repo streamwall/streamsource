@@ -81,19 +81,34 @@ docker compose exec web yarn build
 # Build CSS
 docker compose exec web yarn build:css
 
-# Watch mode (for development)
+# Watch mode (using separate services - recommended)
+docker compose --profile donotstart up js
+docker compose --profile donotstart up css
+
+# Or run directly in web container
 docker compose exec web yarn build --watch
 docker compose exec web yarn build:css --watch
 ```
 
-### Adding New Gems
+### Adding Dependencies
 
+#### New Gems
 ```bash
 # 1. Edit Gemfile
-# 2. Rebuild the image
+# 2. Install in container
+docker compose exec web bundle install
+# 3. If it fails, rebuild
 docker compose build web
-# 3. Restart services
 docker compose restart web
+```
+
+#### New NPM Packages
+```bash
+# Add package
+docker compose exec web yarn add [package-name]
+
+# Add dev dependency
+docker compose exec web yarn add -D [package-name]
 ```
 
 ### Debugging
@@ -106,7 +121,10 @@ docker compose exec web bin/rails routes
 docker compose exec web bin/rails routes -c streams
 
 # Interactive debugging (after adding binding.pry)
-docker attach streamsource_web_1
+docker attach streamsource-web-1
+
+# Or use the container name
+docker attach $(docker compose ps -q web)
 ```
 
 ## Container Management
@@ -127,6 +145,35 @@ docker compose build
 # Start fresh (removes volumes)
 docker compose down -v
 docker compose up -d
+```
+
+## Common Workflows
+
+### Creating a New Feature
+```bash
+# 1. Generate model
+docker compose exec web bin/rails g model Feature name:string
+
+# 2. Run migration
+docker compose exec web bin/rails db:migrate
+
+# 3. Generate controller
+docker compose exec web bin/rails g controller api/v1/features
+
+# 4. Run tests
+docker compose exec web bin/test
+```
+
+### Working with the Test Database
+```bash
+# Prepare test database
+docker compose exec -e RAILS_ENV=test web bin/rails db:prepare
+
+# Run tests with specific seed
+docker compose exec -e SEED=12345 web bin/test
+
+# Access test database
+docker compose exec db psql -U streamsource streamsource_test
 ```
 
 ## Troubleshooting
@@ -171,10 +218,35 @@ docker compose exec web bin/rails db:version
 - **API**: http://localhost:3000
 - **Admin Interface**: http://localhost:3000/admin
 - **API Documentation**: http://localhost:3000/api-docs
+- **Feature Flags**: http://localhost:3000/admin/feature_flags
+- **Health Check**: http://localhost:3000/health
+- **WebSocket**: ws://localhost:3000/cable
 
 ### Default Admin Login
 - Email: `admin@example.com`
 - Password: `password123`
+
+## Key Services & Models
+
+### New in This Version
+- **Streamers**: Content creator management
+- **Annotations**: Incident/event tracking
+- **Stream URLs**: URL management system
+- **Notes**: Polymorphic notes for documentation
+- **WebSockets**: Real-time updates via ActionCable
+
+### Running Model-Specific Commands
+```bash
+# Generate a new model
+docker compose exec web bin/rails generate model ModelName
+
+# Run model-specific tests
+docker compose exec web bin/test spec/models/streamer_spec.rb
+
+# Access specific model in console
+docker compose exec web bin/rails console
+# Then: Streamer.all, Annotation.first, etc.
+```
 
 ## Remember
 

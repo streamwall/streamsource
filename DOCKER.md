@@ -8,19 +8,24 @@ StreamSource is fully containerized using Docker and Docker Compose, providing a
 
 ### `Dockerfile`
 Production-ready multi-stage build that:
-- Uses Ruby 3.3.0 slim base image
-- Installs all dependencies including Node.js and Yarn
+- Uses Ruby 3.3.6 slim base image
+- Multi-stage build with separate test stage
+- Installs all dependencies including Node.js 20 and Yarn
 - Builds JavaScript and CSS assets
 - Runs as non-root user for security
 - Includes health check configuration
+- Optimized layer caching
 
 ### `docker compose.yml`
 Development environment configuration with:
 - PostgreSQL 15 database
-- Redis 7 for caching and sessions
-- Rails web application
+- Redis 7 for caching and sessions (with separate test database)
+- Rails web application with automatic database preparation
+- JavaScript and CSS build watchers (using profiles)
+- Test service for isolated test runs
 - Health checks for all services
 - Volume mounts for development
+- Proper service dependencies
 
 ### `bin/docker-entrypoint`
 Entrypoint script that:
@@ -82,9 +87,35 @@ docker compose up -d --build  # Rebuild and start
   - `RAILS_ENV=development`
   - `DATABASE_URL` configured for PostgreSQL
   - `REDIS_URL` configured for Redis
+  - `WEB_CONCURRENCY=0` for Puma in development
 - **Volumes**:
   - `.:/rails:cached` - Source code (cached for performance)
 - **Dependencies**: Waits for DB and Redis health
+- **Automatic database setup**: Runs migrations on startup
+
+### JavaScript/CSS Watchers (Optional)
+- **js service**: Watches and rebuilds JavaScript
+- **css service**: Watches and rebuilds CSS
+- **Profile**: `donotstart` (manual start)
+- **Usage**: `docker compose --profile donotstart up js css`
+
+## Test Environment
+
+### Running Tests
+```bash
+# Use the test-specific service
+docker compose run --rm test
+
+# Or run tests in the web container
+docker compose exec web bin/test
+
+# Run specific test file
+docker compose exec web bin/test spec/models/stream_spec.rb
+
+# Run with coverage report
+docker compose exec web bin/test
+# Coverage report will be in coverage/index.html
+```
 
 ## Common Docker Commands
 
@@ -134,6 +165,10 @@ docker compose exec web yarn build
 
 # Build CSS
 docker compose exec web yarn build:css
+
+# Watch mode (using separate services)
+docker compose --profile donotstart up js
+docker compose --profile donotstart up css
 
 # Install new JavaScript packages
 docker compose exec web yarn add <package-name>
@@ -365,6 +400,12 @@ docker stats --no-stream
 - Liveness endpoint: `http://localhost:3000/health/live`
 - Prometheus metrics: `http://localhost:3000/metrics`
 
+### WebSocket Support
+
+The application includes ActionCable for real-time features:
+- Endpoint: `ws://localhost:3000/cable`
+- Channels: StreamChannel, AnnotationChannel, AdminChannel
+
 ### Logging
 
 ```bash
@@ -389,3 +430,29 @@ The application is Kubernetes-ready with:
 5. **Horizontal scaling support**
 
 Example Kubernetes deployment available in `/k8s` directory (if needed).
+
+## Advanced Features
+
+### Multi-Stage Build
+
+The Dockerfile uses a multi-stage build:
+1. **Base stage**: Common dependencies
+2. **Build stage**: Compilation and asset building
+3. **Development stage**: Full development tools
+4. **Test stage**: Isolated test environment
+5. **Production stage**: Minimal runtime
+
+### Service Profiles
+
+Docker Compose uses profiles to manage optional services:
+- Default profile: web, db, redis
+- `donotstart` profile: js, css (build watchers)
+- Test profile: Separate test runner
+
+### Database Initialization
+
+The entrypoint script automatically:
+- Creates the database if it doesn't exist
+- Runs pending migrations
+- Seeds the database in development
+- Ensures proper state before starting Rails

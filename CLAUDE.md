@@ -22,43 +22,52 @@ docker compose exec web bundle exec rubocop
 
 ## Project Overview
 
-StreamSource is a Rails 8 application providing both a RESTful API and an admin web interface for managing streaming sources. It was migrated from a Node.js/Express application to Rails, implementing modern security practices, comprehensive testing, and a real-time admin interface using Hotwire.
+StreamSource is a Rails 8 application providing both a RESTful API and an admin web interface for managing streamers and their streaming sources. It was migrated from a Node.js/Express application to Rails, implementing modern security practices, comprehensive testing, and a real-time admin interface using Hotwire with ActionCable WebSocket support.
+
+The application now includes advanced features for managing streamers, their platform accounts, stream URLs, incident annotations, and a polymorphic notes system.
 
 ## Key Technical Details
 
 ### Architecture
-- **Rails 8.0.2** with API + Admin interface
+- **Rails 8.0.x** with API + Admin interface
+- **Ruby 3.3.6** runtime
 - **PostgreSQL 15** for data persistence
 - **Redis 7** for caching, sessions, and rate limiting
-- **JWT** for API authentication
+- **JWT** for API authentication (custom implementation using bcrypt)
 - **Session-based auth** for admin interface
-- **Hotwire** (Turbo + Stimulus) for real-time UI
+- **Hotwire** (Turbo + Stimulus) with ActionCable for real-time UI
 - **Tailwind CSS** for styling
-- **Docker** for containerization
+- **Docker** with multi-stage builds for containerization
+- **Node.js 20** for asset compilation
 
 ### Code Organization
 - Thin controllers with business logic in models
 - Authorization separated into Pundit policies
 - Constants centralized in `config/application_constants.rb`
-- Comprehensive test coverage (target: 100%)
+- Comprehensive test coverage with RSpec 6.1
+- WebSocket support via ActionCable for real-time features
+- Structured logging with Lograge
+- N+1 query detection with Bullet in development
 
 ### Authentication & Authorization
-- **API**: JWT tokens with 24-hour expiration
-- **Admin**: Session-based authentication
+- **API**: JWT tokens with 24-hour expiration (using Rails.application.secret_key_base)
+- **Admin**: Session-based authentication with bcrypt (has_secure_password)
 - Three roles: default, editor, admin
 - Role-based permissions:
   - **default**: Can view streams only
-  - **editor**: Can create/edit/delete own streams
-  - **admin**: Full access to all resources + admin interface
+  - **editor**: Can create/edit/delete own streams and related resources
+  - **admin**: Full access to all resources + admin interface + Flipper UI
 
 ### Important Patterns
 1. **Error Handling**: Centralized in BaseController
-2. **Pagination**: Default 25 items, max 100 (Pagy in admin)
+2. **Pagination**: Pagy for admin interface, Kaminari also available
 3. **Rate Limiting**: Configured in Rack::Attack
 4. **Serialization**: ActiveModel::Serializers for API
-5. **Real-time updates**: Turbo Streams for admin interface
-6. **Feature flags**: Flipper for gradual rollouts
-7. **Asset pipeline**: ESBuild + Tailwind CSS
+5. **Real-time updates**: Turbo Streams + ActionCable for admin interface
+6. **Feature flags**: Flipper with UI for gradual rollouts
+7. **Asset pipeline**: ESBuild + Tailwind CSS (via cssbundling-rails)
+8. **CORS**: Rack::Cors for API access control
+9. **Middleware**: Custom AdminFlipperAuth for Flipper UI authentication
 
 ## Common Tasks
 
@@ -93,6 +102,27 @@ StreamSource is a Rails 8 application providing both a RESTful API and an admin 
 4. Write request specs
 5. Update API documentation
 
+### Data Models
+
+#### Core Models
+- **User**: Authentication and authorization
+- **Stream**: Core streaming source with extensive attributes
+  - Fields: title, source, link, city, state, platform, status, orientation, kind
+  - Features: archiving, pinning, timestamps (started_at, ended_at)
+  - Associations: belongs to user, streamer, and stream_url
+- **Streamer**: Content creator management
+  - Has many streams and streamer accounts
+- **StreamerAccount**: Platform-specific accounts for streamers
+  - Links streamers to their accounts on different platforms
+- **StreamUrl**: URL management for streams
+  - Tracks and validates stream URLs
+- **Annotation**: Incident/event tracking system
+  - Priority levels and status tracking
+  - Many-to-many relationship with streams via AnnotationStream
+- **Note**: Polymorphic notes system
+  - Can be attached to streams or streamers
+  - Belongs to users for tracking authorship
+
 ## Testing Guidelines
 
 ### Running Tests
@@ -124,7 +154,9 @@ docker compose exec web bin/test
 - **Unit tests**: Models, serializers, policies
 - **Request specs**: Controller endpoints, authentication
 - **System specs**: Full user workflows (when needed)
-- **Target**: 100% line coverage
+- **API Testing**: WebMock and VCR for external API interactions
+- **Database Cleaner**: Configured with retry logic for Docker environments
+- **SimpleCov**: Code coverage reporting (coverage report in coverage/index.html)
 
 ## Security Considerations
 
@@ -155,6 +187,13 @@ docker compose exec web bin/test
 
 **CRITICAL**: ALL commands must be run through Docker. Never use local Ruby/Rails/Node.
 
+### Services in Docker Compose
+- **web**: Main Rails application
+- **db**: PostgreSQL 15 database
+- **redis**: Redis 7 for caching and sessions
+- **js**: JavaScript build watcher (profile: donotstart)
+- **css**: CSS build watcher (profile: donotstart)
+
 ### Initial Setup
 ```bash
 # Start all services
@@ -183,6 +222,12 @@ docker compose exec web bin/rails db:migrate
 
 # View application logs
 docker compose logs -f web
+
+# Watch JavaScript changes (optional)
+docker compose --profile donotstart up js
+
+# Watch CSS changes (optional)
+docker compose --profile donotstart up css
 ```
 
 ### Asset Management
@@ -190,6 +235,13 @@ docker compose logs -f web
 # Build JavaScript/CSS (when modified)
 docker compose exec web yarn build
 docker compose exec web yarn build:css
+
+# Install new npm packages
+docker compose exec web yarn add [package-name]
+
+# After adding packages, rebuild
+docker compose build web
+docker compose restart web
 ```
 
 ### Troubleshooting
@@ -213,6 +265,7 @@ docker compose down
 - Tokens expire after 24 hours
 - Use `ApplicationConstants::JWT::ALGORITHM` for consistency
 - Secret key from `Rails.application.secret_key_base`
+- Authentication uses bcrypt (not Devise, despite gems being present)
 
 ### Rate Limiting
 - Development uses memory store
@@ -285,23 +338,25 @@ When working on this project:
 This project was migrated from a Node.js/Express application. Key differences:
 
 1. **ORM**: Sequelize → ActiveRecord
-2. **Auth**: Passport → JWT with custom implementation
-3. **Testing**: Jest → RSpec
+2. **Auth**: Passport → JWT with custom implementation using bcrypt
+3. **Testing**: Jest → RSpec 6.1
 4. **Validation**: Express-validator → ActiveModel validations
 5. **Rate Limiting**: express-rate-limit → Rack::Attack
+6. **Real-time**: Socket.io → ActionCable
+7. **Frontend**: Express views → Hotwire (Turbo + Stimulus)
 
 ## Future Enhancements
 
 Potential areas for improvement:
 
 1. **GraphQL API** - Alternative to REST
-2. **WebSocket Support** - Real-time updates
-3. **Background Jobs** - Sidekiq integration
-4. **File Uploads** - Active Storage
+2. **Enhanced WebSocket** - Expand ActionCable usage
+3. **Background Jobs** - Sidekiq integration (gem already included)
+4. **File Uploads** - Active Storage for media
 5. **API Versioning** - Beyond v1
-6. **Caching Layer** - Redis caching
+6. **Enhanced Caching** - Expand Redis caching strategies
 7. **Search** - Elasticsearch integration
-8. **Monitoring** - APM integration
+8. **Monitoring** - APM integration (Skylight ready)
 
 ## Resources
 
@@ -327,7 +382,9 @@ For questions about architectural decisions or patterns used in this project, re
 1. **Consistency**: Ensures all developers use identical environments
 2. **Dependencies**: All services (PostgreSQL, Redis) are containerized
 3. **Ruby Version**: The project uses Ruby 3.3.6 which may not match your system
-4. **Isolation**: Prevents conflicts with other projects on your machine
+4. **Node.js Version**: Requires Node.js 20 for asset compilation
+5. **Isolation**: Prevents conflicts with other projects on your machine
+6. **Database Cleaner**: Test suite configured specifically for Docker environments
 
 ### Never Do This:
 ```bash

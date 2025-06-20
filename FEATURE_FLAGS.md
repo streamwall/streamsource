@@ -12,14 +12,18 @@ Feature flags allow you to:
 
 ## Accessing Flipper UI
 
-The Flipper UI is available at `/flipper` for admin users only.
+The Flipper UI is available at `/admin/feature_flags` for admin users only.
 
 To access:
-1. Login as an admin user
-2. Navigate to `http://localhost:3000/flipper`
+1. Login as an admin user at `/admin/login`
+2. Navigate to `http://localhost:3000/admin/feature_flags`
 3. Use the UI to manage feature flags
 
+Note: The Flipper UI is protected by basic auth middleware (AdminFlipperAuth) that requires admin role.
+
 ## Available Feature Flags
+
+Note: The application has grown beyond the initial feature set. New features like Streamers, Annotations, and Notes are not feature-flagged but are core functionality. The following flags remain available:
 
 ### Stream Features
 
@@ -97,9 +101,10 @@ To access:
 
 #### `api_websockets`
 - **Description**: WebSocket support for real-time updates
-- **Default**: Disabled
+- **Default**: Enabled (ActionCable is active)
 - **Effects**: 
-  - Would enable WebSocket connections
+  - Enables WebSocket connections at `/cable`
+  - Supports StreamChannel, AnnotationChannel, AdminChannel
 
 #### `api_v2`
 - **Description**: Version 2 of the API
@@ -212,7 +217,7 @@ Flipper.disable(:maintenance_mode)
 
 ### Via Flipper UI
 
-1. Navigate to `/flipper`
+1. Navigate to `/admin/feature_flags`
 2. Find the feature in the list
 3. Use the toggles to enable/disable for:
    - All users

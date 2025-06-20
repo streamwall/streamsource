@@ -117,10 +117,13 @@ Get a paginated list of streams.
 **Query Parameters:**
 - `page` (optional): Page number (default: 1)
 - `per_page` (optional): Items per page (default: 25, max: 100)
-- `status` (optional): Filter by status (`active` or `inactive`)
+- `status` (optional): Filter by status (`active`, `inactive`, `live`, `ended`, etc.)
 - `notStatus` (optional): Exclude streams with this status
 - `user_id` (optional): Filter by user ID
+- `streamer_id` (optional): Filter by streamer ID
+- `platform` (optional): Filter by platform
 - `is_pinned` (optional): Filter by pin state (`true` or `false`)
+- `is_archived` (optional): Filter by archive state (`true` or `false`)
 
 **Response:**
 ```json
@@ -128,18 +131,29 @@ Get a paginated list of streams.
   "streams": [
     {
       "id": 1,
-      "url": "https://example.com/stream1",
-      "name": "Example Stream",
-      "status": "active",
+      "title": "Example Stream",
+      "source": "YouTube Channel",
+      "link": "https://example.com/stream1",
+      "city": "New York",
+      "state": "NY",
+      "platform": "youtube",
+      "status": "live",
+      "orientation": "landscape",
+      "kind": "livestream",
       "is_pinned": false,
+      "is_archived": false,
+      "started_at": "2024-01-01T11:00:00Z",
+      "ended_at": null,
       "created_at": "2024-01-01T12:00:00Z",
       "updated_at": "2024-01-01T12:00:00Z",
       "user": {
         "id": 1,
         "email": "user@example.com",
-        "role": "editor",
-        "created_at": "2024-01-01T12:00:00Z",
-        "updated_at": "2024-01-01T12:00:00Z"
+        "role": "editor"
+      },
+      "streamer": {
+        "id": 1,
+        "name": "Example Streamer"
       }
     }
   ],
@@ -164,19 +178,32 @@ Get a specific stream by ID.
 ```json
 {
   "id": 1,
-  "url": "https://example.com/stream1",
-  "name": "Example Stream",
-  "status": "active",
+  "title": "Example Stream",
+  "source": "YouTube Channel",
+  "link": "https://example.com/stream1",
+  "city": "New York",
+  "state": "NY",
+  "platform": "youtube",
+  "status": "live",
+  "orientation": "landscape",
+  "kind": "livestream",
   "is_pinned": false,
+  "is_archived": false,
+  "started_at": "2024-01-01T11:00:00Z",
+  "ended_at": null,
   "created_at": "2024-01-01T12:00:00Z",
   "updated_at": "2024-01-01T12:00:00Z",
   "user": {
     "id": 1,
     "email": "user@example.com",
-    "role": "editor",
-    "created_at": "2024-01-01T12:00:00Z",
-    "updated_at": "2024-01-01T12:00:00Z"
-  }
+    "role": "editor"
+  },
+  "streamer": {
+    "id": 1,
+    "name": "Example Streamer",
+    "description": "A popular content creator"
+  },
+  "notes_count": 3
 }
 ```
 
@@ -192,35 +219,35 @@ Create a new stream (requires `editor` or `admin` role).
 **Body:**
 ```json
 {
-  "name": "My New Stream",
-  "url": "https://example.com/new-stream",
-  "status": "active"
+  "title": "My New Stream",
+  "source": "Example Source",
+  "link": "https://example.com/new-stream",
+  "city": "New York",
+  "state": "NY",
+  "platform": "youtube",
+  "status": "live",
+  "orientation": "landscape",
+  "kind": "livestream",
+  "streamer_id": 1,
+  "stream_url_id": 1
 }
 ```
 
 **Parameters:**
-- `name` (required): Stream name (1-255 characters)
-- `url` (required): Valid HTTP or HTTPS URL
-- `status` (optional): Stream status - `active` or `inactive` (defaults to `active`)
+- `title` (required): Stream title (1-255 characters)
+- `source` (required): Stream source
+- `link` (required): Valid HTTP or HTTPS URL
+- `city` (optional): City location
+- `state` (optional): State/region location
+- `platform` (optional): Streaming platform
+- `status` (optional): Stream status - `active`, `inactive`, `live`, `ended`, etc.
+- `orientation` (optional): Video orientation - `landscape`, `portrait`, `square`
+- `kind` (optional): Stream type
+- `streamer_id` (optional): Associated streamer ID
+- `stream_url_id` (optional): Associated stream URL ID
 
 **Response:**
-```json
-{
-  "id": 2,
-  "url": "https://example.com/new-stream",
-  "name": "My New Stream",
-  "status": "active",
-  "is_pinned": false,
-  "created_at": "2024-01-01T12:30:00Z",
-  "updated_at": "2024-01-01T12:30:00Z",
-  "user": {
-    "id": 1,
-    "email": "editor@example.com",
-    "role": "editor",
-    "created_at": "2024-01-01T12:00:00Z",
-    "updated_at": "2024-01-01T12:00:00Z"
-  }
-}
+Same as Get Stream response.
 ```
 
 #### Update Stream
@@ -235,16 +262,25 @@ Update an existing stream (owner or `admin` only).
 **Body:**
 ```json
 {
-  "name": "Updated Stream Name",
-  "url": "https://example.com/updated-stream",
-  "status": "inactive"
+  "title": "Updated Stream Title",
+  "link": "https://example.com/updated-stream",
+  "status": "ended",
+  "ended_at": "2024-01-01T13:00:00Z"
 }
 ```
 
 **Parameters:**
-- `name` (optional): New stream name
-- `url` (optional): New stream URL
+- `title` (optional): New stream title
+- `source` (optional): New stream source
+- `link` (optional): New stream URL
 - `status` (optional): New status
+- `city` (optional): New city
+- `state` (optional): New state
+- `platform` (optional): New platform
+- `orientation` (optional): New orientation
+- `kind` (optional): New stream type
+- `started_at` (optional): When stream started
+- `ended_at` (optional): When stream ended
 
 **Response:**
 Same as Get Stream response with updated values.
@@ -281,6 +317,28 @@ Remove pin from a stream (owner or `admin` only).
 
 **Response:**
 Same as Get Stream response with `is_pinned: false`
+
+#### Archive Stream
+Archive a stream (owner or `admin` only).
+
+**Endpoint:** `POST /streams/:id/archive`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Response:**
+Same as Get Stream response with `is_archived: true`
+
+#### Unarchive Stream
+Unarchive a stream (owner or `admin` only).
+
+**Endpoint:** `POST /streams/:id/unarchive`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Response:**
+Same as Get Stream response with `is_archived: false`
 
 #### Stream Analytics (Feature Flagged)
 Get analytics data for a stream.
@@ -320,14 +378,18 @@ Import multiple streams at once.
 {
   "streams": [
     {
-      "name": "Stream 1",
-      "url": "https://example.com/stream1",
-      "status": "active"
+      "title": "Stream 1",
+      "source": "YouTube",
+      "link": "https://example.com/stream1",
+      "status": "live",
+      "platform": "youtube"
     },
     {
-      "name": "Stream 2",
-      "url": "https://example.com/stream2",
-      "status": "active"
+      "title": "Stream 2",
+      "source": "Twitch",
+      "link": "https://example.com/stream2",
+      "status": "live",
+      "platform": "twitch"
     }
   ]
 }
@@ -362,15 +424,388 @@ Export stream data in JSON format.
   "count": 25,
   "streams": [
     {
-      "name": "Stream Name",
-      "url": "https://example.com/stream",
-      "status": "active",
+      "title": "Stream Title",
+      "source": "YouTube Channel",
+      "link": "https://example.com/stream",
+      "platform": "youtube",
+      "status": "live",
       "is_pinned": false,
+      "is_archived": false,
       "created_at": "2024-01-01T10:00:00Z",
-      "owner_email": "user@example.com"
+      "owner_email": "user@example.com",
+      "streamer_name": "Example Streamer"
     }
   ]
 }
+```
+
+### Streamers
+
+#### List Streamers
+Get a paginated list of streamers.
+
+**Endpoint:** `GET /streamers`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `per_page` (optional): Items per page (default: 25, max: 100)
+
+**Response:**
+```json
+{
+  "streamers": [
+    {
+      "id": 1,
+      "name": "Example Streamer",
+      "description": "A popular content creator",
+      "created_at": "2024-01-01T12:00:00Z",
+      "updated_at": "2024-01-01T12:00:00Z",
+      "streams_count": 15,
+      "accounts_count": 3
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "total_pages": 5,
+    "total_count": 123,
+    "per_page": 25
+  }
+}
+```
+
+#### Get Streamer
+Get a specific streamer by ID.
+
+**Endpoint:** `GET /streamers/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Response:**
+```json
+{
+  "id": 1,
+  "name": "Example Streamer",
+  "description": "A popular content creator",
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z",
+  "streams": [
+    {
+      "id": 1,
+      "title": "Stream Title",
+      "platform": "youtube",
+      "status": "live"
+    }
+  ],
+  "accounts": [
+    {
+      "id": 1,
+      "platform": "youtube",
+      "username": "examplestreamer",
+      "url": "https://youtube.com/@examplestreamer"
+    }
+  ]
+}
+```
+
+#### Create Streamer
+Create a new streamer (requires `editor` or `admin` role).
+
+**Endpoint:** `POST /streamers`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+- `Content-Type: application/json`
+
+**Body:**
+```json
+{
+  "name": "New Streamer",
+  "description": "Description of the streamer"
+}
+```
+
+**Response:**
+Same as Get Streamer response.
+
+#### Update Streamer
+Update an existing streamer (requires `editor` or `admin` role).
+
+**Endpoint:** `PATCH /streamers/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+- `Content-Type: application/json`
+
+**Body:**
+```json
+{
+  "name": "Updated Name",
+  "description": "Updated description"
+}
+```
+
+**Response:**
+Same as Get Streamer response with updated values.
+
+#### Delete Streamer
+Delete a streamer (requires `admin` role).
+
+**Endpoint:** `DELETE /streamers/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Response:**
+`204 No Content` on success
+
+### Annotations
+
+#### List Annotations
+Get a paginated list of annotations.
+
+**Endpoint:** `GET /annotations`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `per_page` (optional): Items per page (default: 25, max: 100)
+- `priority` (optional): Filter by priority (`low`, `medium`, `high`, `critical`)
+- `status` (optional): Filter by status (`pending`, `in_progress`, `resolved`, `closed`)
+
+**Response:**
+```json
+{
+  "annotations": [
+    {
+      "id": 1,
+      "title": "Important Event",
+      "description": "Description of the incident",
+      "priority": "high",
+      "status": "in_progress",
+      "occurred_at": "2024-01-01T12:00:00Z",
+      "created_at": "2024-01-01T12:05:00Z",
+      "updated_at": "2024-01-01T12:10:00Z",
+      "user": {
+        "id": 1,
+        "email": "user@example.com"
+      },
+      "streams_count": 3
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "total_pages": 3,
+    "total_count": 67,
+    "per_page": 25
+  }
+}
+```
+
+#### Get Annotation
+Get a specific annotation by ID.
+
+**Endpoint:** `GET /annotations/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Response:**
+```json
+{
+  "id": 1,
+  "title": "Important Event",
+  "description": "Detailed description of the incident",
+  "priority": "high",
+  "status": "in_progress",
+  "occurred_at": "2024-01-01T12:00:00Z",
+  "created_at": "2024-01-01T12:05:00Z",
+  "updated_at": "2024-01-01T12:10:00Z",
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "role": "editor"
+  },
+  "streams": [
+    {
+      "id": 1,
+      "title": "Stream 1",
+      "platform": "youtube"
+    },
+    {
+      "id": 2,
+      "title": "Stream 2",
+      "platform": "twitch"
+    }
+  ]
+}
+```
+
+#### Create Annotation
+Create a new annotation (requires `editor` or `admin` role).
+
+**Endpoint:** `POST /annotations`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+- `Content-Type: application/json`
+
+**Body:**
+```json
+{
+  "title": "New Incident",
+  "description": "Description of what happened",
+  "priority": "medium",
+  "status": "pending",
+  "occurred_at": "2024-01-01T12:00:00Z",
+  "stream_ids": [1, 2, 3]
+}
+```
+
+**Parameters:**
+- `title` (required): Annotation title
+- `description` (optional): Detailed description
+- `priority` (required): Priority level - `low`, `medium`, `high`, `critical`
+- `status` (optional): Status - `pending`, `in_progress`, `resolved`, `closed` (defaults to `pending`)
+- `occurred_at` (required): When the incident occurred
+- `stream_ids` (optional): Array of stream IDs to associate
+
+**Response:**
+Same as Get Annotation response.
+
+#### Update Annotation
+Update an existing annotation (owner or `admin` only).
+
+**Endpoint:** `PATCH /annotations/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+- `Content-Type: application/json`
+
+**Body:**
+```json
+{
+  "title": "Updated Title",
+  "status": "resolved",
+  "stream_ids": [1, 2, 4]
+}
+```
+
+**Response:**
+Same as Get Annotation response with updated values.
+
+#### Delete Annotation
+Delete an annotation (owner or `admin` only).
+
+**Endpoint:** `DELETE /annotations/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Response:**
+`204 No Content` on success
+
+### Notes
+
+#### Create Note
+Create a note for a stream or streamer (requires authentication).
+
+**Endpoint:** `POST /notes`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+- `Content-Type: application/json`
+
+**Body:**
+```json
+{
+  "content": "This is a note about the stream",
+  "notable_type": "Stream",
+  "notable_id": 1
+}
+```
+
+**Parameters:**
+- `content` (required): Note content
+- `notable_type` (required): Type of resource - `Stream` or `Streamer`
+- `notable_id` (required): ID of the resource
+
+**Response:**
+```json
+{
+  "id": 1,
+  "content": "This is a note about the stream",
+  "notable_type": "Stream",
+  "notable_id": 1,
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z",
+  "user": {
+    "id": 1,
+    "email": "user@example.com"
+  }
+}
+```
+
+### Stream URLs
+
+#### List Stream URLs
+Get a list of stream URLs.
+
+**Endpoint:** `GET /stream_urls`
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Response:**
+```json
+{
+  "stream_urls": [
+    {
+      "id": 1,
+      "url": "https://youtube.com/watch?v=abc123",
+      "platform": "youtube",
+      "is_active": true,
+      "created_at": "2024-01-01T12:00:00Z",
+      "updated_at": "2024-01-01T12:00:00Z",
+      "streams_count": 5
+    }
+  ]
+}
+```
+
+### WebSocket Connections
+
+#### ActionCable Connection
+Connect to the WebSocket endpoint for real-time updates.
+
+**Endpoint:** `ws://localhost:3000/cable`
+
+**Authentication:**
+Include the JWT token as a query parameter:
+```
+ws://localhost:3000/cable?token=<your-jwt-token>
+```
+
+**Channels Available:**
+- `StreamChannel`: Real-time stream updates
+- `AnnotationChannel`: Real-time annotation updates
+
+**Example (JavaScript):**
+```javascript
+import { createConsumer } from '@rails/actioncable';
+
+const consumer = createConsumer(`ws://localhost:3000/cable?token=${authToken}`);
+
+const streamChannel = consumer.subscriptions.create('StreamChannel', {
+  received(data) {
+    console.log('Stream update:', data);
+  }
+});
 ```
 
 ### Health Checks
@@ -471,6 +906,45 @@ When rate limited:
 
 ## Example Workflows
 
+### Streamer Management Workflow
+
+1. Create a streamer:
+```bash
+curl -X POST http://localhost:3000/api/v1/streamers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Popular Streamer", "description": "Gaming content creator"}'
+```
+
+2. Add a stream for the streamer:
+```bash
+curl -X POST http://localhost:3000/api/v1/streams \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Live Gaming Session",
+    "source": "YouTube",
+    "link": "https://youtube.com/watch?v=xyz",
+    "platform": "youtube",
+    "status": "live",
+    "streamer_id": 1
+  }'
+```
+
+3. Create an annotation for an incident:
+```bash
+curl -X POST http://localhost:3000/api/v1/annotations \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Stream Interruption",
+    "description": "Technical difficulties during stream",
+    "priority": "high",
+    "occurred_at": "2024-01-01T14:30:00Z",
+    "stream_ids": [1]
+  }'
+```
+
 ### Complete Authentication Flow
 
 1. Sign up:
@@ -487,7 +961,7 @@ curl -X POST http://localhost:3000/api/v1/users/signup \
 curl -X POST http://localhost:3000/api/v1/streams \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"name": "My Stream", "url": "https://example.com/stream"}'
+  -d '{"title": "My Stream", "source": "YouTube", "link": "https://example.com/stream"}'
 ```
 
 ### Stream Management Workflow
@@ -509,7 +983,7 @@ curl -X PUT http://localhost:3000/api/v1/streams/1/pin \
 curl -X PATCH http://localhost:3000/api/v1/streams/1 \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Updated Name", "status": "inactive"}'
+  -d '{"title": "Updated Title", "status": "ended", "ended_at": "2024-01-01T15:00:00Z"}'
 ```
 
 ## SDK Examples
@@ -544,14 +1018,14 @@ async function getStreams(params = {}) {
 }
 
 // Create stream
-async function createStream(name, url) {
+async function createStream(title, source, link, platform = 'youtube') {
   const response = await fetch(`${API_BASE}/streams`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${authToken}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ name, url })
+    body: JSON.stringify({ title, source, link, platform })
   });
   
   return response.json();
@@ -581,8 +1055,8 @@ class StreamSourceClient
     get('/streams', params)
   end
   
-  def create_stream(name, url)
-    post('/streams', { name: name, url: url })
+  def create_stream(title, source, link, platform = 'youtube')
+    post('/streams', { title: title, source: source, link: link, platform: platform })
   end
   
   private
@@ -647,7 +1121,7 @@ class StreamSourceAPI:
         )
         return response.json()
     
-    def create_stream(self, name, url):
+    def create_stream(self, title, source, link, platform='youtube'):
         headers = {
             'Authorization': f'Bearer {self.token}',
             'Content-Type': 'application/json'
@@ -655,15 +1129,15 @@ class StreamSourceAPI:
         response = requests.post(
             f'{self.base_url}/streams',
             headers=headers,
-            json={'name': name, 'url': url}
+            json={'title': title, 'source': source, 'link': link, 'platform': platform}
         )
         return response.json()
 
 # Usage
 api = StreamSourceAPI()
 api.login('user@example.com', 'SecurePass123')
-streams = api.get_streams(status='active', per_page=50)
-new_stream = api.create_stream('My Stream', 'https://example.com/stream')
+streams = api.get_streams(status='live', per_page=50)
+new_stream = api.create_stream('My Stream', 'YouTube', 'https://example.com/stream', 'youtube')
 ```
 
 ## Postman Collection
@@ -783,7 +1257,7 @@ Import this collection to test the API in Postman:
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Stream\",\n  \"url\": \"https://example.com/test\"\n}"
+              "raw": "{\n  \"title\": \"Test Stream\",\n  \"source\": \"YouTube\",\n  \"link\": \"https://example.com/test\",\n  \"platform\": \"youtube\"\n}"
             },
             "url": "{{base_url}}/streams"
           }

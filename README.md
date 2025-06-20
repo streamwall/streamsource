@@ -1,6 +1,6 @@
 # StreamSource
 
-A modern Rails 8 application for managing streaming sources with both a RESTful API and an admin interface. Features JWT authentication, role-based authorization, real-time updates with Hotwire, and comprehensive rate limiting.
+A modern Rails 8 application for managing streamers and streaming sources with both a RESTful API and an admin interface. Features JWT authentication, role-based authorization, real-time updates with Hotwire and ActionCable, incident annotations, and comprehensive rate limiting.
 
 ## Table of Contents
 
@@ -24,10 +24,14 @@ A modern Rails 8 application for managing streaming sources with both a RESTful 
 - **JWT Authentication**: Secure token-based authentication for API access
 - **Session Authentication**: Cookie-based authentication for admin interface
 - **Role-Based Access Control**: Three-tier role system (default, editor, admin)
-- **Stream Management**: Full CRUD operations for streaming sources
+- **Streamer Management**: Manage content creators and their platform accounts
+- **Stream Management**: Full CRUD operations for streaming sources with archiving
+- **Annotation System**: Track and manage incidents/events across streams
+- **Notes System**: Add polymorphic notes to streams and streamers
+- **Stream URLs**: Manage and track stream URLs with platform integration
 - **Pin/Unpin Functionality**: Highlight important streams
-- **Advanced Filtering**: Filter streams by status, user, and pin state
-- **Real-time Updates**: Hotwire-powered admin interface with Turbo and Stimulus
+- **Advanced Filtering**: Filter streams by status, user, platform, and pin state
+- **Real-time Updates**: Hotwire-powered admin interface with Turbo, Stimulus, and ActionCable WebSockets
 
 ### Technical Features
 - **Rate Limiting**: Comprehensive request throttling to prevent abuse
@@ -41,28 +45,33 @@ A modern Rails 8 application for managing streaming sources with both a RESTful 
 ## Technology Stack
 
 ### Backend
-- **Framework**: Rails 8.0.2 (API + Admin interface)
-- **Language**: Ruby 3.3.0
+- **Framework**: Rails 8.0.x (API + Admin interface)
+- **Language**: Ruby 3.3.6
 - **Database**: PostgreSQL 15
 - **Cache/Sessions**: Redis 7
 - **Background Jobs**: Sidekiq (ready for expansion)
 
 ### Frontend (Admin Interface)
-- **JavaScript**: Hotwire (Turbo + Stimulus)
+- **JavaScript**: Hotwire (Turbo + Stimulus) with ActionCable
 - **CSS**: Tailwind CSS 3.4
 - **Build Tools**: ESBuild + Yarn
+- **Node.js**: Version 20 for asset compilation
 
 ### Authentication & Security
-- **API Auth**: JWT (JSON Web Tokens) via devise-jwt
-- **Admin Auth**: Session-based authentication
+- **API Auth**: JWT (JSON Web Tokens) with custom implementation
+- **Admin Auth**: Session-based authentication with bcrypt
 - **Authorization**: Pundit policies
 - **Rate Limiting**: Rack::Attack
+- **CORS**: Rack::Cors for API access control
 
 ### Development & Testing
-- **Testing**: RSpec, FactoryBot, SimpleCov
+- **Testing**: RSpec 6.1, FactoryBot, SimpleCov, Database Cleaner
+- **API Testing**: WebMock, VCR for external API interactions
 - **API Documentation**: Rswag (OpenAPI/Swagger)
 - **Code Quality**: RuboCop with Rails Omakase
-- **Containerization**: Docker & Docker Compose
+- **Development Tools**: Better Errors, Bullet for N+1 detection
+- **Logging**: Lograge for structured logging
+- **Containerization**: Docker & Docker Compose with multi-stage builds
 
 ## Getting Started
 
@@ -126,9 +135,12 @@ The application includes a full-featured admin interface built with Hotwire:
 
 ### Admin Routes
 - `/admin` - Dashboard (redirects to streams)
-- `/admin/streams` - Manage streams
-- `/admin/users` - Manage users
-- `/admin/feature_flags` - Feature flag management
+- `/admin/streams` - Manage streams with archiving and filtering
+- `/admin/streamers` - Manage content creators
+- `/admin/users` - Manage users and roles
+- `/admin/annotations` - Manage incident annotations
+- `/admin/notes` - View and manage notes
+- `/admin/feature_flags` - Feature flag management via Flipper UI
 
 ## API Documentation
 
@@ -160,13 +172,29 @@ Authorization: Bearer <your-jwt-token>
 - `POST /api/v1/users/login` - Authenticate and receive JWT token
 
 #### Streams
-- `GET /api/v1/streams` - List all streams (paginated)
+- `GET /api/v1/streams` - List all streams (paginated, filterable)
 - `GET /api/v1/streams/:id` - Get specific stream
 - `POST /api/v1/streams` - Create new stream
 - `PATCH /api/v1/streams/:id` - Update stream
 - `DELETE /api/v1/streams/:id` - Delete stream
 - `PUT /api/v1/streams/:id/pin` - Pin stream
 - `DELETE /api/v1/streams/:id/pin` - Unpin stream
+- `POST /api/v1/streams/:id/archive` - Archive stream
+- `POST /api/v1/streams/:id/unarchive` - Unarchive stream
+
+#### Streamers
+- `GET /api/v1/streamers` - List all streamers
+- `GET /api/v1/streamers/:id` - Get specific streamer
+- `POST /api/v1/streamers` - Create new streamer
+- `PATCH /api/v1/streamers/:id` - Update streamer
+- `DELETE /api/v1/streamers/:id` - Delete streamer
+
+#### Annotations
+- `GET /api/v1/annotations` - List all annotations
+- `GET /api/v1/annotations/:id` - Get specific annotation
+- `POST /api/v1/annotations` - Create new annotation
+- `PATCH /api/v1/annotations/:id` - Update annotation
+- `DELETE /api/v1/annotations/:id` - Delete annotation
 
 #### Additional Features (with feature flags)
 - `GET /api/v1/streams/:id/analytics` - Stream analytics
@@ -178,6 +206,9 @@ Authorization: Bearer <your-jwt-token>
 - `GET /health/live` - Liveness probe
 - `GET /health/ready` - Readiness probe
 - `GET /metrics` - Prometheus metrics
+
+#### WebSocket Support
+- `/cable` - ActionCable WebSocket endpoint for real-time updates
 
 ## Configuration
 
@@ -208,10 +239,12 @@ SKYLIGHT_AUTHENTICATION=your-skylight-token
 
 Configuration is centralized in `config/application_constants.rb`:
 - JWT settings (algorithm, expiration time)
-- Pagination defaults
+- Pagination defaults (using both Pagy and Kaminari)
 - Password requirements
 - Rate limiting thresholds
 - Feature flag names
+- Stream platforms and statuses
+- Annotation priorities and statuses
 
 ## Testing
 

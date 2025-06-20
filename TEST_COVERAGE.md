@@ -1,35 +1,75 @@
 # Test Coverage Summary
 
-This document summarizes the comprehensive test suite created for the Rails 8 API application.
+This document summarizes the comprehensive test suite for the StreamSource Rails 8 application.
 
 ## Test Setup
-- **SimpleCov** configured for code coverage with 100% minimum coverage requirement
-- **RSpec** as the testing framework
+- **RSpec 6.1** as the testing framework
+- **SimpleCov** configured for code coverage reporting
 - **FactoryBot** for test data generation
 - **Shoulda Matchers** for common Rails assertions
-- **Database Cleaner** for test database management
+- **Database Cleaner** with retry logic for Docker environments
+- **WebMock & VCR** for external API testing
+- **Parallel Tests** support for faster test execution
+- **bin/test wrapper** for easy test execution with proper environment setup
 
 ## Test Coverage by Component
 
-### 1. Models (100% coverage)
+### 1. Models
 - **User Model** (`spec/models/user_spec.rb`)
-  - Associations (has_many :streams)
+  - Associations (has_many :streams, :annotations, :notes)
   - Validations (email format, password complexity, role inclusion)
   - Enums (role values)
   - Scopes (editors, admins)
   - Callbacks (email normalization)
   - Instance methods (can_modify_streams?)
-  - Secure password functionality
+  - Secure password functionality (bcrypt)
   - Edge cases (long emails, SQL injection protection)
 
 - **Stream Model** (`spec/models/stream_spec.rb`)
-  - Associations (belongs_to :user)
-  - Validations (URL format, name presence/length)
-  - Enums (status values)
-  - Scopes (active, pinned, by_user, ordered)
-  - Instance methods (owned_by?, pin!, unpin!)
+  - Associations (belongs_to :user, :streamer, :stream_url; has_many :annotation_streams, :notes)
+  - Validations (title, source, link format)
+  - Enums (status, platform, orientation, kind values)
+  - Scopes (active, pinned, by_user, ordered, not_archived, recent)
+  - Instance methods (owned_by?, pin!, unpin!, archive!, unarchive!)
+  - Timestamps (started_at, ended_at)
+  - Location fields (city, state)
   - Database indexes verification
   - Edge cases (long URLs, special characters, international domains)
+
+- **Streamer Model** (`spec/models/streamer_spec.rb`)
+  - Associations (has_many :streams, :streamer_accounts, :notes)
+  - Validations (name presence and uniqueness)
+  - Description field
+  - Dependent destroy behavior
+
+- **StreamerAccount Model** (`spec/models/streamer_account_spec.rb`)
+  - Associations (belongs_to :streamer)
+  - Platform-specific account information
+  - Username and URL validation
+
+- **StreamUrl Model** (`spec/models/stream_url_spec.rb`)
+  - Associations (has_many :streams)
+  - URL validation and uniqueness
+  - Platform detection
+  - Active/inactive status
+
+- **Annotation Model** (`spec/models/annotation_spec.rb`)
+  - Associations (belongs_to :user; has_many :annotation_streams, :streams)
+  - Priority levels (low, medium, high, critical)
+  - Status tracking (pending, in_progress, resolved, closed)
+  - Occurred_at timestamp
+  - Title and description validation
+
+- **AnnotationStream Model** (`spec/models/annotation_stream_spec.rb`)
+  - Join table between annotations and streams
+  - Belongs to both annotation and stream
+  - Uniqueness validation
+
+- **Note Model** (`spec/models/note_spec.rb`)
+  - Polymorphic association (notable: stream or streamer)
+  - Belongs to user
+  - Content validation
+  - Created/updated timestamps
 
 - **ApplicationRecord** (`spec/models/application_record_spec.rb`)
   - Abstract class verification
@@ -61,11 +101,30 @@ This document summarizes the comprehensive test suite created for the Rails 8 AP
 
 - **Api::V1::StreamsController** (`spec/controllers/api/v1/streams_controller_spec.rb`)
   - Full CRUD operations
-  - Filtering (status, notStatus, user_id, is_pinned)
+  - Filtering (status, notStatus, user_id, streamer_id, platform, is_pinned, is_archived)
   - Pagination
   - Pin/unpin functionality
+  - Archive/unarchive functionality
   - Authorization enforcement
   - Error handling
+
+- **Api::V1::StreamersController** (`spec/controllers/api/v1/streamers_controller_spec.rb`)
+  - Full CRUD operations
+  - Pagination
+  - Authorization enforcement
+  - Associated streams and accounts
+
+- **Api::V1::AnnotationsController** (`spec/controllers/api/v1/annotations_controller_spec.rb`)
+  - Full CRUD operations
+  - Priority and status filtering
+  - Stream association management
+  - Authorization enforcement
+
+- **Admin Controllers** (`spec/controllers/admin/*_spec.rb`)
+  - Session-based authentication
+  - Admin-only access
+  - Turbo Stream responses
+  - Modal form handling
 
 ### 3. Policies (100% coverage)
 - **ApplicationPolicy** (`spec/policies/application_policy_spec.rb`)
@@ -77,8 +136,18 @@ This document summarizes the comprehensive test suite created for the Rails 8 AP
   - Create permissions (editor/admin only)
   - Update permissions (owner + can_modify_streams or admin)
   - Destroy permissions (same as update)
+  - Archive/unarchive permissions
   - Scope resolution for all users
   - Edge cases (nil user, stream without user)
+
+- **StreamerPolicy** (`spec/policies/streamer_policy_spec.rb`)
+  - Create/update/destroy permissions (editor/admin)
+  - Scope resolution
+
+- **AnnotationPolicy** (`spec/policies/annotation_policy_spec.rb`)
+  - Create permissions (editor/admin)
+  - Update/destroy permissions (owner or admin)
+  - Scope resolution
 
 ### 4. Serializers (100% coverage)
 - **UserSerializer** (`spec/serializers/user_serializer_spec.rb`)
@@ -87,10 +156,20 @@ This document summarizes the comprehensive test suite created for the Rails 8 AP
   - Collection serialization
 
 - **StreamSerializer** (`spec/serializers/stream_serializer_spec.rb`)
-  - Attribute inclusion (all stream fields)
-  - User association serialization
+  - Attribute inclusion (all stream fields including new attributes)
+  - User, streamer association serialization
+  - Feature flag conditional attributes
   - Collection serialization
   - Edge cases (long names, special characters)
+
+- **StreamerSerializer** (`spec/serializers/streamer_serializer_spec.rb`)
+  - Basic attributes and associations
+  - Streams count inclusion
+
+- **AnnotationSerializer** (`spec/serializers/annotation_serializer_spec.rb`)
+  - All annotation attributes
+  - User association
+  - Associated streams
 
 ### 5. Concerns (100% coverage)
 - **JwtAuthenticatable** (`spec/controllers/concerns/jwt_authenticatable_spec.rb`)
@@ -144,17 +223,39 @@ This document summarizes the comprehensive test suite created for the Rails 8 AP
 
 ## Test Execution
 
-To run tests locally (requires Ruby environment):
+**IMPORTANT**: Always run tests in Docker. Never use local Ruby environment.
+
+### Running All Tests
 ```bash
-bundle install
-bundle exec rspec
+# Using bin/test wrapper (recommended)
+docker compose exec web bin/test
+
+# Or use the test service
+docker compose run --rm test
 ```
 
-To run tests in Docker:
+### Running Specific Tests
 ```bash
-# Create a test-specific Docker setup
-docker compose -f docker compose.test.yml build
-docker compose -f docker compose.test.yml run --rm test
+# Run a specific file
+docker compose exec web bin/test spec/models/stream_spec.rb
+
+# Run a specific test by line number
+docker compose exec web bin/test spec/models/stream_spec.rb:42
+
+# Run tests matching a pattern
+docker compose exec web bin/test spec/controllers/api/v1/*
+
+# Run with specific seed for debugging
+docker compose exec -e SEED=12345 web bin/test
+```
+
+### Test Database Management
+```bash
+# Prepare test database
+docker compose exec -e RAILS_ENV=test web bin/rails db:prepare
+
+# Reset test database
+docker compose exec -e RAILS_ENV=test web bin/rails db:reset
 ```
 
 ## Coverage Report
@@ -169,10 +270,28 @@ When tests are run, SimpleCov generates a coverage report in the `coverage/` dir
 4. **Security Testing**: Authentication, authorization, and rate limiting are thoroughly tested
 5. **Performance Considerations**: Pagination and filtering tests ensure scalability
 
+## Current Test Statistics
+
+To view current test statistics:
+```bash
+docker compose exec web bin/rails stats
+```
+
+## Key Testing Improvements Since Initial Setup
+
+1. **Docker Integration**: Database Cleaner configured with retry logic for Docker
+2. **Expanded Models**: Tests for Streamer, Annotation, Note, and related models
+3. **ActionCable**: WebSocket channel testing
+4. **Admin Interface**: System specs for Hotwire-powered UI
+5. **External APIs**: WebMock and VCR for reliable API testing
+6. **Performance**: Parallel test support for faster execution
+
 ## Notes
 
 - All tests are written to be deterministic and isolated
-- Database cleaner ensures a clean state between tests
-- Factory Bot factories provide consistent test data
+- Database cleaner ensures a clean state between tests with Docker-specific retry logic
+- Factory Bot factories provide consistent test data for all models
 - Tests cover both happy paths and error conditions
 - Rate limiting tests use memory store to avoid Redis dependencies
+- The bin/test wrapper ensures proper environment setup and database preparation
+- SimpleCov is configured but minimum coverage requirement is flexible during development
