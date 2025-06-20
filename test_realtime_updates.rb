@@ -33,6 +33,9 @@ API_PASSWORD = 'Password123!'
 
 # Helper method to make API requests
 def api_request(method, path, body = nil, token = nil)
+  puts "Making #{method.upcase} request to #{API_BASE_URL}#{path} with body: #{body.inspect}" if body
+  puts "Using token: #{token}" if token
+
   uri = URI("#{API_BASE_URL}#{path}")
 
   case method
@@ -46,6 +49,9 @@ def api_request(method, path, body = nil, token = nil)
     request = Net::HTTP::Get.new(uri)
   end
 
+  puts "Request URI: #{uri}" if method == :get
+  puts "Request body: #{body.inspect}" if body
+
   request['Content-Type'] = 'application/json'
   request['Authorization'] = "Bearer #{token}" if token
   request.body = body.to_json if body
@@ -54,7 +60,12 @@ def api_request(method, path, body = nil, token = nil)
     http.request(request)
   end
 
-  JSON.parse(response.body) if response.body && !response.body.empty?
+  puts "Response status: #{response.code} #{response.message}"
+  puts "Response body: #{response.body}" if response.body && !response.body.empty?
+
+  body = JSON.parse(response.body) if response.body && !response.body.empty?
+  puts "Parsed response: #{body.inspect}" if body
+  return body
 end
 
 # Step 1: Login to get JWT token
@@ -86,8 +97,8 @@ stream_data = {
 
 create_response = api_request(:post, '/streams', stream_data, token)
 
-if create_response && create_response['data']
-  stream = create_response['data']
+if create_response && create_response['stream']
+  stream = create_response['stream']
   stream_id = stream['id']
   puts "   ✓ Stream created (ID: #{stream_id})"
   puts "   → Check your browser - the stream should appear at the top of the list!"
