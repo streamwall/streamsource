@@ -9,8 +9,8 @@ RSpec.describe Streamer, type: :model do
     it { should have_many(:stream_urls).dependent(:destroy) }
     it { should have_many(:streams).dependent(:destroy) }
     it { should have_many(:note_records).class_name('Note').dependent(:destroy) }
-    it { should have_many(:annotation_streams).through(:streams) }
-    it { should have_many(:annotations).through(:annotation_streams) }
+    it { should have_many(:timestamp_streams).through(:streams) }
+    it { should have_many(:timestamps).through(:timestamp_streams) }
   end
   
   describe 'validations' do

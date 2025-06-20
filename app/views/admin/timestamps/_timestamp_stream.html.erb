@@ -1,0 +1,66 @@
+<div id="<%= dom_id(timestamp_stream) %>" class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+  <div class="flex items-start justify-between">
+    <div class="flex-1 min-w-0">
+      <!-- Stream Info -->
+      <div class="flex items-center space-x-2 mb-2">
+        <h4 class="text-sm font-medium text-gray-900">
+          <%= link_to admin_stream_path(timestamp_stream.stream), class: "text-indigo-600 hover:text-indigo-900" do %>
+            <%= timestamp_stream.stream.source %>
+          <% end %>
+        </h4>
+        <% if timestamp_stream.stream.streamer.present? %>
+          <span class="text-xs text-gray-500">
+            by <%= link_to timestamp_stream.stream.streamer.name, admin_streamer_path(timestamp_stream.stream.streamer), class: "text-indigo-600 hover:text-indigo-900" %>
+          </span>
+        <% end %>
+      </div>
+      
+      <!-- Platform and Status -->
+      <div class="flex items-center space-x-2 mb-2">
+        <% if timestamp_stream.stream.platform.present? %>
+          <span class="text-xs text-gray-600"><%= timestamp_stream.stream.platform %></span>
+          <span class="text-gray-300">•</span>
+        <% end %>
+        
+        <% badge_color = case timestamp_stream.stream.status
+           when 'Live' then 'bg-green-100 text-green-800'
+           when 'Offline' then 'bg-gray-100 text-gray-800'
+           else 'bg-yellow-100 text-yellow-800'
+           end %>
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= badge_color %>">
+          <%= timestamp_stream.stream.status %>
+        </span>
+      </div>
+      
+      <!-- Timestamp -->
+      <% if timestamp_stream.stream_timestamp_seconds.present? %>
+        <div class="text-xs text-gray-500 mb-2">
+          <span class="font-medium">Timestamp:</span>
+          <%= timestamp_stream.formatted_stream_timestamp %>
+        </div>
+      <% end %>
+      
+      <!-- Added by -->
+      <div class="text-xs text-gray-500">
+        Added by <%= timestamp_stream.added_by_user.email %> 
+        <span class="text-gray-400">•</span>
+        <%= time_ago_in_words(timestamp_stream.created_at) %> ago
+      </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="flex items-center space-x-2 ml-4 flex-shrink-0">
+      <a href="<%= timestamp_stream.stream.link %>" target="_blank" class="text-blue-600 hover:text-blue-900" title="View stream">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </a>
+      
+      <%= link_to admin_stream_path(timestamp_stream.stream), class: "text-gray-600 hover:text-gray-900", title: "View stream details" do %>
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      <% end %>
+    </div>
+  </div>
+</div>

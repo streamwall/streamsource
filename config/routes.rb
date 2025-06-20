@@ -77,8 +77,8 @@ Rails.application.routes.draw do
       end
     end
     
-    # Annotations routes
-    resources :annotations, only: [:index, :show, :new, :edit, :create, :update, :destroy] do
+    # Timestamps routes
+    resources :timestamps, only: [:index, :show, :new, :edit, :create, :update, :destroy] do
       member do
         patch 'resolve'
         patch 'dismiss'

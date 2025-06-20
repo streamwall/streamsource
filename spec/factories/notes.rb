@@ -12,8 +12,8 @@ FactoryBot.define do
       notable { association :streamer }
     end
     
-    trait :for_annotation do
-      notable { association :annotation }
+    trait :for_timestamp do
+      notable { association :timestamp }
     end
     
     trait :long do

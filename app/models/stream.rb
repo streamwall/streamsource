@@ -31,8 +31,8 @@ class Stream < ApplicationRecord
   belongs_to :streamer, optional: true # Optional for now during migration
   belongs_to :stream_url, optional: true # Optional during migration period
   has_many :note_records, as: :notable, class_name: 'Note', dependent: :destroy
-  has_many :annotation_streams, dependent: :destroy
-  has_many :annotations, through: :annotation_streams
+  has_many :timestamp_streams, dependent: :destroy
+  has_many :timestamps, through: :timestamp_streams
   
   # Enums
   enum :status, {

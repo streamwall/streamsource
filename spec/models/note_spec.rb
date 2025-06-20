@@ -30,11 +30,11 @@ RSpec.describe Note, type: :model do
       expect(note.notable_type).to eq('Streamer')
     end
     
-    it 'can belong to an annotation' do
-      annotation = create(:annotation)
-      note = create(:note, notable: annotation, user: user)
-      expect(note.notable).to eq(annotation)
-      expect(note.notable_type).to eq('Annotation')
+    it 'can belong to a timestamp' do
+      timestamp = create(:timestamp)
+      note = create(:note, notable: timestamp, user: user)
+      expect(note.notable).to eq(timestamp)
+      expect(note.notable_type).to eq('Timestamp')
     end
   end
   

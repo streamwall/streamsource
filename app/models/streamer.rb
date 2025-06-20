@@ -17,8 +17,8 @@ class Streamer < ApplicationRecord
   has_many :stream_urls, dependent: :destroy
   has_many :streams, dependent: :destroy
   has_many :note_records, as: :notable, class_name: 'Note', dependent: :destroy
-  has_many :annotation_streams, through: :streams
-  has_many :annotations, through: :annotation_streams
+  has_many :timestamp_streams, through: :streams
+  has_many :timestamps, through: :timestamp_streams
   
   # Validations
   validates :name, presence: true, uniqueness: { case_sensitive: false }

@@ -1,0 +1,108 @@
+<% content_for :page_title, "Timestamp: #{@timestamp.title}" %>
+<% content_for :page_subtitle, "Viewing timestamp details and linked streams" %>
+<% content_for :page_actions do %>
+  <%= link_to edit_admin_timestamp_path(@timestamp), 
+      class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50",
+      data: { turbo_frame: "modal" } do %>
+    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+    </svg>
+    Edit Timestamp
+  <% end %>
+  <%= link_to admin_timestamps_path, class: "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700" do %>
+    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+    </svg>
+    Back to Timestamps
+  <% end %>
+<% end %>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Timestamp Details -->
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Basic Info -->
+    <div class="bg-white shadow rounded-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-medium text-gray-900">Event Information</h2>
+      </div>
+      
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-gray-500">Event Title</dt>
+          <dd class="mt-1 text-lg font-medium text-gray-900"><%= @timestamp.title %></dd>
+        </div>
+        
+        <% if @timestamp.description.present? %>
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Description</dt>
+            <dd class="mt-1 text-sm text-gray-900 whitespace-pre-wrap"><%= @timestamp.description %></dd>
+          </div>
+        <% end %>
+        
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Event Time</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @timestamp.event_timestamp.strftime("%B %d, %Y at %I:%M %p") %>
+            <span class="text-gray-500 text-xs">(<%= @timestamp.time_ago %> ago)</span>
+          </dd>
+        </div>
+        
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Created By</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @timestamp.user.email %></dd>
+        </div>
+        
+        
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Created</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @timestamp.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+          </dd>
+        </div>
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @timestamp.updated_at.strftime("%B %d, %Y at %I:%M %p") %>
+          </dd>
+        </div>
+      </dl>
+      
+      
+    </div>
+  </div>
+  
+  <!-- Linked Streams Section -->
+  <div class="space-y-6">
+    <div class="bg-white shadow rounded-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-medium text-gray-900">Linked Streams</h2>
+        <span class="text-sm text-gray-500"><%= @timestamp.stream_count %> <%= 'stream'.pluralize(@timestamp.stream_count) %></span>
+      </div>
+      
+      <div id="timestamp_streams">
+        <% if @timestamp_streams.any? %>
+          <div class="space-y-4">
+            <% @timestamp_streams.each do |timestamp_stream| %>
+              <%= render 'timestamp_stream', timestamp_stream: timestamp_stream %>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-6">
+            <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No streams linked</h3>
+            <p class="mt-1 text-sm text-gray-500">This event hasn't been linked to any streams yet.</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal container -->
+<turbo-frame id="modal" data-controller="modal"></turbo-frame>

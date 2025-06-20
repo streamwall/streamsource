@@ -3,10 +3,10 @@
   
   <div class="fixed inset-0 z-10 overflow-y-auto">
     <div class="flex min-h-full items-center justify-center p-4">
-      <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6" id="new_annotation_modal">
+      <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6" id="new_timestamp_modal">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-medium text-gray-900">New Event Annotation</h3>
-          <%= link_to admin_annotations_path, 
+          <h3 class="text-lg font-medium text-gray-900">New Event Timestamp</h3>
+          <%= link_to admin_timestamps_path, 
               class: "text-gray-400 hover:text-gray-500",
               data: { turbo_frame: "_top" } do %>
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,7 +15,7 @@
           <% end %>
         </div>
         
-        <%= render 'form', annotation: @annotation %>
+        <%= render 'form', timestamp: @timestamp %>
       </div>
     </div>
   </div>

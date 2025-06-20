@@ -6,9 +6,9 @@ RSpec.describe User, type: :model do
   describe 'associations' do
     it { should have_many(:streams).dependent(:destroy) }
     it { should have_many(:streamers).dependent(:destroy) }
-    it { should have_many(:annotations).dependent(:destroy) }
-    it { should have_many(:annotation_streams).with_foreign_key('added_by_user_id').dependent(:destroy) }
-    it { should have_many(:resolved_annotations).class_name('Annotation').with_foreign_key('resolved_by_user_id') }
+    it { should have_many(:timestamps).dependent(:destroy) }
+    it { should have_many(:timestamp_streams).with_foreign_key('added_by_user_id').dependent(:destroy) }
+    it { should have_many(:resolved_timestamps).class_name('Timestamp').with_foreign_key('resolved_by_user_id') }
   end
   
   describe 'validations' do

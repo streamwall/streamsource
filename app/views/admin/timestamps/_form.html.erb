@@ -1,0 +1,53 @@
+<%= form_with model: [:admin, timestamp], id: "timestamp_form", class: "space-y-6" do |form| %>
+  <% if timestamp.errors.any? %>
+    <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+      <h4 class="font-medium">Please fix the following errors:</h4>
+      <ul class="mt-2 list-disc list-inside text-sm">
+        <% timestamp.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-6">
+    <!-- Basic Event Information -->
+    <div>
+      <%= form.label :title, "Event Title", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.text_field :title, 
+          class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500",
+          placeholder: "Brief description of the event",
+          required: true,
+          maxlength: 200 %>
+      <p class="mt-1 text-xs text-gray-500">Brief title describing the event (max 200 characters)</p>
+    </div>
+
+    <!-- Event Timing -->
+    <div>
+      <%= form.label :event_timestamp, "Event Date & Time", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.datetime_local_field :event_timestamp, 
+          class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500",
+          required: true %>
+      <p class="mt-1 text-xs text-gray-500">When did this event occur? (in your local time)</p>
+    </div>
+
+    <!-- Description field -->
+    <div>
+      <%= form.label :description, "Detailed Description", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.text_area :description, 
+          rows: 4,
+          maxlength: 2000,
+          class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500",
+          placeholder: "Detailed description of what happened during this event..." %>
+      <p class="mt-1 text-xs text-gray-500">Provide detailed context about this event (max 2000 characters)</p>
+    </div>
+  </div>
+
+  <div class="flex justify-end space-x-3 pt-4 border-t">
+    <%= link_to "Cancel", admin_timestamps_path, 
+        class: "px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50",
+        data: { turbo_frame: "_top" } %>
+    <%= form.submit class: "px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed", 
+        data: { "turbo-submits-with": "Saving..." } %>
+  </div>
+<% end %>
