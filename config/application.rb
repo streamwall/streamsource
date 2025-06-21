@@ -46,6 +46,9 @@ module Streamsource
     config.middleware.use ActionDispatch::Session::CookieStore
     config.middleware.use ActionDispatch::Flash
     
+    # Add method override middleware for proper PATCH/PUT/DELETE support
+    config.middleware.use Rack::MethodOverride
+    
     # Add custom middleware for Flipper UI authentication
     require_relative '../app/middleware/admin_flipper_auth'
     config.middleware.use AdminFlipperAuth

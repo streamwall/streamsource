@@ -44,7 +44,7 @@ module Admin
               turbo_stream.prepend('streams', partial: 'admin/streams/stream', locals: { stream: @stream }),
               turbo_stream.replace('flash', partial: 'admin/shared/flash', 
                 locals: { notice: 'Stream was successfully created.' }),
-              turbo_stream.replace('new_stream_modal', '')
+              turbo_stream.replace('modal', '')
             ]
           end
         else
@@ -79,7 +79,7 @@ module Admin
               turbo_stream.replace(@stream, partial: 'admin/streams/stream', locals: { stream: @stream }),
               turbo_stream.replace('flash', partial: 'admin/shared/flash', 
                 locals: { notice: 'Stream was successfully updated.' }),
-              turbo_stream.replace("edit_stream_#{@stream.id}_modal", '')
+              turbo_stream.replace('modal', '')
             ]
           end
         else

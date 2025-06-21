@@ -1,4 +1,8 @@
-<%= form_with model: [:admin, streamer], id: "streamer_form", class: "space-y-6" do |form| %>
+<%= form_with model: [:admin, streamer], 
+              url: streamer.persisted? ? admin_streamer_path(streamer) : admin_streamers_path,
+              method: streamer.persisted? ? :patch : :post,
+              id: "streamer_form", 
+              class: "space-y-6" do |form| %>
   <% if streamer.errors.any? %>
     <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
       <h4 class="font-medium">Please fix the following errors:</h4>
