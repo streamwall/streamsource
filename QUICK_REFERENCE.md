@@ -147,7 +147,7 @@ docker compose exec web bundle outdated
 
 ### Default Credentials (Development)
 - Email: `admin@example.com`
-- Password: `password123`
+- Password: `Password123!`
 
 ## Quick Debugging
 
@@ -164,7 +164,7 @@ puts payload
 # Login and save token
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/users/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@example.com", "password": "password123"}' | jq -r '.token')
+  -d '{"email": "admin@example.com", "password": "Password123!"}' | jq -r '.token')
 
 # Use token
 curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/streams
@@ -223,7 +223,7 @@ const streamChannel = consumer.subscriptions.create("StreamChannel", {
 
 ### Required
 - `DATABASE_URL` - PostgreSQL connection string
-- `REDIS_URL` - Redis connection string  
+- `REDIS_URL` - Redis connection string
 - `SECRET_KEY_BASE` - Rails secret key
 
 ### Optional

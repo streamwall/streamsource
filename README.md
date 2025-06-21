@@ -113,7 +113,7 @@ The application will automatically:
 
 In development mode, a default admin user is created:
 - **Email**: `admin@example.com`
-- **Password**: `password123`
+- **Password**: `Password123!`
 
 ## Admin Interface
 
@@ -154,7 +154,7 @@ curl -X POST http://localhost:3000/api/v1/users/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
-    "password": "password123"
+    "password": "Password123!"
   }'
 ```
 

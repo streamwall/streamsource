@@ -224,7 +224,7 @@ docker compose exec web bin/rails db:version
 
 ### Default Admin Login
 - Email: `admin@example.com`
-- Password: `password123`
+- Password: `Password123!`
 
 ## Key Services & Models
 

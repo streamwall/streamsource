@@ -61,7 +61,7 @@ The StreamSource admin interface is a modern web application built with Rails 8 
 1. Navigate to `http://localhost:3000/admin/login`
 2. Enter admin credentials:
    - Email: `admin@example.com`
-   - Password: `password123` (in development)
+   - Password: `Password123!` (in development)
 3. Click "Sign In"
 
 ### Navigation
@@ -241,34 +241,34 @@ Enhance interactivity:
 module Admin
   class YourController < BaseController
     before_action :set_item, only: [:show, :edit, :update, :destroy]
-    
+
     def index
       @items = YourModel.includes(:associations)
                         .page(params[:page])
                         .per(25)
     end
-    
+
     def new
       @item = YourModel.new
     end
-    
+
     def create
       @item = YourModel.new(item_params)
-      
+
       if @item.save
-        redirect_to admin_items_path, 
+        redirect_to admin_items_path,
                     notice: 'Item was successfully created.'
       else
         render :new, status: :unprocessable_entity
       end
     end
-    
+
     private
-    
+
     def set_item
       @item = YourModel.find(params[:id])
     end
-    
+
     def item_params
       params.require(:your_model).permit(:allowed, :attributes)
     end
@@ -315,9 +315,9 @@ docker compose --profile donotstart up css
 ```ruby
 RSpec.describe Admin::StreamsController do
   let(:admin) { create(:user, :admin) }
-  
+
   before { sign_in(admin) }
-  
+
   describe "GET #index" do
     it "returns success" do
       get :index
@@ -331,18 +331,18 @@ end
 ```ruby
 RSpec.describe "Admin Streams Management", type: :system do
   let(:admin) { create(:user, :admin) }
-  
+
   before do
     login_as(admin)
     visit admin_streams_path
   end
-  
+
   it "creates a new stream" do
     click_link "New Stream"
     fill_in "Name", with: "Test Stream"
     fill_in "URL", with: "https://example.com"
     click_button "Create Stream"
-    
+
     expect(page).to have_content("Stream was successfully created")
     expect(page).to have_content("Test Stream")
   end

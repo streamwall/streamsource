@@ -39,7 +39,7 @@ docker compose logs -f web
 
 ### Accessing the Application
 - **API**: http://localhost:3000
-- **Admin Interface**: http://localhost:3000/admin (admin@example.com / password123)
+- **Admin Interface**: http://localhost:3000/admin (admin@example.com / Password123!)
 - **API Documentation**: http://localhost:3000/api-docs
 
 ## DO NOT Install Ruby Locally

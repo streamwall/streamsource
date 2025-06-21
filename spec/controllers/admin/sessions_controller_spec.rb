@@ -14,21 +14,21 @@ RSpec.describe Admin::SessionsController, type: :controller do
   end
 
   describe 'POST #create' do
-    let(:admin_user) { create(:user, :admin, email: 'admin@example.com', password: 'password123') }
+    let(:admin_user) { create(:user, :admin, email: 'admin@example.com', password: 'Password123!') }
 
     context 'with valid credentials' do
       it 'sets session' do
-        post :create, params: { email: admin_user.email, password: 'password123' }
+        post :create, params: { email: admin_user.email, password: 'Password123!' }
         expect(session[:admin_user_id]).to eq(admin_user.id)
       end
 
       it 'redirects to admin root' do
-        post :create, params: { email: admin_user.email, password: 'password123' }
+        post :create, params: { email: admin_user.email, password: 'Password123!' }
         expect(response).to redirect_to(admin_streams_path)
       end
 
       it 'sets success notice' do
-        post :create, params: { email: admin_user.email, password: 'password123' }
+        post :create, params: { email: admin_user.email, password: 'Password123!' }
         expect(flash[:notice]).to eq('Successfully logged in.')
       end
     end
