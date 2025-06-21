@@ -17,7 +17,6 @@ class User < ApplicationRecord
   has_many :streamers, dependent: :destroy
   has_many :timestamps, dependent: :destroy
   has_many :timestamp_streams, foreign_key: 'added_by_user_id', dependent: :destroy
-  has_many :resolved_timestamps, class_name: 'Timestamp', foreign_key: 'resolved_by_user_id'
   has_many :notes, dependent: :destroy
 
   # Flipper actor

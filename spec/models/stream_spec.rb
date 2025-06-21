@@ -6,7 +6,6 @@ RSpec.describe Stream, type: :model do
   describe 'associations' do
     it { should belong_to(:user) }
     it { should belong_to(:streamer).optional }
-    it { should belong_to(:stream_url).optional }
     it { should have_many(:note_records).class_name('Note').dependent(:destroy) }
     it { should have_many(:timestamp_streams).dependent(:destroy) }
     it { should have_many(:timestamps).through(:timestamp_streams) }
@@ -446,78 +445,7 @@ RSpec.describe Stream, type: :model do
       # Composite indexes
       expect(ActiveRecord::Base.connection.index_exists?(:streams, [:user_id, :created_at])).to be true
       expect(ActiveRecord::Base.connection.index_exists?(:streams, [:streamer_id, :is_archived])).to be true
-      expect(ActiveRecord::Base.connection.index_exists?(:streams, :stream_url_id)).to be true
     end
   end
   
-  describe 'StreamUrl integration' do
-    let(:streamer) { create(:streamer) }
-    let(:stream_url) { create(:stream_url, streamer: streamer) }
-    
-    describe '#link method' do
-      context 'when stream has stream_url' do
-        it 'returns URL from stream_url' do
-          stream = create(:stream, stream_url: stream_url, link: 'https://old-url.com')
-          expect(stream.link).to eq(stream_url.url)
-        end
-      end
-      
-      context 'when stream has no stream_url' do
-        it 'returns link attribute for backward compatibility' do
-          stream = create(:stream, link: 'https://direct-link.com')
-          expect(stream.link).to eq('https://direct-link.com')
-        end
-      end
-      
-      context 'when stream_url is nil and link is nil' do
-        it 'returns nil' do
-          stream = build(:stream, link: nil, stream_url: nil)
-          expect(stream.link).to be_nil
-        end
-      end
-    end
-    
-    describe '#link= method' do
-      context 'when stream has stream_url' do
-        it 'updates both link attribute and stream_url' do
-          stream = create(:stream, stream_url: stream_url)
-          new_url = 'https://new-url.com'
-          
-          stream.link = new_url
-          stream.save!
-          
-          expect(stream.read_attribute(:link)).to eq(new_url)
-          expect(stream_url.reload.url).to eq(new_url)
-        end
-      end
-      
-      context 'when stream has no stream_url' do
-        it 'only updates link attribute' do
-          stream = create(:stream, link: 'https://old-url.com')
-          new_url = 'https://new-url.com'
-          
-          stream.link = new_url
-          stream.save!
-          
-          expect(stream.read_attribute(:link)).to eq(new_url)
-        end
-      end
-    end
-    
-    describe '#url delegate' do
-      context 'when stream has stream_url' do
-        it 'delegates to stream_url.url' do
-          stream = build(:stream, stream_url: stream_url)
-          expect(stream.url).to eq(stream_url.url)
-        end
-      end
-      
-      context 'when stream has no stream_url' do
-        it 'returns nil' do
-          stream = build(:stream, stream_url: nil)
-          expect(stream.url).to be_nil
-        end
-      end
-    end
-  end
 end

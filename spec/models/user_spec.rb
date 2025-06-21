@@ -8,7 +8,6 @@ RSpec.describe User, type: :model do
     it { should have_many(:streamers).dependent(:destroy) }
     it { should have_many(:timestamps).dependent(:destroy) }
     it { should have_many(:timestamp_streams).with_foreign_key('added_by_user_id').dependent(:destroy) }
-    it { should have_many(:resolved_timestamps).class_name('Timestamp').with_foreign_key('resolved_by_user_id') }
   end
   
   describe 'validations' do
