@@ -6,7 +6,6 @@ RSpec.describe Stream, type: :model do
   describe 'associations' do
     it { should belong_to(:user) }
     it { should belong_to(:streamer).optional }
-    it { should have_many(:note_records).class_name('Note').dependent(:destroy) }
     it { should have_many(:timestamp_streams).dependent(:destroy) }
     it { should have_many(:timestamps).through(:timestamp_streams) }
   end

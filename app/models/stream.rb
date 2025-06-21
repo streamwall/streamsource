@@ -29,7 +29,6 @@ class Stream < ApplicationRecord
   # Associations
   belongs_to :user
   belongs_to :streamer, optional: true # Optional for now during migration
-  has_many :note_records, as: :notable, class_name: 'Note', dependent: :destroy
   has_many :timestamp_streams, dependent: :destroy
   has_many :timestamps, through: :timestamp_streams
   

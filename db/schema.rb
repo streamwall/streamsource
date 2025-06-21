@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_21_000927) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_21_001814) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -28,18 +28,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_21_000927) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["feature_key", "key"], name: "index_flipper_gates_on_feature_key_and_key", unique: true
-  end
-
-  create_table "notes", force: :cascade do |t|
-    t.text "content", null: false
-    t.bigint "user_id", null: false
-    t.string "notable_type", null: false
-    t.bigint "notable_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["created_at"], name: "index_notes_on_created_at"
-    t.index ["notable_type", "notable_id"], name: "index_notes_on_notable"
-    t.index ["user_id"], name: "index_notes_on_user_id"
   end
 
   create_table "streamer_accounts", force: :cascade do |t|
@@ -139,7 +127,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_21_000927) do
     t.index ["role"], name: "index_users_on_role"
   end
 
-  add_foreign_key "notes", "users"
   add_foreign_key "streamer_accounts", "streamers"
   add_foreign_key "streamers", "users"
   add_foreign_key "streams", "streamers"

@@ -46,12 +46,6 @@
           <span class="font-medium">Created:</span>
           <%= streamer.created_at.strftime("%b %d, %Y") %>
         </div>
-        <% if streamer.note_records.any? %>
-          <div>
-            <span class="font-medium">Notes:</span>
-            <%= pluralize(streamer.note_records.count, 'note') %>
-          </div>
-        <% end %>
       </div>
     </div>
     

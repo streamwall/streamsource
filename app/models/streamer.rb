@@ -15,7 +15,6 @@ class Streamer < ApplicationRecord
   belongs_to :user
   has_many :streamer_accounts, dependent: :destroy
   has_many :streams, dependent: :destroy
-  has_many :note_records, as: :notable, class_name: 'Note', dependent: :destroy
   has_many :timestamp_streams, through: :streams
   has_many :timestamps, through: :timestamp_streams
   

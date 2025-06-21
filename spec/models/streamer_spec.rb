@@ -7,7 +7,6 @@ RSpec.describe Streamer, type: :model do
     it { should belong_to(:user) }
     it { should have_many(:streamer_accounts).dependent(:destroy) }
     it { should have_many(:streams).dependent(:destroy) }
-    it { should have_many(:note_records).class_name('Note').dependent(:destroy) }
     it { should have_many(:timestamp_streams).through(:streams) }
     it { should have_many(:timestamps).through(:timestamp_streams) }
   end

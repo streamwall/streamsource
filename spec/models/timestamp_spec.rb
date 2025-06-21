@@ -7,7 +7,6 @@ RSpec.describe Timestamp, type: :model do
     it { should belong_to(:user) }
     it { should have_many(:timestamp_streams).dependent(:destroy) }
     it { should have_many(:streams).through(:timestamp_streams) }
-    it { should have_many(:note_records).class_name('Note').dependent(:destroy) }
   end
   
   describe 'validations' do

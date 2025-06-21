@@ -4,7 +4,7 @@ module Admin
     
     def index
       @pagy, @users = pagy(
-        User.includes(:streams, :streamers, :notes)
+        User.includes(:streams, :streamers)
             .order(:email)
       )
     end

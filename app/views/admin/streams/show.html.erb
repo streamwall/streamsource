@@ -153,38 +153,6 @@
     </div>
   </div>
   
-  <!-- Notes Section -->
-  <div class="space-y-6">
-    <div class="bg-white shadow rounded-lg p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-medium text-gray-900">User Notes</h2>
-        <%= link_to admin_stream_new_note_path(@stream), 
-            class: "inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200",
-            data: { turbo_frame: "modal" } do %>
-          <svg class="-ml-0.5 mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Add Note
-        <% end %>
-      </div>
-      
-      <div id="stream_notes">
-        <% if @stream.note_records.any? %>
-          <% @stream.note_records.includes(:user).recent.each do |note| %>
-            <%= render 'admin/notes/note', note: note %>
-          <% end %>
-        <% else %>
-          <div class="text-center py-6">
-            <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No notes yet</h3>
-            <p class="mt-1 text-sm text-gray-500">Add a note to share context about this stream.</p>
-          </div>
-        <% end %>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Modal container -->
