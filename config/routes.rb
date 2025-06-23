@@ -23,6 +23,9 @@ Rails.application.routes.draw do
           get 'export'
         end
       end
+      
+      # Notion integration
+      get 'notion/streams', to: 'notion_streams#index'
     end
   end
   

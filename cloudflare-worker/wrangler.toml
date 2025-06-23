@@ -1,0 +1,74 @@
+name = "streamsource-notion"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+# KV Namespace for caching
+[[kv_namespaces]]
+binding = "STREAM_CACHE"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
+
+# Analytics Engine (optional - for tracking API usage)
+# [[analytics_engine_datasets]]
+# binding = "ANALYTICS"
+
+# Environment variables (set these in Cloudflare dashboard or with wrangler secret)
+[vars]
+# Public variables
+CORS_ORIGIN = "*"  # Set to specific domain in production
+
+# Secret variables (use wrangler secret put <KEY>)
+# NOTION_API_KEY = "set via: wrangler secret put NOTION_API_KEY"
+# NOTION_DATABASE_ID = "set via: wrangler secret put NOTION_DATABASE_ID"  
+# API_KEY = "set via: wrangler secret put API_KEY"
+
+# Platform API keys (optional - for health monitoring)
+# YOUTUBE_API_KEY = "set via: wrangler secret put YOUTUBE_API_KEY"
+# TWITCH_CLIENT_ID = "set via: wrangler secret put TWITCH_CLIENT_ID"
+# TWITCH_CLIENT_SECRET = "set via: wrangler secret put TWITCH_CLIENT_SECRET"
+# FACEBOOK_ACCESS_TOKEN = "set via: wrangler secret put FACEBOOK_ACCESS_TOKEN"
+
+# Routes (optional - can also configure in Cloudflare dashboard)
+# route = "api.yourdomain.com/*"
+# zone_id = "your-zone-id"
+
+# Development settings
+[env.development]
+vars = { 
+  ENVIRONMENT = "development",
+  CORS_ORIGIN = "*"
+}
+
+# Staging environment
+[env.staging]
+vars = { 
+  ENVIRONMENT = "staging",
+  CORS_ORIGIN = "https://staging.streamwall.com"
+}
+# route = "staging-api.yourdomain.com/*"
+
+# Production settings
+[env.production]
+vars = { 
+  ENVIRONMENT = "production",
+  CORS_ORIGIN = "https://streamwall.com"  # Restrict in production
+}
+# route = "api.yourdomain.com/*"
+
+# Performance settings
+[build]
+command = ""
+[build.upload]
+format = "modules"
+main = "./src/index.js"
+
+# Compatibility flags for better performance
+compatibility_flags = ["nodejs_compat"]
+
+# Limits and usage model
+usage_model = "unbound"  # Better for APIs with variable response times
+
+# Observability
+[observability]
+enabled = true

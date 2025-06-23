@@ -1,0 +1,22 @@
+{
+  "name": "streamsource-cloudflare-worker",
+  "version": "1.0.0",
+  "description": "Lightweight livestream API using Notion as database and Cloudflare Workers",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "kv:create": "wrangler kv:namespace create STREAM_CACHE",
+    "kv:create-preview": "wrangler kv:namespace create STREAM_CACHE --preview",
+    "secret:notion": "wrangler secret put NOTION_API_KEY",
+    "secret:database": "wrangler secret put NOTION_DATABASE_ID",
+    "secret:api": "wrangler secret put API_KEY"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

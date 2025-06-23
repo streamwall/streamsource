@@ -120,3 +120,6 @@ end
 
 # Logging
 gem "lograge", "~> 0.14"
+
+# HTTP client for external APIs
+gem "httparty", "~> 0.21"

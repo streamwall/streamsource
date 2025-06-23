@@ -1,0 +1,107 @@
+{
+  "livestreams_database": {
+    "title": "Livestreams",
+    "properties": {
+      "Stream ID": {
+        "type": "title",
+        "description": "Unique identifier for the stream"
+      },
+      "Title": {
+        "type": "rich_text",
+        "description": "Display title for the stream"
+      },
+      "Streamer": {
+        "type": "select",
+        "options": [
+          { "name": "Streamer 1", "color": "blue" },
+          { "name": "Streamer 2", "color": "green" }
+        ],
+        "description": "Person streaming"
+      },
+      "Platform": {
+        "type": "select",
+        "options": [
+          { "name": "twitch", "color": "purple" },
+          { "name": "youtube", "color": "red" },
+          { "name": "facebook", "color": "blue" },
+          { "name": "instagram", "color": "pink" },
+          { "name": "tiktok", "color": "default" },
+          { "name": "periscope", "color": "light_blue" }
+        ]
+      },
+      "Status": {
+        "type": "select",
+        "options": [
+          { "name": "live", "color": "green" },
+          { "name": "offline", "color": "gray" },
+          { "name": "ended", "color": "red" },
+          { "name": "scheduled", "color": "yellow" },
+          { "name": "archived", "color": "brown" }
+        ]
+      },
+      "Stream URL": {
+        "type": "url",
+        "description": "Direct link to the stream"
+      },
+      "Embed URL": {
+        "type": "url",
+        "description": "URL for embedding the stream"
+      },
+      "Location": {
+        "type": "rich_text",
+        "description": "City, State format (e.g., 'New York, NY')"
+      },
+      "Latitude": {
+        "type": "number",
+        "number": { "format": "number" }
+      },
+      "Longitude": {
+        "type": "number",
+        "number": { "format": "number" }
+      },
+      "Started At": {
+        "type": "date",
+        "date": { "include_time": true }
+      },
+      "Ended At": {
+        "type": "date",
+        "date": { "include_time": true }
+      },
+      "Is Featured": {
+        "type": "checkbox",
+        "description": "Pin/feature this stream"
+      },
+      "Viewer Count": {
+        "type": "number",
+        "number": { "format": "number" }
+      },
+      "Tags": {
+        "type": "multi_select",
+        "options": [
+          { "name": "news", "color": "red" },
+          { "name": "protest", "color": "orange" },
+          { "name": "event", "color": "blue" },
+          { "name": "weather", "color": "green" },
+          { "name": "traffic", "color": "yellow" }
+        ]
+      },
+      "Notes": {
+        "type": "rich_text",
+        "description": "Internal notes about the stream"
+      },
+      "Last Health Check": {
+        "type": "date",
+        "date": { "include_time": true },
+        "description": "Last time microservice checked stream health"
+      },
+      "Archive Links": {
+        "type": "rich_text",
+        "description": "JSON array of archived video URLs"
+      },
+      "Thumbnail": {
+        "type": "files",
+        "description": "Stream thumbnail/preview image"
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/streams.js": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/streams/:path*",
+      "destination": "/api/streams"
+    }
+  ]
+}
