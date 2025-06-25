@@ -9107,8 +9107,18 @@ var ActionCableManager = class {
   connect() {
     this.subscription = createConsumer3().subscriptions.create("CollaborativeStreamsChannel", {
       received: (data) => this.handleMessage(data),
-      connected: () => console.log("Connected to CollaborativeStreamsChannel"),
-      disconnected: () => console.log("Disconnected from CollaborativeStreamsChannel")
+      connected: () => {
+        console.log("Connected to CollaborativeStreamsChannel");
+        this.controller.messageDisplayManager.showConnectionStatus("connected");
+      },
+      disconnected: () => {
+        console.log("Disconnected from CollaborativeStreamsChannel");
+        this.controller.messageDisplayManager.showConnectionStatus("disconnected");
+      },
+      rejected: () => {
+        console.error("Connection to CollaborativeStreamsChannel was rejected");
+        this.controller.messageDisplayManager.showConnectionStatus("rejected");
+      }
     });
   }
   disconnect() {
@@ -9118,8 +9128,16 @@ var ActionCableManager = class {
     }
   }
   perform(action, data) {
-    if (this.subscription) {
-      this.subscription.perform(action, data);
+    if (this.subscription && this.subscription.consumer.connection.isOpen()) {
+      try {
+        this.subscription.perform(action, data);
+      } catch (error2) {
+        console.error(`Failed to perform action ${action}:`, error2);
+        this.controller.messageDisplayManager.showConnectionStatus("disconnected");
+      }
+    } else {
+      console.warn(`Cannot perform action ${action} - not connected`);
+      this.controller.messageDisplayManager.showConnectionStatus("disconnected");
     }
   }
   handleMessage(data) {
@@ -9138,6 +9156,9 @@ var ActionCableManager = class {
         break;
       case "cell_unlocked":
         this.controller.cellRenderer.hideCellLocked(data.cell_id);
+        if (data.user_id == this.controller.currentUser) {
+          this.controller.cellEditor.confirmCellUnlocked(data.cell_id);
+        }
         break;
       case "cell_updated":
         this.controller.cellRenderer.updateCell(data.cell_id, data.field, data.value, data.stream_id);
@@ -9159,6 +9180,8 @@ var CellEditor = class {
   constructor(controller) {
     this.controller = controller;
     this.autosaveTimeout = null;
+    this.savingCells = /* @__PURE__ */ new Set();
+    this.lockedCells = /* @__PURE__ */ new Set();
   }
   handleCellClick(event) {
     const cell = event.currentTarget;
@@ -9167,11 +9190,15 @@ var CellEditor = class {
     const lockedBy = cell.dataset.lockedBy;
     const field = cell.dataset.field;
     const fieldType = cell.dataset.fieldType;
+    if (this.savingCells.has(cellId)) {
+      console.log("Cell is being saved, ignoring click");
+      return;
+    }
     if (isLocked && lockedBy !== this.controller.currentUser) {
       this.controller.messageDisplayManager.showLockedMessage(cell);
       return;
     }
-    this.controller.actionCableManager.perform("lock_cell", { cell_id: cellId });
+    this.lockCell(cellId);
     if (fieldType === "select") {
       this.controller.cellRenderer.showSelectDropdown(cell);
     } else {
@@ -9189,17 +9216,20 @@ var CellEditor = class {
     const cell = event.currentTarget;
     const cellId = cell.dataset.cellId;
     const field = cell.dataset.field;
+    if (cell.contentEditable === "false") {
+      return;
+    }
     if (this.autosaveTimeout) {
       clearTimeout(this.autosaveTimeout);
       this.autosaveTimeout = null;
     }
+    cell.contentEditable = false;
     if (cell.dataset.skipSave !== "true") {
       this.saveCell(cell);
     } else {
-      this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
+      this.unlockCell(cellId);
       delete cell.dataset.skipSave;
     }
-    cell.contentEditable = false;
     this.controller.editTimeoutManager.clearEditTimeout(cellId);
   }
   handleCellInput(event) {
@@ -9258,6 +9288,7 @@ var CellEditor = class {
       console.error("Cell is not in a valid table structure!", { cellId });
       return;
     }
+    this.savingCells.add(cellId);
     if (value !== originalValue) {
       console.log("Saving cell:", { cellId, streamId, field, value, originalValue });
       this.controller.actionCableManager.perform("update_cell", {
@@ -9267,10 +9298,35 @@ var CellEditor = class {
         value
       });
       cell.dataset.originalValue = value;
+      setTimeout(() => {
+        this.savingCells.delete(cellId);
+      }, 500);
     } else {
       console.log("No change detected, not saving:", { value, originalValue });
+      this.unlockCell(cellId);
+      this.savingCells.delete(cellId);
     }
-    this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
+  }
+  lockCell(cellId) {
+    if (!this.lockedCells.has(cellId)) {
+      this.lockedCells.add(cellId);
+      this.controller.actionCableManager.perform("lock_cell", { cell_id: cellId });
+      return true;
+    }
+    return false;
+  }
+  unlockCell(cellId) {
+    if (this.lockedCells.has(cellId)) {
+      this.lockedCells.delete(cellId);
+      this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
+      return true;
+    }
+    return false;
+  }
+  // Called when we receive confirmation that a cell was unlocked
+  confirmCellUnlocked(cellId) {
+    this.lockedCells.delete(cellId);
+    this.savingCells.delete(cellId);
   }
 };
 
@@ -9284,7 +9340,7 @@ var CellRenderer = class {
     if (!cell) return;
     console.log("showCellLocked", { cellId, userId, userName, currentUser: this.controller.currentUser });
     cell.dataset.locked = "true";
-    cell.dataset.lockedBy = userId;
+    cell.dataset.lockedBy = userId.toString();
     cell.style.outline = `2px solid ${userColor}`;
     cell.style.outlineOffset = "-2px";
     const td = cell.closest("td");
@@ -9394,14 +9450,22 @@ var CellRenderer = class {
       }
     }
     const selectOptions = JSON.parse(cell.dataset.selectOptions || "{}");
+    const portal = document.createElement("div");
+    portal.style.position = "fixed";
+    portal.style.top = "0";
+    portal.style.left = "0";
+    portal.style.width = "0";
+    portal.style.height = "0";
+    portal.style.zIndex = "99999";
+    portal.style.pointerEvents = "none";
     const dropdown = document.createElement("div");
-    dropdown.className = "absolute left-0 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50";
-    dropdown.style.zIndex = "50";
+    dropdown.className = "absolute w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5";
+    dropdown.style.pointerEvents = "auto";
     const cellRect = cell.getBoundingClientRect();
-    const tdRect = cell.closest("td").getBoundingClientRect();
-    dropdown.style.top = `${cellRect.height + 2}px`;
+    const td = cell.closest("td");
+    if (!td) return;
     const optionsList = document.createElement("div");
-    optionsList.className = "py-1";
+    optionsList.className = "py-1 max-h-64 overflow-y-auto";
     optionsList.setAttribute("role", "menu");
     Object.entries(selectOptions).forEach(([value, label]) => {
       const option = document.createElement("button");
@@ -9423,43 +9487,97 @@ var CellRenderer = class {
       optionsList.appendChild(option);
     });
     dropdown.appendChild(optionsList);
-    const td = cell.closest("td");
-    if (!td) return;
-    const originalPosition = td.style.position;
-    td.style.position = "relative";
-    td.appendChild(dropdown);
+    portal.appendChild(dropdown);
+    document.body.appendChild(portal);
+    let dropdownTop = cellRect.bottom + 2;
+    let dropdownLeft = cellRect.left;
+    dropdown.style.left = `${dropdownLeft}px`;
+    dropdown.style.top = `${dropdownTop}px`;
+    dropdown.style.visibility = "hidden";
+    dropdown.style.display = "block";
     const dropdownRect = dropdown.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    if (dropdownRect.bottom > viewportHeight) {
-      dropdown.style.top = "auto";
-      dropdown.style.bottom = `${cellRect.height + 2}px`;
+    const viewportWidth = window.innerWidth;
+    const scrollY = window.scrollY;
+    const spaceBelow = viewportHeight - cellRect.bottom;
+    const spaceAbove = cellRect.top;
+    if (dropdownRect.height > spaceBelow && spaceAbove > spaceBelow) {
+      dropdownTop = cellRect.top - dropdownRect.height - 2;
+      dropdown.style.top = `${dropdownTop}px`;
+    } else if (dropdownRect.height > spaceBelow) {
+      const maxTop = viewportHeight - dropdownRect.height - 10;
+      dropdownTop = Math.min(dropdownTop, maxTop);
+      dropdown.style.top = `${dropdownTop}px`;
     }
+    if (dropdownRect.right > viewportWidth) {
+      dropdownLeft = cellRect.right - dropdownRect.width;
+      dropdown.style.left = `${dropdownLeft}px`;
+    }
+    if (dropdownTop < 0) {
+      dropdown.style.top = "2px";
+    }
+    dropdown.style.visibility = "visible";
+    if (field === "platform" || field === "orientation") {
+      console.log(`${field} dropdown positioning:`, {
+        cellRect,
+        dropdownTop,
+        dropdownLeft,
+        dropdownRect,
+        viewportHeight,
+        spaceBelow,
+        spaceAbove,
+        cellField: field
+      });
+    }
+    const handleScroll = () => {
+      const newCellRect = cell.getBoundingClientRect();
+      if (newCellRect.top < 0 || newCellRect.bottom > viewportHeight) {
+        cleanupDropdown(true);
+        return;
+      }
+      let newTop = newCellRect.bottom + 2;
+      let newLeft = newCellRect.left;
+      if (newTop + dropdownRect.height > viewportHeight) {
+        newTop = newCellRect.top - dropdownRect.height - 2;
+      }
+      dropdown.style.top = `${newTop}px`;
+      dropdown.style.left = `${newLeft}px`;
+    };
+    window.addEventListener("scroll", handleScroll, true);
     const firstOption = optionsList.querySelector("button");
     if (firstOption) firstOption.focus();
-    let changeHandled = false;
+    let isCleaningUp = false;
+    const cleanupDropdown = (shouldUnlock = true) => {
+      if (isCleaningUp) return;
+      isCleaningUp = true;
+      if (portal.parentNode) {
+        portal.remove();
+      }
+      document.removeEventListener("click", handleOutsideClick);
+      optionsList.removeEventListener("click", handleOptionClick);
+      dropdown.removeEventListener("keydown", handleKeydown);
+      window.removeEventListener("scroll", handleScroll, true);
+      this.controller.editTimeoutManager.clearEditTimeout(cellId);
+      if (shouldUnlock) {
+        this.controller.cellEditor.unlockCell(cellId);
+      }
+    };
     const handleOptionClick = (event) => {
       const button = event.target.closest("button");
       if (!button) return;
       const newValue = button.dataset.value;
-      changeHandled = true;
       console.log("Select changed:", { newValue, currentValue, originalValue: cell.dataset.originalValue });
       if (field === "status") {
         this.formatStatusCell(cell, newValue);
       } else {
         cell.textContent = newValue;
       }
+      cleanupDropdown(false);
       this.controller.cellEditor.saveCell(cell);
-      dropdown.remove();
-      td.style.position = originalPosition;
-      this.controller.editTimeoutManager.clearEditTimeout(cellId);
     };
     const handleOutsideClick = (event) => {
       if (!dropdown.contains(event.target) && event.target !== cell) {
-        dropdown.remove();
-        td.style.position = originalPosition;
-        this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
-        this.controller.editTimeoutManager.clearEditTimeout(cellId);
-        document.removeEventListener("click", handleOutsideClick);
+        cleanupDropdown(true);
       }
     };
     const handleKeydown = (event) => {
@@ -9467,11 +9585,7 @@ var CellRenderer = class {
       const currentIndex = options.indexOf(document.activeElement);
       if (event.key === "Escape") {
         event.preventDefault();
-        dropdown.remove();
-        td.style.position = originalPosition;
-        this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
-        this.controller.editTimeoutManager.clearEditTimeout(cellId);
-        document.removeEventListener("click", handleOutsideClick);
+        cleanupDropdown(true);
       } else if (event.key === "ArrowDown") {
         event.preventDefault();
         const nextIndex = currentIndex + 1 < options.length ? currentIndex + 1 : 0;
@@ -9485,11 +9599,7 @@ var CellRenderer = class {
         options[currentIndex].click();
       } else if (event.key === "Tab") {
         event.preventDefault();
-        dropdown.remove();
-        td.style.position = originalPosition;
-        this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
-        this.controller.editTimeoutManager.clearEditTimeout(cellId);
-        document.removeEventListener("click", handleOutsideClick);
+        cleanupDropdown(true);
         const allCells = this.controller.cellTargets;
         const cellIndex = allCells.indexOf(cell);
         let nextIndex;
@@ -9559,6 +9669,7 @@ var CollaborationManager = class {
 var MessageDisplayManager = class {
   constructor(controller) {
     this.controller = controller;
+    this.connectionStatusElement = null;
   }
   showLockedMessage(cell) {
     const message = document.createElement("div");
@@ -9584,6 +9695,34 @@ var MessageDisplayManager = class {
       setTimeout(() => {
         message.remove();
       }, 2e3);
+    }
+  }
+  showConnectionStatus(status) {
+    if (this.connectionStatusElement) {
+      this.connectionStatusElement.remove();
+      this.connectionStatusElement = null;
+    }
+    if (status === "connected") {
+      return;
+    }
+    const statusElement = document.createElement("div");
+    statusElement.className = "fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg text-white text-sm z-50";
+    if (status === "disconnected") {
+      statusElement.className += " bg-red-600";
+      statusElement.textContent = "Disconnected from server - attempting to reconnect...";
+    } else if (status === "rejected") {
+      statusElement.className += " bg-red-800";
+      statusElement.textContent = "Connection rejected - please refresh the page";
+    }
+    document.body.appendChild(statusElement);
+    this.connectionStatusElement = statusElement;
+    if (status === "disconnected") {
+      setTimeout(() => {
+        if (this.connectionStatusElement === statusElement) {
+          statusElement.remove();
+          this.connectionStatusElement = null;
+        }
+      }, 5e3);
     }
   }
 };

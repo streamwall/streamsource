@@ -9,8 +9,18 @@ export class ActionCableManager {
   connect() {
     this.subscription = createConsumer().subscriptions.create("CollaborativeStreamsChannel", {
       received: (data) => this.handleMessage(data),
-      connected: () => console.log("Connected to CollaborativeStreamsChannel"),
-      disconnected: () => console.log("Disconnected from CollaborativeStreamsChannel")
+      connected: () => {
+        console.log("Connected to CollaborativeStreamsChannel")
+        this.controller.messageDisplayManager.showConnectionStatus('connected')
+      },
+      disconnected: () => {
+        console.log("Disconnected from CollaborativeStreamsChannel")
+        this.controller.messageDisplayManager.showConnectionStatus('disconnected')
+      },
+      rejected: () => {
+        console.error("Connection to CollaborativeStreamsChannel was rejected")
+        this.controller.messageDisplayManager.showConnectionStatus('rejected')
+      }
     })
   }
 
@@ -22,8 +32,16 @@ export class ActionCableManager {
   }
 
   perform(action, data) {
-    if (this.subscription) {
-      this.subscription.perform(action, data)
+    if (this.subscription && this.subscription.consumer.connection.isOpen()) {
+      try {
+        this.subscription.perform(action, data)
+      } catch (error) {
+        console.error(`Failed to perform action ${action}:`, error)
+        this.controller.messageDisplayManager.showConnectionStatus('disconnected')
+      }
+    } else {
+      console.warn(`Cannot perform action ${action} - not connected`)
+      this.controller.messageDisplayManager.showConnectionStatus('disconnected')
     }
   }
 
@@ -43,6 +61,10 @@ export class ActionCableManager {
         break
       case 'cell_unlocked':
         this.controller.cellRenderer.hideCellLocked(data.cell_id)
+        // If this was our lock, update our tracking
+        if (data.user_id == this.controller.currentUser) {
+          this.controller.cellEditor.confirmCellUnlocked(data.cell_id)
+        }
         break
       case 'cell_updated':
         this.controller.cellRenderer.updateCell(data.cell_id, data.field, data.value, data.stream_id)

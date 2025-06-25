@@ -11,7 +11,7 @@ export class CellRenderer {
     
     // Mark as locked
     cell.dataset.locked = 'true'
-    cell.dataset.lockedBy = userId
+    cell.dataset.lockedBy = userId.toString() // Ensure it's a string for comparison
     
     // Add visual indicator
     cell.style.outline = `2px solid ${userColor}`
@@ -167,19 +167,29 @@ export class CellRenderer {
     
     const selectOptions = JSON.parse(cell.dataset.selectOptions || '{}')
     
+    // Create a portal container to escape any parent stacking contexts
+    const portal = document.createElement('div')
+    portal.style.position = 'fixed'
+    portal.style.top = '0'
+    portal.style.left = '0'
+    portal.style.width = '0'
+    portal.style.height = '0'
+    portal.style.zIndex = '99999'
+    portal.style.pointerEvents = 'none'
+    
     // Create dropdown container
     const dropdown = document.createElement('div')
-    dropdown.className = 'absolute left-0 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50'
-    dropdown.style.zIndex = '50'
+    dropdown.className = 'absolute w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5'
+    dropdown.style.pointerEvents = 'auto' // Make dropdown itself clickable
     
-    // Position it just below the cell
+    // Get cell position relative to viewport
     const cellRect = cell.getBoundingClientRect()
-    const tdRect = cell.closest('td').getBoundingClientRect()
-    dropdown.style.top = `${cellRect.height + 2}px`
+    const td = cell.closest('td')
+    if (!td) return
     
     // Create options list
     const optionsList = document.createElement('div')
-    optionsList.className = 'py-1'
+    optionsList.className = 'py-1 max-h-64 overflow-y-auto'
     optionsList.setAttribute('role', 'menu')
     
     // Add options
@@ -212,33 +222,131 @@ export class CellRenderer {
     
     dropdown.appendChild(optionsList)
     
-    // Position the dropdown
-    const td = cell.closest('td')
-    if (!td) return
+    // Add dropdown to portal, and portal to body for complete z-index isolation
+    portal.appendChild(dropdown)
+    document.body.appendChild(portal)
     
-    // Make TD relative for absolute positioning
-    const originalPosition = td.style.position
-    td.style.position = 'relative'
+    // Calculate initial position (below the cell)
+    let dropdownTop = cellRect.bottom + 2
+    let dropdownLeft = cellRect.left
     
-    // Add dropdown to TD
-    td.appendChild(dropdown)
+    // Set position relative to the viewport
+    dropdown.style.left = `${dropdownLeft}px`
+    dropdown.style.top = `${dropdownTop}px`
+    
+    // Force a reflow to get accurate measurements
+    dropdown.style.visibility = 'hidden'
+    dropdown.style.display = 'block'
     
     // Check if dropdown would go off screen and adjust if needed
     const dropdownRect = dropdown.getBoundingClientRect()
     const viewportHeight = window.innerHeight
+    const viewportWidth = window.innerWidth
+    const scrollY = window.scrollY
     
-    if (dropdownRect.bottom > viewportHeight) {
-      // Position above the cell instead
-      dropdown.style.top = 'auto'
-      dropdown.style.bottom = `${cellRect.height + 2}px`
+    // Calculate available space above and below
+    const spaceBelow = viewportHeight - cellRect.bottom
+    const spaceAbove = cellRect.top
+    
+    // Adjust vertical position if needed
+    if (dropdownRect.height > spaceBelow && spaceAbove > spaceBelow) {
+      // Position above the cell if more space available there
+      dropdownTop = cellRect.top - dropdownRect.height - 2
+      dropdown.style.top = `${dropdownTop}px`
+    } else if (dropdownRect.height > spaceBelow) {
+      // If still not enough space below, limit the dropdown height or position at bottom of viewport
+      const maxTop = viewportHeight - dropdownRect.height - 10 // 10px padding from bottom
+      dropdownTop = Math.min(dropdownTop, maxTop)
+      dropdown.style.top = `${dropdownTop}px`
     }
+    
+    // Adjust horizontal position if needed
+    if (dropdownRect.right > viewportWidth) {
+      // Align to right edge of cell instead
+      dropdownLeft = cellRect.right - dropdownRect.width
+      dropdown.style.left = `${dropdownLeft}px`
+    }
+    
+    // Ensure dropdown doesn't go off the top of the screen
+    if (dropdownTop < 0) {
+      dropdown.style.top = '2px'
+    }
+    
+    // Make dropdown visible
+    dropdown.style.visibility = 'visible'
+    
+    // Debug logging for select dropdowns
+    if (field === 'platform' || field === 'orientation') {
+      console.log(`${field} dropdown positioning:`, {
+        cellRect,
+        dropdownTop,
+        dropdownLeft,
+        dropdownRect,
+        viewportHeight,
+        spaceBelow,
+        spaceAbove,
+        cellField: field
+      })
+    }
+    
+    // Handle scroll to reposition dropdown
+    const handleScroll = () => {
+      const newCellRect = cell.getBoundingClientRect()
+      
+      // Check if cell is still visible
+      if (newCellRect.top < 0 || newCellRect.bottom > viewportHeight) {
+        // Cell scrolled out of view, close dropdown
+        cleanupDropdown(true)
+        return
+      }
+      
+      // Reposition dropdown
+      let newTop = newCellRect.bottom + 2
+      let newLeft = newCellRect.left
+      
+      // Check if we need to position above
+      if (newTop + dropdownRect.height > viewportHeight) {
+        newTop = newCellRect.top - dropdownRect.height - 2
+      }
+      
+      dropdown.style.top = `${newTop}px`
+      dropdown.style.left = `${newLeft}px`
+    }
+    
+    // Add scroll listener to window and any scrollable parent
+    window.addEventListener('scroll', handleScroll, true)
     
     // Focus first option
     const firstOption = optionsList.querySelector('button')
     if (firstOption) firstOption.focus()
     
-    // Flag to track if change handler already processed
-    let changeHandled = false
+    // Flag to track if dropdown is being cleaned up
+    let isCleaningUp = false
+    
+    // Cleanup function to avoid duplication
+    const cleanupDropdown = (shouldUnlock = true) => {
+      if (isCleaningUp) return
+      isCleaningUp = true
+      
+      // Remove portal (which contains dropdown) from body
+      if (portal.parentNode) {
+        portal.remove()
+      }
+      
+      // Remove event listeners
+      document.removeEventListener('click', handleOutsideClick)
+      optionsList.removeEventListener('click', handleOptionClick)
+      dropdown.removeEventListener('keydown', handleKeydown)
+      window.removeEventListener('scroll', handleScroll, true)
+      
+      // Clear edit timeout
+      this.controller.editTimeoutManager.clearEditTimeout(cellId)
+      
+      // Unlock if requested
+      if (shouldUnlock) {
+        this.controller.cellEditor.unlockCell(cellId)
+      }
+    }
     
     // Handle option click
     const handleOptionClick = (event) => {
@@ -246,7 +354,6 @@ export class CellRenderer {
       if (!button) return
       
       const newValue = button.dataset.value
-      changeHandled = true
       
       console.log('Select changed:', { newValue, currentValue, originalValue: cell.dataset.originalValue })
       
@@ -258,32 +365,18 @@ export class CellRenderer {
         cell.textContent = newValue
       }
       
+      // Clean up without unlocking (saveCell will handle the unlock)
+      cleanupDropdown(false)
+      
       // Save the change
       this.controller.cellEditor.saveCell(cell)
-      
-      // Clean up
-      dropdown.remove()
-      td.style.position = originalPosition
-      
-      // Clear edit timeout
-      this.controller.editTimeoutManager.clearEditTimeout(cellId)
     }
     
     // Handle clicks outside the dropdown
     const handleOutsideClick = (event) => {
       if (!dropdown.contains(event.target) && event.target !== cell) {
-        // Clean up without saving
-        dropdown.remove()
-        td.style.position = originalPosition
-        
-        // Unlock cell
-        this.controller.actionCableManager.perform('unlock_cell', { cell_id: cellId })
-        
-        // Clear edit timeout
-        this.controller.editTimeoutManager.clearEditTimeout(cellId)
-        
-        // Remove the event listener
-        document.removeEventListener('click', handleOutsideClick)
+        // Clean up with unlock
+        cleanupDropdown(true)
       }
     }
     
@@ -295,16 +388,7 @@ export class CellRenderer {
       if (event.key === 'Escape') {
         event.preventDefault()
         // Close without saving
-        dropdown.remove()
-        td.style.position = originalPosition
-        
-        // Unlock cell
-        this.controller.actionCableManager.perform('unlock_cell', { cell_id: cellId })
-        
-        // Clear edit timeout
-        this.controller.editTimeoutManager.clearEditTimeout(cellId)
-        
-        document.removeEventListener('click', handleOutsideClick)
+        cleanupDropdown(true)
       } else if (event.key === 'ArrowDown') {
         event.preventDefault()
         const nextIndex = currentIndex + 1 < options.length ? currentIndex + 1 : 0
@@ -318,17 +402,8 @@ export class CellRenderer {
         options[currentIndex].click()
       } else if (event.key === 'Tab') {
         event.preventDefault()
-        // Close dropdown and move to next cell
-        dropdown.remove()
-        td.style.position = originalPosition
-        
-        // Unlock cell
-        this.controller.actionCableManager.perform('unlock_cell', { cell_id: cellId })
-        
-        // Clear edit timeout
-        this.controller.editTimeoutManager.clearEditTimeout(cellId)
-        
-        document.removeEventListener('click', handleOutsideClick)
+        // Close dropdown
+        cleanupDropdown(true)
         
         // Move to next cell
         const allCells = this.controller.cellTargets
