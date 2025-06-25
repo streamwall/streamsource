@@ -4,6 +4,7 @@
   "dependencies": {
     "@hotwired/stimulus": "^3.2.2",
     "@hotwired/turbo-rails": "^8.0.13",
+    "@rails/actioncable": "^8.0.200",
     "esbuild": "^0.25.5"
   },
   "scripts": {
@@ -11,6 +12,6 @@
     "build:css": "tailwindcss -i ./app/assets/stylesheets/application.tailwind.css -o ./app/assets/builds/application.css --minify"
   },
   "devDependencies": {
-    "tailwindcss": "^4.1.10"
+    "tailwindcss": "^3"
   }
 }

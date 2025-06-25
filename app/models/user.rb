@@ -53,6 +53,10 @@ class User < ApplicationRecord
     editor? || admin?
   end
   
+  def display_name
+    email.split('@').first
+  end
+  
   # Feature flag groups
   def beta_user?
     # You can implement your own logic here

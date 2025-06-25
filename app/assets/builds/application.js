@@ -5969,8 +5969,8 @@ function setConsumer(newConsumer) {
   return consumer = newConsumer;
 }
 async function createConsumer2() {
-  const { createConsumer: createConsumer3 } = await Promise.resolve().then(() => (init_src(), src_exports));
-  return createConsumer3();
+  const { createConsumer: createConsumer4 } = await Promise.resolve().then(() => (init_src(), src_exports));
+  return createConsumer4();
 }
 async function subscribeTo(channel, mixin) {
   const { subscriptions } = await getConsumer();
@@ -6083,6 +6083,493 @@ function isBodyInit(body) {
 // node_modules/@hotwired/turbo-rails/app/javascript/turbo/index.js
 window.Turbo = turbo_es2017_esm_exports;
 addEventListener("turbo:before-fetch-request", encodeMethodIntoRequestBody);
+
+// node_modules/@rails/actioncable/app/assets/javascripts/actioncable.esm.js
+var adapters = {
+  logger: typeof console !== "undefined" ? console : void 0,
+  WebSocket: typeof WebSocket !== "undefined" ? WebSocket : void 0
+};
+var logger = {
+  log(...messages) {
+    if (this.enabled) {
+      messages.push(Date.now());
+      adapters.logger.log("[ActionCable]", ...messages);
+    }
+  }
+};
+var now2 = () => (/* @__PURE__ */ new Date()).getTime();
+var secondsSince2 = (time) => (now2() - time) / 1e3;
+var ConnectionMonitor2 = class {
+  constructor(connection) {
+    this.visibilityDidChange = this.visibilityDidChange.bind(this);
+    this.connection = connection;
+    this.reconnectAttempts = 0;
+  }
+  start() {
+    if (!this.isRunning()) {
+      this.startedAt = now2();
+      delete this.stoppedAt;
+      this.startPolling();
+      addEventListener("visibilitychange", this.visibilityDidChange);
+      logger.log(`ConnectionMonitor started. stale threshold = ${this.constructor.staleThreshold} s`);
+    }
+  }
+  stop() {
+    if (this.isRunning()) {
+      this.stoppedAt = now2();
+      this.stopPolling();
+      removeEventListener("visibilitychange", this.visibilityDidChange);
+      logger.log("ConnectionMonitor stopped");
+    }
+  }
+  isRunning() {
+    return this.startedAt && !this.stoppedAt;
+  }
+  recordMessage() {
+    this.pingedAt = now2();
+  }
+  recordConnect() {
+    this.reconnectAttempts = 0;
+    delete this.disconnectedAt;
+    logger.log("ConnectionMonitor recorded connect");
+  }
+  recordDisconnect() {
+    this.disconnectedAt = now2();
+    logger.log("ConnectionMonitor recorded disconnect");
+  }
+  startPolling() {
+    this.stopPolling();
+    this.poll();
+  }
+  stopPolling() {
+    clearTimeout(this.pollTimeout);
+  }
+  poll() {
+    this.pollTimeout = setTimeout(() => {
+      this.reconnectIfStale();
+      this.poll();
+    }, this.getPollInterval());
+  }
+  getPollInterval() {
+    const { staleThreshold, reconnectionBackoffRate } = this.constructor;
+    const backoff = Math.pow(1 + reconnectionBackoffRate, Math.min(this.reconnectAttempts, 10));
+    const jitterMax = this.reconnectAttempts === 0 ? 1 : reconnectionBackoffRate;
+    const jitter = jitterMax * Math.random();
+    return staleThreshold * 1e3 * backoff * (1 + jitter);
+  }
+  reconnectIfStale() {
+    if (this.connectionIsStale()) {
+      logger.log(`ConnectionMonitor detected stale connection. reconnectAttempts = ${this.reconnectAttempts}, time stale = ${secondsSince2(this.refreshedAt)} s, stale threshold = ${this.constructor.staleThreshold} s`);
+      this.reconnectAttempts++;
+      if (this.disconnectedRecently()) {
+        logger.log(`ConnectionMonitor skipping reopening recent disconnect. time disconnected = ${secondsSince2(this.disconnectedAt)} s`);
+      } else {
+        logger.log("ConnectionMonitor reopening");
+        this.connection.reopen();
+      }
+    }
+  }
+  get refreshedAt() {
+    return this.pingedAt ? this.pingedAt : this.startedAt;
+  }
+  connectionIsStale() {
+    return secondsSince2(this.refreshedAt) > this.constructor.staleThreshold;
+  }
+  disconnectedRecently() {
+    return this.disconnectedAt && secondsSince2(this.disconnectedAt) < this.constructor.staleThreshold;
+  }
+  visibilityDidChange() {
+    if (document.visibilityState === "visible") {
+      setTimeout(() => {
+        if (this.connectionIsStale() || !this.connection.isOpen()) {
+          logger.log(`ConnectionMonitor reopening stale connection on visibilitychange. visibilityState = ${document.visibilityState}`);
+          this.connection.reopen();
+        }
+      }, 200);
+    }
+  }
+};
+ConnectionMonitor2.staleThreshold = 6;
+ConnectionMonitor2.reconnectionBackoffRate = 0.15;
+var INTERNAL = {
+  message_types: {
+    welcome: "welcome",
+    disconnect: "disconnect",
+    ping: "ping",
+    confirmation: "confirm_subscription",
+    rejection: "reject_subscription"
+  },
+  disconnect_reasons: {
+    unauthorized: "unauthorized",
+    invalid_request: "invalid_request",
+    server_restart: "server_restart",
+    remote: "remote"
+  },
+  default_mount_path: "/cable",
+  protocols: ["actioncable-v1-json", "actioncable-unsupported"]
+};
+var { message_types: message_types2, protocols: protocols2 } = INTERNAL;
+var supportedProtocols2 = protocols2.slice(0, protocols2.length - 1);
+var indexOf2 = [].indexOf;
+var Connection2 = class {
+  constructor(consumer2) {
+    this.open = this.open.bind(this);
+    this.consumer = consumer2;
+    this.subscriptions = this.consumer.subscriptions;
+    this.monitor = new ConnectionMonitor2(this);
+    this.disconnected = true;
+  }
+  send(data) {
+    if (this.isOpen()) {
+      this.webSocket.send(JSON.stringify(data));
+      return true;
+    } else {
+      return false;
+    }
+  }
+  open() {
+    if (this.isActive()) {
+      logger.log(`Attempted to open WebSocket, but existing socket is ${this.getState()}`);
+      return false;
+    } else {
+      const socketProtocols = [...protocols2, ...this.consumer.subprotocols || []];
+      logger.log(`Opening WebSocket, current state is ${this.getState()}, subprotocols: ${socketProtocols}`);
+      if (this.webSocket) {
+        this.uninstallEventHandlers();
+      }
+      this.webSocket = new adapters.WebSocket(this.consumer.url, socketProtocols);
+      this.installEventHandlers();
+      this.monitor.start();
+      return true;
+    }
+  }
+  close({ allowReconnect } = {
+    allowReconnect: true
+  }) {
+    if (!allowReconnect) {
+      this.monitor.stop();
+    }
+    if (this.isOpen()) {
+      return this.webSocket.close();
+    }
+  }
+  reopen() {
+    logger.log(`Reopening WebSocket, current state is ${this.getState()}`);
+    if (this.isActive()) {
+      try {
+        return this.close();
+      } catch (error2) {
+        logger.log("Failed to reopen WebSocket", error2);
+      } finally {
+        logger.log(`Reopening WebSocket in ${this.constructor.reopenDelay}ms`);
+        setTimeout(this.open, this.constructor.reopenDelay);
+      }
+    } else {
+      return this.open();
+    }
+  }
+  getProtocol() {
+    if (this.webSocket) {
+      return this.webSocket.protocol;
+    }
+  }
+  isOpen() {
+    return this.isState("open");
+  }
+  isActive() {
+    return this.isState("open", "connecting");
+  }
+  triedToReconnect() {
+    return this.monitor.reconnectAttempts > 0;
+  }
+  isProtocolSupported() {
+    return indexOf2.call(supportedProtocols2, this.getProtocol()) >= 0;
+  }
+  isState(...states) {
+    return indexOf2.call(states, this.getState()) >= 0;
+  }
+  getState() {
+    if (this.webSocket) {
+      for (let state in adapters.WebSocket) {
+        if (adapters.WebSocket[state] === this.webSocket.readyState) {
+          return state.toLowerCase();
+        }
+      }
+    }
+    return null;
+  }
+  installEventHandlers() {
+    for (let eventName in this.events) {
+      const handler = this.events[eventName].bind(this);
+      this.webSocket[`on${eventName}`] = handler;
+    }
+  }
+  uninstallEventHandlers() {
+    for (let eventName in this.events) {
+      this.webSocket[`on${eventName}`] = function() {
+      };
+    }
+  }
+};
+Connection2.reopenDelay = 500;
+Connection2.prototype.events = {
+  message(event) {
+    if (!this.isProtocolSupported()) {
+      return;
+    }
+    const { identifier, message, reason, reconnect, type } = JSON.parse(event.data);
+    this.monitor.recordMessage();
+    switch (type) {
+      case message_types2.welcome:
+        if (this.triedToReconnect()) {
+          this.reconnectAttempted = true;
+        }
+        this.monitor.recordConnect();
+        return this.subscriptions.reload();
+      case message_types2.disconnect:
+        logger.log(`Disconnecting. Reason: ${reason}`);
+        return this.close({
+          allowReconnect: reconnect
+        });
+      case message_types2.ping:
+        return null;
+      case message_types2.confirmation:
+        this.subscriptions.confirmSubscription(identifier);
+        if (this.reconnectAttempted) {
+          this.reconnectAttempted = false;
+          return this.subscriptions.notify(identifier, "connected", {
+            reconnected: true
+          });
+        } else {
+          return this.subscriptions.notify(identifier, "connected", {
+            reconnected: false
+          });
+        }
+      case message_types2.rejection:
+        return this.subscriptions.reject(identifier);
+      default:
+        return this.subscriptions.notify(identifier, "received", message);
+    }
+  },
+  open() {
+    logger.log(`WebSocket onopen event, using '${this.getProtocol()}' subprotocol`);
+    this.disconnected = false;
+    if (!this.isProtocolSupported()) {
+      logger.log("Protocol is unsupported. Stopping monitor and disconnecting.");
+      return this.close({
+        allowReconnect: false
+      });
+    }
+  },
+  close(event) {
+    logger.log("WebSocket onclose event");
+    if (this.disconnected) {
+      return;
+    }
+    this.disconnected = true;
+    this.monitor.recordDisconnect();
+    return this.subscriptions.notifyAll("disconnected", {
+      willAttemptReconnect: this.monitor.isRunning()
+    });
+  },
+  error() {
+    logger.log("WebSocket onerror event");
+  }
+};
+var extend2 = function(object, properties) {
+  if (properties != null) {
+    for (let key in properties) {
+      const value = properties[key];
+      object[key] = value;
+    }
+  }
+  return object;
+};
+var Subscription2 = class {
+  constructor(consumer2, params = {}, mixin) {
+    this.consumer = consumer2;
+    this.identifier = JSON.stringify(params);
+    extend2(this, mixin);
+  }
+  perform(action, data = {}) {
+    data.action = action;
+    return this.send(data);
+  }
+  send(data) {
+    return this.consumer.send({
+      command: "message",
+      identifier: this.identifier,
+      data: JSON.stringify(data)
+    });
+  }
+  unsubscribe() {
+    return this.consumer.subscriptions.remove(this);
+  }
+};
+var SubscriptionGuarantor2 = class {
+  constructor(subscriptions) {
+    this.subscriptions = subscriptions;
+    this.pendingSubscriptions = [];
+  }
+  guarantee(subscription) {
+    if (this.pendingSubscriptions.indexOf(subscription) == -1) {
+      logger.log(`SubscriptionGuarantor guaranteeing ${subscription.identifier}`);
+      this.pendingSubscriptions.push(subscription);
+    } else {
+      logger.log(`SubscriptionGuarantor already guaranteeing ${subscription.identifier}`);
+    }
+    this.startGuaranteeing();
+  }
+  forget(subscription) {
+    logger.log(`SubscriptionGuarantor forgetting ${subscription.identifier}`);
+    this.pendingSubscriptions = this.pendingSubscriptions.filter((s) => s !== subscription);
+  }
+  startGuaranteeing() {
+    this.stopGuaranteeing();
+    this.retrySubscribing();
+  }
+  stopGuaranteeing() {
+    clearTimeout(this.retryTimeout);
+  }
+  retrySubscribing() {
+    this.retryTimeout = setTimeout(() => {
+      if (this.subscriptions && typeof this.subscriptions.subscribe === "function") {
+        this.pendingSubscriptions.map((subscription) => {
+          logger.log(`SubscriptionGuarantor resubscribing ${subscription.identifier}`);
+          this.subscriptions.subscribe(subscription);
+        });
+      }
+    }, 500);
+  }
+};
+var Subscriptions2 = class {
+  constructor(consumer2) {
+    this.consumer = consumer2;
+    this.guarantor = new SubscriptionGuarantor2(this);
+    this.subscriptions = [];
+  }
+  create(channelName, mixin) {
+    const channel = channelName;
+    const params = typeof channel === "object" ? channel : {
+      channel
+    };
+    const subscription = new Subscription2(this.consumer, params, mixin);
+    return this.add(subscription);
+  }
+  add(subscription) {
+    this.subscriptions.push(subscription);
+    this.consumer.ensureActiveConnection();
+    this.notify(subscription, "initialized");
+    this.subscribe(subscription);
+    return subscription;
+  }
+  remove(subscription) {
+    this.forget(subscription);
+    if (!this.findAll(subscription.identifier).length) {
+      this.sendCommand(subscription, "unsubscribe");
+    }
+    return subscription;
+  }
+  reject(identifier) {
+    return this.findAll(identifier).map((subscription) => {
+      this.forget(subscription);
+      this.notify(subscription, "rejected");
+      return subscription;
+    });
+  }
+  forget(subscription) {
+    this.guarantor.forget(subscription);
+    this.subscriptions = this.subscriptions.filter((s) => s !== subscription);
+    return subscription;
+  }
+  findAll(identifier) {
+    return this.subscriptions.filter((s) => s.identifier === identifier);
+  }
+  reload() {
+    return this.subscriptions.map((subscription) => this.subscribe(subscription));
+  }
+  notifyAll(callbackName, ...args) {
+    return this.subscriptions.map((subscription) => this.notify(subscription, callbackName, ...args));
+  }
+  notify(subscription, callbackName, ...args) {
+    let subscriptions;
+    if (typeof subscription === "string") {
+      subscriptions = this.findAll(subscription);
+    } else {
+      subscriptions = [subscription];
+    }
+    return subscriptions.map((subscription2) => typeof subscription2[callbackName] === "function" ? subscription2[callbackName](...args) : void 0);
+  }
+  subscribe(subscription) {
+    if (this.sendCommand(subscription, "subscribe")) {
+      this.guarantor.guarantee(subscription);
+    }
+  }
+  confirmSubscription(identifier) {
+    logger.log(`Subscription confirmed ${identifier}`);
+    this.findAll(identifier).map((subscription) => this.guarantor.forget(subscription));
+  }
+  sendCommand(subscription, command) {
+    const { identifier } = subscription;
+    return this.consumer.send({
+      command,
+      identifier
+    });
+  }
+};
+var Consumer2 = class {
+  constructor(url) {
+    this._url = url;
+    this.subscriptions = new Subscriptions2(this);
+    this.connection = new Connection2(this);
+    this.subprotocols = [];
+  }
+  get url() {
+    return createWebSocketURL2(this._url);
+  }
+  send(data) {
+    return this.connection.send(data);
+  }
+  connect() {
+    return this.connection.open();
+  }
+  disconnect() {
+    return this.connection.close({
+      allowReconnect: false
+    });
+  }
+  ensureActiveConnection() {
+    if (!this.connection.isActive()) {
+      return this.connection.open();
+    }
+  }
+  addSubProtocol(subprotocol) {
+    this.subprotocols = [...this.subprotocols, subprotocol];
+  }
+};
+function createWebSocketURL2(url) {
+  if (typeof url === "function") {
+    url = url();
+  }
+  if (url && !/^wss?:/i.test(url)) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.href = a.href;
+    a.protocol = a.protocol.replace("http", "ws");
+    return a.href;
+  } else {
+    return url;
+  }
+}
+function createConsumer3(url = getConfig2("url") || INTERNAL.default_mount_path) {
+  return new Consumer2(url);
+}
+function getConfig2(name) {
+  const element = document.head.querySelector(`meta[name='action-cable-${name}']`);
+  if (element) {
+    return element.getAttribute("content");
+  }
+}
 
 // node_modules/@hotwired/stimulus/dist/stimulus.js
 var EventListener = class {
@@ -7565,7 +8052,7 @@ function bless(constructor) {
   return shadow(constructor, getBlessedProperties(constructor));
 }
 function shadow(constructor, properties) {
-  const shadowConstructor = extend2(constructor);
+  const shadowConstructor = extend3(constructor);
   const shadowProperties = getShadowProperties(constructor.prototype, properties);
   Object.defineProperties(shadowConstructor.prototype, shadowProperties);
   return shadowConstructor;
@@ -7609,7 +8096,7 @@ var getOwnKeys = (() => {
     return Object.getOwnPropertyNames;
   }
 })();
-var extend2 = (() => {
+var extend3 = (() => {
   function extendWithReflect(constructor) {
     function extended() {
       return Reflect.construct(constructor, arguments, new.target);
@@ -7741,9 +8228,9 @@ var DataMap = class {
   }
 };
 var Guide = class {
-  constructor(logger) {
+  constructor(logger2) {
     this.warnedKeysByObject = /* @__PURE__ */ new WeakMap();
-    this.logger = logger;
+    this.logger = logger2;
   }
   warn(object, key, message) {
     let warnedKeys = this.warnedKeysByObject.get(object);
@@ -7873,7 +8360,7 @@ var OutletSet = class {
   }
 };
 var Scope = class _Scope {
-  constructor(schema, element, identifier, logger) {
+  constructor(schema, element, identifier, logger2) {
     this.targets = new TargetSet(this);
     this.classes = new ClassMap(this);
     this.data = new DataMap(this);
@@ -7883,7 +8370,7 @@ var Scope = class _Scope {
     this.schema = schema;
     this.element = element;
     this.identifier = identifier;
-    this.guide = new Guide(logger);
+    this.guide = new Guide(logger2);
     this.outlets = new OutletSet(this.documentScope, element);
   }
   findElement(selector) {
@@ -8611,10 +9098,324 @@ var mobile_menu_controller_default = class extends Controller {
   }
 };
 
+// app/javascript/controllers/collaborative_spreadsheet_controller.js
+var collaborative_spreadsheet_controller_default = class extends Controller {
+  static targets = ["cell", "userIndicator", "presenceList"];
+  connect() {
+    this.currentUser = this.data.get("currentUserId");
+    this.currentUserName = this.data.get("currentUserName");
+    this.currentUserColor = this.data.get("currentUserColor");
+    this.editTimeouts = /* @__PURE__ */ new Map();
+    this.activeUsers = /* @__PURE__ */ new Map();
+    console.log("Collaborative spreadsheet initialized", {
+      cellCount: this.cellTargets.length,
+      currentUser: this.currentUser
+    });
+    this.subscription = createConsumer3().subscriptions.create("CollaborativeStreamsChannel", {
+      received: (data) => this.handleMessage(data),
+      connected: () => console.log("Connected to CollaborativeStreamsChannel"),
+      disconnected: () => console.log("Disconnected from CollaborativeStreamsChannel")
+    });
+    this.cellTargets.forEach((cell) => {
+      cell.addEventListener("click", this.handleCellClick.bind(this));
+      cell.addEventListener("blur", this.handleCellBlur.bind(this));
+      cell.addEventListener("input", this.handleCellInput.bind(this));
+      cell.addEventListener("keydown", this.handleCellKeydown.bind(this));
+    });
+  }
+  disconnect() {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
+    this.editTimeouts.forEach((timeout) => clearTimeout(timeout));
+  }
+  handleMessage(data) {
+    switch (data.action) {
+      case "active_users_list":
+        this.setActiveUsers(data.users);
+        break;
+      case "user_joined":
+        this.addUser(data.user_id, data.user_name, data.user_color);
+        break;
+      case "user_left":
+        this.removeUser(data.user_id);
+        break;
+      case "cell_locked":
+        this.showCellLocked(data.cell_id, data.user_id, data.user_name, data.user_color);
+        break;
+      case "cell_unlocked":
+        this.hideCellLocked(data.cell_id);
+        break;
+      case "cell_updated":
+        this.updateCell(data.cell_id, data.field, data.value, data.stream_id);
+        break;
+    }
+  }
+  handleCellClick(event) {
+    const cell = event.currentTarget;
+    const cellId = cell.dataset.cellId;
+    const isLocked = cell.dataset.locked === "true";
+    const lockedBy = cell.dataset.lockedBy;
+    const field = cell.dataset.field;
+    if (isLocked && lockedBy !== this.currentUser) {
+      this.showLockedMessage(cell);
+      return;
+    }
+    if (field === "status") {
+      const currentValue = cell.dataset.originalValue || cell.textContent.trim();
+      cell.textContent = currentValue;
+    }
+    cell.contentEditable = true;
+    cell.focus();
+    const range = document.createRange();
+    range.selectNodeContents(cell);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    this.subscription.perform("lock_cell", { cell_id: cellId });
+    this.setEditTimeout(cellId);
+  }
+  handleCellBlur(event) {
+    const cell = event.currentTarget;
+    const cellId = cell.dataset.cellId;
+    const field = cell.dataset.field;
+    if (cell.dataset.skipSave !== "true") {
+      this.saveCell(cell);
+    } else {
+      this.subscription.perform("unlock_cell", { cell_id: cellId });
+      delete cell.dataset.skipSave;
+    }
+    cell.contentEditable = false;
+    if (field === "status") {
+      const value = cell.dataset.originalValue || cell.textContent.trim();
+      const colorClass = value === "Live" ? "bg-green-100 text-green-800" : value === "Offline" ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-800";
+      while (cell.firstChild) {
+        cell.removeChild(cell.firstChild);
+      }
+      const span = document.createElement("span");
+      span.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}`;
+      span.textContent = value;
+      cell.appendChild(span);
+    }
+    this.clearEditTimeout(cellId);
+  }
+  handleCellInput(event) {
+    const cell = event.currentTarget;
+    const cellId = cell.dataset.cellId;
+    this.clearEditTimeout(cellId);
+    this.setEditTimeout(cellId);
+    clearTimeout(this.autosaveTimeout);
+    this.autosaveTimeout = setTimeout(() => {
+      this.saveCell(cell);
+    }, 1e3);
+  }
+  handleCellKeydown(event) {
+    const cell = event.currentTarget;
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      cell.blur();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      const originalValue = cell.dataset.originalValue || "";
+      cell.textContent = originalValue;
+      cell.dataset.skipSave = "true";
+      cell.blur();
+    } else if (event.key === "Tab") {
+      event.preventDefault();
+      cell.blur();
+      const allCells = this.cellTargets;
+      const currentIndex = allCells.indexOf(cell);
+      let nextIndex;
+      if (event.shiftKey) {
+        nextIndex = currentIndex - 1;
+        if (nextIndex < 0) nextIndex = allCells.length - 1;
+      } else {
+        nextIndex = currentIndex + 1;
+        if (nextIndex >= allCells.length) nextIndex = 0;
+      }
+      if (allCells[nextIndex]) {
+        allCells[nextIndex].click();
+      }
+    }
+  }
+  saveCell(cell) {
+    const cellId = cell.dataset.cellId;
+    const streamId = cell.dataset.streamId;
+    const field = cell.dataset.field;
+    const value = cell.textContent.trim();
+    const originalValue = cell.dataset.originalValue || "";
+    if (!cellId || !streamId || !field) {
+      console.error("Missing required data for cell save:", { cellId, streamId, field });
+      return;
+    }
+    const td = cell.closest("td");
+    const tr = td ? td.closest("tr") : null;
+    if (!td || !tr) {
+      console.error("Cell is not in a valid table structure!", { cellId });
+      return;
+    }
+    if (value !== originalValue) {
+      console.log("Saving cell:", { cellId, streamId, field, value, originalValue });
+      this.subscription.perform("update_cell", {
+        cell_id: cellId,
+        stream_id: streamId,
+        field,
+        value
+      });
+      cell.dataset.originalValue = value;
+    }
+    this.subscription.perform("unlock_cell", { cell_id: cellId });
+  }
+  showCellLocked(cellId, userId, userName, userColor) {
+    const cell = this.cellTargets.find((c) => c.dataset.cellId === cellId);
+    if (!cell) return;
+    cell.dataset.locked = "true";
+    cell.dataset.lockedBy = userId;
+    cell.style.outline = `2px solid ${userColor}`;
+    cell.style.outlineOffset = "-2px";
+    const td = cell.closest("td");
+    if (td) {
+      const existingIndicator = td.querySelector(".user-indicator");
+      if (existingIndicator) existingIndicator.remove();
+      const indicator = document.createElement("div");
+      indicator.className = "user-indicator absolute -top-5 left-0 px-2 py-0.5 text-xs text-white rounded shadow-sm z-10 pointer-events-none";
+      indicator.style.backgroundColor = userColor;
+      indicator.textContent = userName;
+      indicator.dataset.userId = userId;
+      indicator.dataset.forCell = cellId;
+      td.appendChild(indicator);
+    }
+  }
+  hideCellLocked(cellId) {
+    const cell = this.cellTargets.find((c) => c.dataset.cellId === cellId);
+    if (!cell) return;
+    cell.dataset.locked = "false";
+    delete cell.dataset.lockedBy;
+    cell.style.outline = "";
+    cell.style.outlineOffset = "";
+    const td = cell.closest("td");
+    if (td) {
+      const indicator = td.querySelector(`[data-for-cell="${cellId}"]`);
+      if (indicator) {
+        indicator.remove();
+      }
+    }
+  }
+  updateCell(cellId, field, value, streamId) {
+    const cell = this.cellTargets.find((c) => c.dataset.cellId === cellId);
+    if (!cell) {
+      console.error("Cell not found for update:", cellId);
+      return;
+    }
+    if (cell.contentEditable === "true") return;
+    console.log("Updating cell:", { cellId, field, value, currentContent: cell.textContent });
+    const parentTd = cell.parentElement;
+    const parentTr = parentTd ? parentTd.parentElement : null;
+    if (field === "status") {
+      const colorClass = value === "Live" ? "bg-green-100 text-green-800" : value === "Offline" ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-800";
+      while (cell.firstChild) {
+        cell.removeChild(cell.firstChild);
+      }
+      const span = document.createElement("span");
+      span.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}`;
+      span.textContent = value;
+      cell.appendChild(span);
+    } else {
+      cell.textContent = value;
+    }
+    cell.dataset.originalValue = value;
+    if (cell.parentElement !== parentTd || parentTd && parentTd.parentElement !== parentTr) {
+      console.error("Table structure was broken during update!", { cellId, field });
+    }
+    cell.classList.add("bg-green-50");
+    setTimeout(() => {
+      cell.classList.remove("bg-green-50");
+    }, 500);
+  }
+  setActiveUsers(users) {
+    this.activeUsers.clear();
+    users.forEach((user) => {
+      this.activeUsers.set(user.user_id.toString(), {
+        name: user.user_name,
+        color: user.user_color,
+        isCurrentUser: user.user_id.toString() === this.currentUser
+      });
+    });
+    this.updatePresenceList();
+  }
+  addUser(userId, userName, userColor) {
+    this.activeUsers.set(userId.toString(), {
+      name: userName,
+      color: userColor,
+      isCurrentUser: userId.toString() === this.currentUser
+    });
+    this.updatePresenceList();
+  }
+  removeUser(userId) {
+    this.activeUsers.delete(userId.toString());
+    this.updatePresenceList();
+  }
+  updatePresenceList() {
+    if (!this.hasPresenceListTarget) return;
+    const presenceHtml = Array.from(this.activeUsers.entries()).map(([userId, user]) => `
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full" style="background-color: ${user.color}"></div>
+        <span class="text-sm ${user.isCurrentUser ? "font-semibold" : ""}">${user.name} ${user.isCurrentUser ? "(You)" : ""}</span>
+      </div>
+    `).join("");
+    this.presenceListTarget.innerHTML = presenceHtml;
+  }
+  setEditTimeout(cellId) {
+    this.clearEditTimeout(cellId);
+    const timeout = setTimeout(() => {
+      const cell = this.cellTargets.find((c) => c.dataset.cellId === cellId);
+      if (cell && cell.contentEditable === "true") {
+        cell.blur();
+        this.showTimeoutMessage(cell);
+      }
+    }, 3e4);
+    this.editTimeouts.set(cellId, timeout);
+  }
+  clearEditTimeout(cellId) {
+    const timeout = this.editTimeouts.get(cellId);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.editTimeouts.delete(cellId);
+    }
+  }
+  showLockedMessage(cell) {
+    const message = document.createElement("div");
+    message.className = "absolute top-full left-0 mt-1 px-3 py-2 bg-gray-800 text-white text-sm rounded shadow-lg z-20 pointer-events-none";
+    message.textContent = "This cell is being edited by another user";
+    const td = cell.closest("td");
+    if (td) {
+      message.dataset.messageFor = cell.dataset.cellId;
+      td.appendChild(message);
+      setTimeout(() => {
+        message.remove();
+      }, 2e3);
+    }
+  }
+  showTimeoutMessage(cell) {
+    const message = document.createElement("div");
+    message.className = "absolute top-full left-0 mt-1 px-3 py-2 bg-yellow-600 text-white text-sm rounded shadow-lg z-20 pointer-events-none";
+    message.textContent = "Edit timeout - changes saved";
+    const td = cell.closest("td");
+    if (td) {
+      message.dataset.messageFor = cell.dataset.cellId;
+      td.appendChild(message);
+      setTimeout(() => {
+        message.remove();
+      }, 2e3);
+    }
+  }
+};
+
 // app/javascript/controllers/index.js
 application.register("modal", modal_controller_default);
 application.register("search", search_controller_default);
 application.register("mobile-menu", mobile_menu_controller_default);
+application.register("collaborative-spreadsheet", collaborative_spreadsheet_controller_default);
 /*! Bundled license information:
 
 @hotwired/turbo/dist/turbo.es2017-esm.js:

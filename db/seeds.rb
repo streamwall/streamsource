@@ -16,6 +16,18 @@ if Rails.env.development? || Rails.env.test?
     puts "Admin user already exists: #{admin.email}"
   end
 
+  # Create second admin user for testing multiplayer
+  admin2 = User.find_or_create_by!(email: 'admin2@example.com') do |user|
+    user.password = 'Password123!'
+    user.role = 'admin'
+  end
+
+  if admin2.previously_new_record?
+    puts "Second admin user created: #{admin2.email} (password: Password123!)"
+  else
+    puts "Second admin user already exists: #{admin2.email}"
+  end
+
   # Create editor user
   editor = User.find_or_create_by!(email: 'editor@example.com') do |user|
     user.password = 'Password123!'
@@ -42,7 +54,8 @@ if Rails.env.development? || Rails.env.test?
 
   puts "\n========================================"
   puts "Development Admin Login Credentials:"
-  puts "Email: admin@example.com"
+  puts "Admin 1: admin@example.com"
+  puts "Admin 2: admin2@example.com"
   puts "Password: Password123!"
   puts "========================================\n"
 end

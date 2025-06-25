@@ -1,4 +1,5 @@
-<%= turbo_stream_from "streams" %>
+<%# Disabled for collaborative spreadsheet - using ActionCable instead %>
+<%# turbo_stream_from "streams" %>
 
 <% content_for :page_title, "Streams" %>
 <% content_for :page_subtitle, "Manage and monitor all streaming sessions" %>
@@ -143,8 +144,8 @@
 
 <!-- Streams list -->
 <turbo-frame id="streams_list">
-  <div class="bg-white shadow overflow-hidden rounded-lg">
-    <% if @streams.empty? %>
+  <% if @streams.empty? %>
+    <div class="bg-white shadow overflow-hidden rounded-lg">
       <div class="text-center py-12">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -169,77 +170,10 @@
           <% end %>
         </div>
       </div>
-    <% else %>
-      <!-- Results count -->
-      <div class="bg-gray-50 border-b border-gray-200 px-6 py-3">
-        <div class="flex items-center justify-between">
-          <p class="text-sm text-gray-700">
-            Showing <%= @pagy.offset + 1 %> to <%= [@pagy.offset + @pagy.items, @pagy.count].min %> of <%= @pagy.count %> streams
-            <% if params.values.any?(&:present?) %>
-              <span class="text-gray-500">(filtered)</span>
-            <% end %>
-          </p>
-          <% if @pagy.pages > 1 %>
-            <p class="text-sm text-gray-500">Page <%= @pagy.page %> of <%= @pagy.pages %></p>
-          <% end %>
-        </div>
-      </div>
-      
-      <!-- Desktop table -->
-      <div class="hidden md:block">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Streamer</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Platform</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Live</th>
-              <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200" id="streams">
-            <% @streams.each do |stream| %>
-              <%= render 'stream', stream: stream %>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-      
-      <!-- Mobile cards -->
-      <div class="md:hidden divide-y divide-gray-200">
-        <% @streams.each do |stream| %>
-          <%= render 'stream_card', stream: stream %>
-        <% end %>
-      </div>
-    <% end %>
-  </div>
-  
-  <!-- Pagination -->
-  <% if @pagy.pages > 1 %>
-    <div class="mt-6 flex items-center justify-between">
-      <div class="flex-1 flex justify-between sm:hidden">
-        <% if @pagy.prev %>
-          <%= link_to "Previous", admin_streams_path(page: @pagy.prev, **params.except(:page).permit!), 
-              class: "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
-        <% end %>
-        <% if @pagy.next %>
-          <%= link_to "Next", admin_streams_path(page: @pagy.next, **params.except(:page).permit!), 
-              class: "ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
-        <% end %>
-      </div>
-      <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-        <div>
-          <p class="text-sm text-gray-700">
-            Showing <span class="font-medium"><%= @pagy.offset + 1 %></span> to <span class="font-medium"><%= [@pagy.offset + @pagy.items, @pagy.count].min %></span> of <span class="font-medium"><%= @pagy.count %></span> results
-          </p>
-        </div>
-        <div>
-          <%== pagy_bootstrap_nav(@pagy) %>
-        </div>
-      </div>
     </div>
+  <% else %>
+    <!-- Collaborative Spreadsheet View -->
+    <%= render 'spreadsheet', streams: @streams, pagy: @pagy %>
   <% end %>
 </turbo-frame>
 
