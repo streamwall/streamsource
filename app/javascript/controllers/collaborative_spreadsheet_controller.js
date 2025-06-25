@@ -3,17 +3,25 @@ import { createConsumer } from "@rails/actioncable"
 
 export default class extends Controller {
   static targets = ["cell", "userIndicator", "presenceList"]
+  static values = { 
+    currentUserId: String,
+    currentUserName: String,
+    currentUserColor: String
+  }
   
   connect() {
-    this.currentUser = this.data.get("currentUserId")
-    this.currentUserName = this.data.get("currentUserName")
-    this.currentUserColor = this.data.get("currentUserColor")
+    this.currentUser = this.currentUserIdValue
+    this.currentUserName = this.currentUserNameValue
+    this.currentUserColor = this.currentUserColorValue
     this.editTimeouts = new Map()
     this.activeUsers = new Map()
     
     console.log('Collaborative spreadsheet initialized', {
       cellCount: this.cellTargets.length,
-      currentUser: this.currentUser
+      currentUser: this.currentUser,
+      currentUserIdValue: this.currentUserIdValue,
+      currentUserName: this.currentUserName,
+      currentUserColor: this.currentUserColor
     })
     
     // Connect to ActionCable
@@ -71,6 +79,7 @@ export default class extends Controller {
     const isLocked = cell.dataset.locked === 'true'
     const lockedBy = cell.dataset.lockedBy
     const field = cell.dataset.field
+    const fieldType = cell.dataset.fieldType
     
     // Prevent editing if locked by another user
     if (isLocked && lockedBy !== this.currentUser) {
@@ -78,26 +87,31 @@ export default class extends Controller {
       return
     }
     
-    // For status field and other fields with special formatting, 
-    // replace content with plain text for editing
-    if (field === 'status') {
-      const currentValue = cell.dataset.originalValue || cell.textContent.trim()
-      cell.textContent = currentValue
-    }
-    
-    // Make cell editable
-    cell.contentEditable = true
-    cell.focus()
-    
-    // Select all text
-    const range = document.createRange()
-    range.selectNodeContents(cell)
-    const sel = window.getSelection()
-    sel.removeAllRanges()
-    sel.addRange(range)
-    
     // Request lock
     this.subscription.perform('lock_cell', { cell_id: cellId })
+    
+    // Handle select fields differently
+    if (fieldType === 'select') {
+      this.showSelectDropdown(cell)
+    } else {
+      // For status field and other fields with special formatting, 
+      // replace content with plain text for editing
+      if (field === 'status') {
+        const currentValue = cell.dataset.originalValue || cell.textContent.trim()
+        cell.textContent = currentValue
+      }
+      
+      // Make cell editable
+      cell.contentEditable = true
+      cell.focus()
+      
+      // Select all text
+      const range = document.createRange()
+      range.selectNodeContents(cell)
+      const sel = window.getSelection()
+      sel.removeAllRanges()
+      sel.addRange(range)
+    }
     
     // Set edit timeout (30 seconds)
     this.setEditTimeout(cellId)
@@ -108,10 +122,17 @@ export default class extends Controller {
     const cellId = cell.dataset.cellId
     const field = cell.dataset.field
     
+    // Clear any pending autosave to prevent duplicate saves
+    if (this.autosaveTimeout) {
+      clearTimeout(this.autosaveTimeout)
+      this.autosaveTimeout = null
+    }
+    
     // Check if we should skip saving (e.g., Escape was pressed)
     if (cell.dataset.skipSave !== 'true') {
       // Save changes
       this.saveCell(cell)
+      // Note: saveCell will handle unlocking
     } else {
       // Just unlock without saving
       this.subscription.perform('unlock_cell', { cell_id: cellId })
@@ -204,6 +225,8 @@ export default class extends Controller {
     const value = cell.textContent.trim()
     const originalValue = cell.dataset.originalValue || ''
     
+    console.log('saveCell called for field:', field, 'with value:', value)
+    
     // Validate required data
     if (!cellId || !streamId || !field) {
       console.error('Missing required data for cell save:', { cellId, streamId, field })
@@ -231,6 +254,8 @@ export default class extends Controller {
       
       // Update original value
       cell.dataset.originalValue = value
+    } else {
+      console.log('No change detected, not saving:', { value, originalValue })
     }
     
     // Unlock cell
@@ -240,6 +265,8 @@ export default class extends Controller {
   showCellLocked(cellId, userId, userName, userColor) {
     const cell = this.cellTargets.find(c => c.dataset.cellId === cellId)
     if (!cell) return
+    
+    console.log('showCellLocked', { cellId, userId, userName, currentUser: this.currentUser })
     
     // Mark as locked
     cell.dataset.locked = 'true'
@@ -445,5 +472,147 @@ export default class extends Controller {
         message.remove()
       }, 2000)
     }
+  }
+  
+  showSelectDropdown(cell) {
+    const cellId = cell.dataset.cellId
+    const currentValue = cell.dataset.originalValue || cell.textContent.trim()
+    const selectOptions = JSON.parse(cell.dataset.selectOptions || '{}')
+    
+    // Create select element
+    const select = document.createElement('select')
+    select.className = 'absolute inset-0 w-full h-full px-2 py-1 border-2 border-indigo-500 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm'
+    select.style.zIndex = '30'
+    
+    // Add options
+    Object.entries(selectOptions).forEach(([value, label]) => {
+      const option = document.createElement('option')
+      option.value = value
+      option.textContent = label
+      option.selected = value === currentValue
+      select.appendChild(option)
+    })
+    
+    // Store reference to cell for later use
+    select.dataset.cellId = cellId
+    select.dataset.originalValue = currentValue
+    
+    // Position the select over the cell
+    const td = cell.closest('td')
+    if (!td) return
+    
+    // Make TD relative for absolute positioning
+    const originalPosition = td.style.position
+    td.style.position = 'relative'
+    
+    // Add select to TD
+    td.appendChild(select)
+    
+    // Focus and open the select
+    select.focus()
+    
+    // Flag to track if change handler already processed
+    let changeHandled = false
+    
+    // Handle selection
+    const handleSelectChange = (event) => {
+      const newValue = event.target.value
+      changeHandled = true
+      
+      console.log('Select changed:', { newValue, currentValue, originalValue: cell.dataset.originalValue })
+      
+      // Update cell display but NOT the originalValue yet
+      // Let saveCell handle updating originalValue after successful save
+      cell.textContent = newValue
+      
+      // Save the change
+      this.saveCell(cell)
+      
+      // Clean up
+      select.removeEventListener('change', handleSelectChange)
+      select.removeEventListener('blur', handleSelectBlur)
+      select.removeEventListener('keydown', handleSelectKeydown)
+      select.remove()
+      td.style.position = originalPosition
+      
+      // Clear edit timeout
+      this.clearEditTimeout(cellId)
+    }
+    
+    const handleSelectBlur = (event) => {
+      // If change was already handled, skip blur processing
+      if (changeHandled) return
+      
+      // Clean up without saving if no change
+      select.removeEventListener('change', handleSelectChange)
+      select.removeEventListener('blur', handleSelectBlur)
+      select.removeEventListener('keydown', handleSelectKeydown)
+      select.remove()
+      td.style.position = originalPosition
+      
+      // Unlock cell
+      this.subscription.perform('unlock_cell', { cell_id: cellId })
+      
+      // Clear edit timeout
+      this.clearEditTimeout(cellId)
+    }
+    
+    const handleSelectKeydown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        
+        // Restore original value and close without saving
+        cell.textContent = select.dataset.originalValue
+        select.blur()
+      } else if (event.key === 'Tab') {
+        event.preventDefault()
+        
+        // Save current selection if changed
+        if (select.value !== select.dataset.originalValue) {
+          cell.textContent = select.value
+          cell.dataset.originalValue = select.value
+          this.saveCell(cell)
+        }
+        
+        // Clean up
+        select.removeEventListener('change', handleSelectChange)
+        select.removeEventListener('blur', handleSelectBlur)
+        select.removeEventListener('keydown', handleSelectKeydown)
+        select.remove()
+        td.style.position = originalPosition
+        
+        // Unlock cell
+        this.subscription.perform('unlock_cell', { cell_id: cellId })
+        
+        // Clear edit timeout
+        this.clearEditTimeout(cellId)
+        
+        // Move to next cell
+        const allCells = this.cellTargets
+        const currentIndex = allCells.indexOf(cell)
+        let nextIndex
+        
+        if (event.shiftKey) {
+          nextIndex = currentIndex - 1
+          if (nextIndex < 0) nextIndex = allCells.length - 1
+        } else {
+          nextIndex = currentIndex + 1
+          if (nextIndex >= allCells.length) nextIndex = 0
+        }
+        
+        if (allCells[nextIndex]) {
+          allCells[nextIndex].click()
+        }
+      }
+    }
+    
+    // Add event listeners
+    select.addEventListener('change', handleSelectChange)
+    select.addEventListener('blur', handleSelectBlur)
+    select.addEventListener('keydown', handleSelectKeydown)
+    
+    // Set edit timeout
+    this.setEditTimeout(cellId)
   }
 }

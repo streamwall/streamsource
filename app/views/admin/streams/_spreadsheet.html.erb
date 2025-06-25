@@ -1,5 +1,5 @@
 <div data-controller="collaborative-spreadsheet"
-     data-collaborative-spreadsheet-current-user-id-value="<%= current_admin_user.id %>"
+     data-collaborative-spreadsheet-current-user-id-value="<%= current_admin_user.id.to_s %>"
      data-collaborative-spreadsheet-current-user-name-value="<%= current_admin_user.display_name %>"
      data-collaborative-spreadsheet-current-user-color-value="<%= user_color(current_admin_user) %>"
      class="relative">
@@ -167,9 +167,11 @@
                    data-cell-id="stream_<%= stream.id %>_kind"
                    data-stream-id="<%= stream.id %>"
                    data-field="kind"
+                   data-field-type="select"
                    data-original-value="<%= stream.kind %>"
+                   data-select-options='<%= { video: "video", web: "web", overlay: "overlay", background: "background" }.to_json %>'
                    class="text-sm text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors min-h-[1.5rem]">
-                <%= stream.kind || '-' %>
+                <%= stream.kind || 'video' %>
               </div>
             </td>
             

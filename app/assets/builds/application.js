@@ -9101,15 +9101,23 @@ var mobile_menu_controller_default = class extends Controller {
 // app/javascript/controllers/collaborative_spreadsheet_controller.js
 var collaborative_spreadsheet_controller_default = class extends Controller {
   static targets = ["cell", "userIndicator", "presenceList"];
+  static values = {
+    currentUserId: String,
+    currentUserName: String,
+    currentUserColor: String
+  };
   connect() {
-    this.currentUser = this.data.get("currentUserId");
-    this.currentUserName = this.data.get("currentUserName");
-    this.currentUserColor = this.data.get("currentUserColor");
+    this.currentUser = this.currentUserIdValue;
+    this.currentUserName = this.currentUserNameValue;
+    this.currentUserColor = this.currentUserColorValue;
     this.editTimeouts = /* @__PURE__ */ new Map();
     this.activeUsers = /* @__PURE__ */ new Map();
     console.log("Collaborative spreadsheet initialized", {
       cellCount: this.cellTargets.length,
-      currentUser: this.currentUser
+      currentUser: this.currentUser,
+      currentUserIdValue: this.currentUserIdValue,
+      currentUserName: this.currentUserName,
+      currentUserColor: this.currentUserColor
     });
     this.subscription = createConsumer3().subscriptions.create("CollaborativeStreamsChannel", {
       received: (data) => this.handleMessage(data),
@@ -9157,28 +9165,37 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     const isLocked = cell.dataset.locked === "true";
     const lockedBy = cell.dataset.lockedBy;
     const field = cell.dataset.field;
+    const fieldType = cell.dataset.fieldType;
     if (isLocked && lockedBy !== this.currentUser) {
       this.showLockedMessage(cell);
       return;
     }
-    if (field === "status") {
-      const currentValue = cell.dataset.originalValue || cell.textContent.trim();
-      cell.textContent = currentValue;
-    }
-    cell.contentEditable = true;
-    cell.focus();
-    const range = document.createRange();
-    range.selectNodeContents(cell);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
     this.subscription.perform("lock_cell", { cell_id: cellId });
+    if (fieldType === "select") {
+      this.showSelectDropdown(cell);
+    } else {
+      if (field === "status") {
+        const currentValue = cell.dataset.originalValue || cell.textContent.trim();
+        cell.textContent = currentValue;
+      }
+      cell.contentEditable = true;
+      cell.focus();
+      const range = document.createRange();
+      range.selectNodeContents(cell);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
     this.setEditTimeout(cellId);
   }
   handleCellBlur(event) {
     const cell = event.currentTarget;
     const cellId = cell.dataset.cellId;
     const field = cell.dataset.field;
+    if (this.autosaveTimeout) {
+      clearTimeout(this.autosaveTimeout);
+      this.autosaveTimeout = null;
+    }
     if (cell.dataset.skipSave !== "true") {
       this.saveCell(cell);
     } else {
@@ -9244,6 +9261,7 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     const field = cell.dataset.field;
     const value = cell.textContent.trim();
     const originalValue = cell.dataset.originalValue || "";
+    console.log("saveCell called for field:", field, "with value:", value);
     if (!cellId || !streamId || !field) {
       console.error("Missing required data for cell save:", { cellId, streamId, field });
       return;
@@ -9263,12 +9281,15 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
         value
       });
       cell.dataset.originalValue = value;
+    } else {
+      console.log("No change detected, not saving:", { value, originalValue });
     }
     this.subscription.perform("unlock_cell", { cell_id: cellId });
   }
   showCellLocked(cellId, userId, userName, userColor) {
     const cell = this.cellTargets.find((c) => c.dataset.cellId === cellId);
     if (!cell) return;
+    console.log("showCellLocked", { cellId, userId, userName, currentUser: this.currentUser });
     cell.dataset.locked = "true";
     cell.dataset.lockedBy = userId;
     cell.style.outline = `2px solid ${userColor}`;
@@ -9408,6 +9429,92 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
         message.remove();
       }, 2e3);
     }
+  }
+  showSelectDropdown(cell) {
+    const cellId = cell.dataset.cellId;
+    const currentValue = cell.dataset.originalValue || cell.textContent.trim();
+    const selectOptions = JSON.parse(cell.dataset.selectOptions || "{}");
+    const select = document.createElement("select");
+    select.className = "absolute inset-0 w-full h-full px-2 py-1 border-2 border-indigo-500 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm";
+    select.style.zIndex = "30";
+    Object.entries(selectOptions).forEach(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      option.selected = value === currentValue;
+      select.appendChild(option);
+    });
+    select.dataset.cellId = cellId;
+    select.dataset.originalValue = currentValue;
+    const td = cell.closest("td");
+    if (!td) return;
+    const originalPosition = td.style.position;
+    td.style.position = "relative";
+    td.appendChild(select);
+    select.focus();
+    let changeHandled = false;
+    const handleSelectChange = (event) => {
+      const newValue = event.target.value;
+      changeHandled = true;
+      console.log("Select changed:", { newValue, currentValue, originalValue: cell.dataset.originalValue });
+      cell.textContent = newValue;
+      this.saveCell(cell);
+      select.removeEventListener("change", handleSelectChange);
+      select.removeEventListener("blur", handleSelectBlur);
+      select.removeEventListener("keydown", handleSelectKeydown);
+      select.remove();
+      td.style.position = originalPosition;
+      this.clearEditTimeout(cellId);
+    };
+    const handleSelectBlur = (event) => {
+      if (changeHandled) return;
+      select.removeEventListener("change", handleSelectChange);
+      select.removeEventListener("blur", handleSelectBlur);
+      select.removeEventListener("keydown", handleSelectKeydown);
+      select.remove();
+      td.style.position = originalPosition;
+      this.subscription.perform("unlock_cell", { cell_id: cellId });
+      this.clearEditTimeout(cellId);
+    };
+    const handleSelectKeydown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        cell.textContent = select.dataset.originalValue;
+        select.blur();
+      } else if (event.key === "Tab") {
+        event.preventDefault();
+        if (select.value !== select.dataset.originalValue) {
+          cell.textContent = select.value;
+          cell.dataset.originalValue = select.value;
+          this.saveCell(cell);
+        }
+        select.removeEventListener("change", handleSelectChange);
+        select.removeEventListener("blur", handleSelectBlur);
+        select.removeEventListener("keydown", handleSelectKeydown);
+        select.remove();
+        td.style.position = originalPosition;
+        this.subscription.perform("unlock_cell", { cell_id: cellId });
+        this.clearEditTimeout(cellId);
+        const allCells = this.cellTargets;
+        const currentIndex = allCells.indexOf(cell);
+        let nextIndex;
+        if (event.shiftKey) {
+          nextIndex = currentIndex - 1;
+          if (nextIndex < 0) nextIndex = allCells.length - 1;
+        } else {
+          nextIndex = currentIndex + 1;
+          if (nextIndex >= allCells.length) nextIndex = 0;
+        }
+        if (allCells[nextIndex]) {
+          allCells[nextIndex].click();
+        }
+      }
+    };
+    select.addEventListener("change", handleSelectChange);
+    select.addEventListener("blur", handleSelectBlur);
+    select.addEventListener("keydown", handleSelectKeydown);
+    this.setEditTimeout(cellId);
   }
 };
 

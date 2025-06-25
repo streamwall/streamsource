@@ -56,8 +56,11 @@ class CollaborativeStreamsChannel < ApplicationCable::Channel
     field = data['field']
     value = data['value']
 
+    Rails.logger.info "CollaborativeStreamsChannel#update_cell called with: #{data.inspect}"
+
     # Verify user has lock on this cell
     unless cell_locked_by_user?(cell_id)
+      Rails.logger.warn "Cell not locked by user: #{cell_id}"
       reject
       return
     end
@@ -84,7 +87,7 @@ class CollaborativeStreamsChannel < ApplicationCable::Channel
       # Use update_columns to completely skip all callbacks including after_commit
       success = false
       
-      if %w[title source link city state platform orientation kind notes].include?(field)
+      if %w[title source link city state platform orientation notes].include?(field)
         stream.update_columns(field => value, updated_at: Time.current)
         success = true
       elsif field == 'status'
@@ -92,6 +95,16 @@ class CollaborativeStreamsChannel < ApplicationCable::Channel
         # Convert the display value to the enum key
         status_value = stream.class.statuses.key(value) || value.downcase
         stream.update_columns(status: status_value, updated_at: Time.current)
+        success = true
+      elsif field == 'kind'
+        # Kind is an enum but uses the same values as keys
+        Rails.logger.info "Updating kind field with value: #{value.inspect}"
+        Rails.logger.info "Available kinds: #{stream.class.kinds.inspect}"
+        kind_value = stream.class.kinds.key?(value) ? value : 'video'
+        Rails.logger.info "Setting kind to: #{kind_value}"
+        result = stream.update_columns(kind: kind_value, updated_at: Time.current)
+        Rails.logger.info "Update result: #{result}"
+        Rails.logger.info "Stream kind after update: #{stream.reload.kind}"
         success = true
       elsif %w[started_at ended_at].include?(field)
         # Handle datetime fields
@@ -230,7 +243,9 @@ class CollaborativeStreamsChannel < ApplicationCable::Channel
   end
 
   def cell_locked_by_user?(cell_id)
-    redis.get("collaborative_streams:cell:#{cell_id}:lock") == current_user.id.to_s
+    lock_user_id = redis.get("collaborative_streams:cell:#{cell_id}:lock")
+    Rails.logger.info "Checking if cell locked by user: lock_user_id=#{lock_user_id}, current_user.id=#{current_user.id}, match=#{lock_user_id == current_user.id.to_s}"
+    lock_user_id == current_user.id.to_s
   end
 
   def user_color
