@@ -9098,66 +9098,59 @@ var mobile_menu_controller_default = class extends Controller {
   }
 };
 
-// app/javascript/controllers/collaborative_spreadsheet_controller.js
-var collaborative_spreadsheet_controller_default = class extends Controller {
-  static targets = ["cell", "userIndicator", "presenceList"];
-  static values = {
-    currentUserId: String,
-    currentUserName: String,
-    currentUserColor: String
-  };
+// app/javascript/controllers/collaborative_spreadsheet/action_cable_manager.js
+var ActionCableManager = class {
+  constructor(controller) {
+    this.controller = controller;
+    this.subscription = null;
+  }
   connect() {
-    this.currentUser = this.currentUserIdValue;
-    this.currentUserName = this.currentUserNameValue;
-    this.currentUserColor = this.currentUserColorValue;
-    this.editTimeouts = /* @__PURE__ */ new Map();
-    this.activeUsers = /* @__PURE__ */ new Map();
-    console.log("Collaborative spreadsheet initialized", {
-      cellCount: this.cellTargets.length,
-      currentUser: this.currentUser,
-      currentUserIdValue: this.currentUserIdValue,
-      currentUserName: this.currentUserName,
-      currentUserColor: this.currentUserColor
-    });
     this.subscription = createConsumer3().subscriptions.create("CollaborativeStreamsChannel", {
       received: (data) => this.handleMessage(data),
       connected: () => console.log("Connected to CollaborativeStreamsChannel"),
       disconnected: () => console.log("Disconnected from CollaborativeStreamsChannel")
     });
-    this.cellTargets.forEach((cell) => {
-      cell.addEventListener("click", this.handleCellClick.bind(this));
-      cell.addEventListener("blur", this.handleCellBlur.bind(this));
-      cell.addEventListener("input", this.handleCellInput.bind(this));
-      cell.addEventListener("keydown", this.handleCellKeydown.bind(this));
-    });
   }
   disconnect() {
     if (this.subscription) {
       this.subscription.unsubscribe();
+      this.subscription = null;
     }
-    this.editTimeouts.forEach((timeout) => clearTimeout(timeout));
+  }
+  perform(action, data) {
+    if (this.subscription) {
+      this.subscription.perform(action, data);
+    }
   }
   handleMessage(data) {
     switch (data.action) {
       case "active_users_list":
-        this.setActiveUsers(data.users);
+        this.controller.collaborationManager.setActiveUsers(data.users);
         break;
       case "user_joined":
-        this.addUser(data.user_id, data.user_name, data.user_color);
+        this.controller.collaborationManager.addUser(data.user_id, data.user_name, data.user_color);
         break;
       case "user_left":
-        this.removeUser(data.user_id);
+        this.controller.collaborationManager.removeUser(data.user_id);
         break;
       case "cell_locked":
-        this.showCellLocked(data.cell_id, data.user_id, data.user_name, data.user_color);
+        this.controller.cellRenderer.showCellLocked(data.cell_id, data.user_id, data.user_name, data.user_color);
         break;
       case "cell_unlocked":
-        this.hideCellLocked(data.cell_id);
+        this.controller.cellRenderer.hideCellLocked(data.cell_id);
         break;
       case "cell_updated":
-        this.updateCell(data.cell_id, data.field, data.value, data.stream_id);
+        this.controller.cellRenderer.updateCell(data.cell_id, data.field, data.value, data.stream_id);
         break;
     }
+  }
+};
+
+// app/javascript/controllers/collaborative_spreadsheet/cell_editor.js
+var CellEditor = class {
+  constructor(controller) {
+    this.controller = controller;
+    this.autosaveTimeout = null;
   }
   handleCellClick(event) {
     const cell = event.currentTarget;
@@ -9166,13 +9159,13 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     const lockedBy = cell.dataset.lockedBy;
     const field = cell.dataset.field;
     const fieldType = cell.dataset.fieldType;
-    if (isLocked && lockedBy !== this.currentUser) {
-      this.showLockedMessage(cell);
+    if (isLocked && lockedBy !== this.controller.currentUser) {
+      this.controller.messageDisplayManager.showLockedMessage(cell);
       return;
     }
-    this.subscription.perform("lock_cell", { cell_id: cellId });
+    this.controller.actionCableManager.perform("lock_cell", { cell_id: cellId });
     if (fieldType === "select") {
-      this.showSelectDropdown(cell);
+      this.controller.cellRenderer.showSelectDropdown(cell);
     } else {
       if (field === "status") {
         const currentValue = cell.dataset.originalValue || cell.textContent.trim();
@@ -9186,7 +9179,7 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
       sel.removeAllRanges();
       sel.addRange(range);
     }
-    this.setEditTimeout(cellId);
+    this.controller.editTimeoutManager.setEditTimeout(cellId);
   }
   handleCellBlur(event) {
     const cell = event.currentTarget;
@@ -9199,28 +9192,20 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     if (cell.dataset.skipSave !== "true") {
       this.saveCell(cell);
     } else {
-      this.subscription.perform("unlock_cell", { cell_id: cellId });
+      this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
       delete cell.dataset.skipSave;
     }
     cell.contentEditable = false;
     if (field === "status") {
-      const value = cell.dataset.originalValue || cell.textContent.trim();
-      const colorClass = value === "Live" ? "bg-green-100 text-green-800" : value === "Offline" ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-800";
-      while (cell.firstChild) {
-        cell.removeChild(cell.firstChild);
-      }
-      const span = document.createElement("span");
-      span.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}`;
-      span.textContent = value;
-      cell.appendChild(span);
+      this.controller.cellRenderer.formatStatusCell(cell);
     }
-    this.clearEditTimeout(cellId);
+    this.controller.editTimeoutManager.clearEditTimeout(cellId);
   }
   handleCellInput(event) {
     const cell = event.currentTarget;
     const cellId = cell.dataset.cellId;
-    this.clearEditTimeout(cellId);
-    this.setEditTimeout(cellId);
+    this.controller.editTimeoutManager.clearEditTimeout(cellId);
+    this.controller.editTimeoutManager.setEditTimeout(cellId);
     clearTimeout(this.autosaveTimeout);
     this.autosaveTimeout = setTimeout(() => {
       this.saveCell(cell);
@@ -9240,7 +9225,7 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     } else if (event.key === "Tab") {
       event.preventDefault();
       cell.blur();
-      const allCells = this.cellTargets;
+      const allCells = this.controller.cellTargets;
       const currentIndex = allCells.indexOf(cell);
       let nextIndex;
       if (event.shiftKey) {
@@ -9274,7 +9259,7 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     }
     if (value !== originalValue) {
       console.log("Saving cell:", { cellId, streamId, field, value, originalValue });
-      this.subscription.perform("update_cell", {
+      this.controller.actionCableManager.perform("update_cell", {
         cell_id: cellId,
         stream_id: streamId,
         field,
@@ -9284,12 +9269,19 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     } else {
       console.log("No change detected, not saving:", { value, originalValue });
     }
-    this.subscription.perform("unlock_cell", { cell_id: cellId });
+    this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
+  }
+};
+
+// app/javascript/controllers/collaborative_spreadsheet/cell_renderer.js
+var CellRenderer = class {
+  constructor(controller) {
+    this.controller = controller;
   }
   showCellLocked(cellId, userId, userName, userColor) {
-    const cell = this.cellTargets.find((c) => c.dataset.cellId === cellId);
+    const cell = this.controller.cellTargets.find((c) => c.dataset.cellId === cellId);
     if (!cell) return;
-    console.log("showCellLocked", { cellId, userId, userName, currentUser: this.currentUser });
+    console.log("showCellLocked", { cellId, userId, userName, currentUser: this.controller.currentUser });
     cell.dataset.locked = "true";
     cell.dataset.lockedBy = userId;
     cell.style.outline = `2px solid ${userColor}`;
@@ -9308,7 +9300,7 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     }
   }
   hideCellLocked(cellId) {
-    const cell = this.cellTargets.find((c) => c.dataset.cellId === cellId);
+    const cell = this.controller.cellTargets.find((c) => c.dataset.cellId === cellId);
     if (!cell) return;
     cell.dataset.locked = "false";
     delete cell.dataset.lockedBy;
@@ -9323,7 +9315,7 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     }
   }
   updateCell(cellId, field, value, streamId) {
-    const cell = this.cellTargets.find((c) => c.dataset.cellId === cellId);
+    const cell = this.controller.cellTargets.find((c) => c.dataset.cellId === cellId);
     if (!cell) {
       console.error("Cell not found for update:", cellId);
       return;
@@ -9333,14 +9325,7 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     const parentTd = cell.parentElement;
     const parentTr = parentTd ? parentTd.parentElement : null;
     if (field === "status") {
-      const colorClass = value === "Live" ? "bg-green-100 text-green-800" : value === "Offline" ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-800";
-      while (cell.firstChild) {
-        cell.removeChild(cell.firstChild);
-      }
-      const span = document.createElement("span");
-      span.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}`;
-      span.textContent = value;
-      cell.appendChild(span);
+      this.formatStatusCell(cell, value);
     } else {
       cell.textContent = value;
     }
@@ -9353,82 +9338,16 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
       cell.classList.remove("bg-green-50");
     }, 500);
   }
-  setActiveUsers(users) {
-    this.activeUsers.clear();
-    users.forEach((user) => {
-      this.activeUsers.set(user.user_id.toString(), {
-        name: user.user_name,
-        color: user.user_color,
-        isCurrentUser: user.user_id.toString() === this.currentUser
-      });
-    });
-    this.updatePresenceList();
-  }
-  addUser(userId, userName, userColor) {
-    this.activeUsers.set(userId.toString(), {
-      name: userName,
-      color: userColor,
-      isCurrentUser: userId.toString() === this.currentUser
-    });
-    this.updatePresenceList();
-  }
-  removeUser(userId) {
-    this.activeUsers.delete(userId.toString());
-    this.updatePresenceList();
-  }
-  updatePresenceList() {
-    if (!this.hasPresenceListTarget) return;
-    const presenceHtml = Array.from(this.activeUsers.entries()).map(([userId, user]) => `
-      <div class="flex items-center gap-2">
-        <div class="w-3 h-3 rounded-full" style="background-color: ${user.color}"></div>
-        <span class="text-sm ${user.isCurrentUser ? "font-semibold" : ""}">${user.name} ${user.isCurrentUser ? "(You)" : ""}</span>
-      </div>
-    `).join("");
-    this.presenceListTarget.innerHTML = presenceHtml;
-  }
-  setEditTimeout(cellId) {
-    this.clearEditTimeout(cellId);
-    const timeout = setTimeout(() => {
-      const cell = this.cellTargets.find((c) => c.dataset.cellId === cellId);
-      if (cell && cell.contentEditable === "true") {
-        cell.blur();
-        this.showTimeoutMessage(cell);
-      }
-    }, 3e4);
-    this.editTimeouts.set(cellId, timeout);
-  }
-  clearEditTimeout(cellId) {
-    const timeout = this.editTimeouts.get(cellId);
-    if (timeout) {
-      clearTimeout(timeout);
-      this.editTimeouts.delete(cellId);
+  formatStatusCell(cell, value = null) {
+    const displayValue = value || cell.dataset.originalValue || cell.textContent.trim();
+    const colorClass = displayValue === "Live" ? "bg-green-100 text-green-800" : displayValue === "Offline" ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-800";
+    while (cell.firstChild) {
+      cell.removeChild(cell.firstChild);
     }
-  }
-  showLockedMessage(cell) {
-    const message = document.createElement("div");
-    message.className = "absolute top-full left-0 mt-1 px-3 py-2 bg-gray-800 text-white text-sm rounded shadow-lg z-20 pointer-events-none";
-    message.textContent = "This cell is being edited by another user";
-    const td = cell.closest("td");
-    if (td) {
-      message.dataset.messageFor = cell.dataset.cellId;
-      td.appendChild(message);
-      setTimeout(() => {
-        message.remove();
-      }, 2e3);
-    }
-  }
-  showTimeoutMessage(cell) {
-    const message = document.createElement("div");
-    message.className = "absolute top-full left-0 mt-1 px-3 py-2 bg-yellow-600 text-white text-sm rounded shadow-lg z-20 pointer-events-none";
-    message.textContent = "Edit timeout - changes saved";
-    const td = cell.closest("td");
-    if (td) {
-      message.dataset.messageFor = cell.dataset.cellId;
-      td.appendChild(message);
-      setTimeout(() => {
-        message.remove();
-      }, 2e3);
-    }
+    const span = document.createElement("span");
+    span.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}`;
+    span.textContent = displayValue;
+    cell.appendChild(span);
   }
   showSelectDropdown(cell) {
     const cellId = cell.dataset.cellId;
@@ -9484,17 +9403,17 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
       changeHandled = true;
       console.log("Select changed:", { newValue, currentValue, originalValue: cell.dataset.originalValue });
       cell.textContent = newValue;
-      this.saveCell(cell);
+      this.controller.cellEditor.saveCell(cell);
       dropdown.remove();
       td.style.position = originalPosition;
-      this.clearEditTimeout(cellId);
+      this.controller.editTimeoutManager.clearEditTimeout(cellId);
     };
     const handleOutsideClick = (event) => {
       if (!dropdown.contains(event.target) && event.target !== cell) {
         dropdown.remove();
         td.style.position = originalPosition;
-        this.subscription.perform("unlock_cell", { cell_id: cellId });
-        this.clearEditTimeout(cellId);
+        this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
+        this.controller.editTimeoutManager.clearEditTimeout(cellId);
         document.removeEventListener("click", handleOutsideClick);
       }
     };
@@ -9505,8 +9424,8 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
         event.preventDefault();
         dropdown.remove();
         td.style.position = originalPosition;
-        this.subscription.perform("unlock_cell", { cell_id: cellId });
-        this.clearEditTimeout(cellId);
+        this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
+        this.controller.editTimeoutManager.clearEditTimeout(cellId);
         document.removeEventListener("click", handleOutsideClick);
       } else if (event.key === "ArrowDown") {
         event.preventDefault();
@@ -9523,10 +9442,10 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
         event.preventDefault();
         dropdown.remove();
         td.style.position = originalPosition;
-        this.subscription.perform("unlock_cell", { cell_id: cellId });
-        this.clearEditTimeout(cellId);
+        this.controller.actionCableManager.perform("unlock_cell", { cell_id: cellId });
+        this.controller.editTimeoutManager.clearEditTimeout(cellId);
         document.removeEventListener("click", handleOutsideClick);
-        const allCells = this.cellTargets;
+        const allCells = this.controller.cellTargets;
         const cellIndex = allCells.indexOf(cell);
         let nextIndex;
         if (event.shiftKey) {
@@ -9546,7 +9465,151 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     setTimeout(() => {
       document.addEventListener("click", handleOutsideClick);
     }, 0);
-    this.setEditTimeout(cellId);
+    this.controller.editTimeoutManager.setEditTimeout(cellId);
+  }
+};
+
+// app/javascript/controllers/collaborative_spreadsheet/collaboration_manager.js
+var CollaborationManager = class {
+  constructor(controller) {
+    this.controller = controller;
+    this.activeUsers = /* @__PURE__ */ new Map();
+  }
+  setActiveUsers(users) {
+    this.activeUsers.clear();
+    users.forEach((user) => {
+      this.activeUsers.set(user.user_id.toString(), {
+        name: user.user_name,
+        color: user.user_color,
+        isCurrentUser: user.user_id.toString() === this.controller.currentUser
+      });
+    });
+    this.updatePresenceList();
+  }
+  addUser(userId, userName, userColor) {
+    this.activeUsers.set(userId.toString(), {
+      name: userName,
+      color: userColor,
+      isCurrentUser: userId.toString() === this.controller.currentUser
+    });
+    this.updatePresenceList();
+  }
+  removeUser(userId) {
+    this.activeUsers.delete(userId.toString());
+    this.updatePresenceList();
+  }
+  updatePresenceList() {
+    if (!this.controller.hasPresenceListTarget) return;
+    const presenceHtml = Array.from(this.activeUsers.entries()).map(([userId, user]) => `
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full" style="background-color: ${user.color}"></div>
+        <span class="text-sm ${user.isCurrentUser ? "font-semibold" : ""}">${user.name} ${user.isCurrentUser ? "(You)" : ""}</span>
+      </div>
+    `).join("");
+    this.controller.presenceListTarget.innerHTML = presenceHtml;
+  }
+};
+
+// app/javascript/controllers/collaborative_spreadsheet/message_display_manager.js
+var MessageDisplayManager = class {
+  constructor(controller) {
+    this.controller = controller;
+  }
+  showLockedMessage(cell) {
+    const message = document.createElement("div");
+    message.className = "absolute top-full left-0 mt-1 px-3 py-2 bg-gray-800 text-white text-sm rounded shadow-lg z-20 pointer-events-none";
+    message.textContent = "This cell is being edited by another user";
+    const td = cell.closest("td");
+    if (td) {
+      message.dataset.messageFor = cell.dataset.cellId;
+      td.appendChild(message);
+      setTimeout(() => {
+        message.remove();
+      }, 2e3);
+    }
+  }
+  showTimeoutMessage(cell) {
+    const message = document.createElement("div");
+    message.className = "absolute top-full left-0 mt-1 px-3 py-2 bg-yellow-600 text-white text-sm rounded shadow-lg z-20 pointer-events-none";
+    message.textContent = "Edit timeout - changes saved";
+    const td = cell.closest("td");
+    if (td) {
+      message.dataset.messageFor = cell.dataset.cellId;
+      td.appendChild(message);
+      setTimeout(() => {
+        message.remove();
+      }, 2e3);
+    }
+  }
+};
+
+// app/javascript/controllers/collaborative_spreadsheet/edit_timeout_manager.js
+var EditTimeoutManager = class {
+  constructor(controller) {
+    this.controller = controller;
+    this.editTimeouts = /* @__PURE__ */ new Map();
+    this.TIMEOUT_DURATION = 3e4;
+  }
+  setEditTimeout(cellId) {
+    this.clearEditTimeout(cellId);
+    const timeout = setTimeout(() => {
+      const cell = this.controller.cellTargets.find((c) => c.dataset.cellId === cellId);
+      if (cell && cell.contentEditable === "true") {
+        cell.blur();
+        this.controller.messageDisplayManager.showTimeoutMessage(cell);
+      }
+    }, this.TIMEOUT_DURATION);
+    this.editTimeouts.set(cellId, timeout);
+  }
+  clearEditTimeout(cellId) {
+    const timeout = this.editTimeouts.get(cellId);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.editTimeouts.delete(cellId);
+    }
+  }
+  clearAllTimeouts() {
+    this.editTimeouts.forEach((timeout) => clearTimeout(timeout));
+    this.editTimeouts.clear();
+  }
+};
+
+// app/javascript/controllers/collaborative_spreadsheet_controller.js
+var collaborative_spreadsheet_controller_default = class extends Controller {
+  static targets = ["cell", "userIndicator", "presenceList"];
+  static values = {
+    currentUserId: String,
+    currentUserName: String,
+    currentUserColor: String
+  };
+  connect() {
+    this.currentUser = this.currentUserIdValue;
+    this.currentUserName = this.currentUserNameValue;
+    this.currentUserColor = this.currentUserColorValue;
+    console.log("Collaborative spreadsheet initialized", {
+      cellCount: this.cellTargets.length,
+      currentUser: this.currentUser,
+      currentUserIdValue: this.currentUserIdValue,
+      currentUserName: this.currentUserName,
+      currentUserColor: this.currentUserColor
+    });
+    this.actionCableManager = new ActionCableManager(this);
+    this.cellEditor = new CellEditor(this);
+    this.cellRenderer = new CellRenderer(this);
+    this.collaborationManager = new CollaborationManager(this);
+    this.messageDisplayManager = new MessageDisplayManager(this);
+    this.editTimeoutManager = new EditTimeoutManager(this);
+    this.actionCableManager.connect();
+    this.cellTargets.forEach((cell) => {
+      cell.addEventListener("click", this.cellEditor.handleCellClick.bind(this.cellEditor));
+      cell.addEventListener("blur", this.cellEditor.handleCellBlur.bind(this.cellEditor));
+      cell.addEventListener("input", this.cellEditor.handleCellInput.bind(this.cellEditor));
+      cell.addEventListener("keydown", this.cellEditor.handleCellKeydown.bind(this.cellEditor));
+    });
+  }
+  disconnect() {
+    this.actionCableManager.disconnect();
+    this.editTimeoutManager.clearAllTimeouts();
   }
 };
 
