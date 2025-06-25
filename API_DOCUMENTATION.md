@@ -202,8 +202,7 @@ Get a specific stream by ID.
     "id": 1,
     "name": "Example Streamer",
     "description": "A popular content creator"
-  },
-  "notes_count": 3
+  }
 }
 ```
 
@@ -229,7 +228,6 @@ Create a new stream (requires `editor` or `admin` role).
   "orientation": "landscape",
   "kind": "livestream",
   "streamer_id": 1,
-  "stream_url_id": 1
 }
 ```
 
@@ -244,7 +242,6 @@ Create a new stream (requires `editor` or `admin` role).
 - `orientation` (optional): Video orientation - `landscape`, `portrait`, `square`
 - `kind` (optional): Stream type
 - `streamer_id` (optional): Associated streamer ID
-- `stream_url_id` (optional): Associated stream URL ID
 
 **Response:**
 Same as Get Stream response.
@@ -562,221 +559,8 @@ Delete a streamer (requires `admin` role).
 **Response:**
 `204 No Content` on success
 
-### Annotations
 
-#### List Annotations
-Get a paginated list of annotations.
 
-**Endpoint:** `GET /annotations`
-
-**Headers:**
-- `Authorization: Bearer <token>` (required)
-
-**Query Parameters:**
-- `page` (optional): Page number (default: 1)
-- `per_page` (optional): Items per page (default: 25, max: 100)
-- `priority` (optional): Filter by priority (`low`, `medium`, `high`, `critical`)
-- `status` (optional): Filter by status (`pending`, `in_progress`, `resolved`, `closed`)
-
-**Response:**
-```json
-{
-  "annotations": [
-    {
-      "id": 1,
-      "title": "Important Event",
-      "description": "Description of the incident",
-      "priority": "high",
-      "status": "in_progress",
-      "occurred_at": "2024-01-01T12:00:00Z",
-      "created_at": "2024-01-01T12:05:00Z",
-      "updated_at": "2024-01-01T12:10:00Z",
-      "user": {
-        "id": 1,
-        "email": "user@example.com"
-      },
-      "streams_count": 3
-    }
-  ],
-  "meta": {
-    "current_page": 1,
-    "total_pages": 3,
-    "total_count": 67,
-    "per_page": 25
-  }
-}
-```
-
-#### Get Annotation
-Get a specific annotation by ID.
-
-**Endpoint:** `GET /annotations/:id`
-
-**Headers:**
-- `Authorization: Bearer <token>` (required)
-
-**Response:**
-```json
-{
-  "id": 1,
-  "title": "Important Event",
-  "description": "Detailed description of the incident",
-  "priority": "high",
-  "status": "in_progress",
-  "occurred_at": "2024-01-01T12:00:00Z",
-  "created_at": "2024-01-01T12:05:00Z",
-  "updated_at": "2024-01-01T12:10:00Z",
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "role": "editor"
-  },
-  "streams": [
-    {
-      "id": 1,
-      "title": "Stream 1",
-      "platform": "youtube"
-    },
-    {
-      "id": 2,
-      "title": "Stream 2",
-      "platform": "twitch"
-    }
-  ]
-}
-```
-
-#### Create Annotation
-Create a new annotation (requires `editor` or `admin` role).
-
-**Endpoint:** `POST /annotations`
-
-**Headers:**
-- `Authorization: Bearer <token>` (required)
-- `Content-Type: application/json`
-
-**Body:**
-```json
-{
-  "title": "New Incident",
-  "description": "Description of what happened",
-  "priority": "medium",
-  "status": "pending",
-  "occurred_at": "2024-01-01T12:00:00Z",
-  "stream_ids": [1, 2, 3]
-}
-```
-
-**Parameters:**
-- `title` (required): Annotation title
-- `description` (optional): Detailed description
-- `priority` (required): Priority level - `low`, `medium`, `high`, `critical`
-- `status` (optional): Status - `pending`, `in_progress`, `resolved`, `closed` (defaults to `pending`)
-- `occurred_at` (required): When the incident occurred
-- `stream_ids` (optional): Array of stream IDs to associate
-
-**Response:**
-Same as Get Annotation response.
-
-#### Update Annotation
-Update an existing annotation (owner or `admin` only).
-
-**Endpoint:** `PATCH /annotations/:id`
-
-**Headers:**
-- `Authorization: Bearer <token>` (required)
-- `Content-Type: application/json`
-
-**Body:**
-```json
-{
-  "title": "Updated Title",
-  "status": "resolved",
-  "stream_ids": [1, 2, 4]
-}
-```
-
-**Response:**
-Same as Get Annotation response with updated values.
-
-#### Delete Annotation
-Delete an annotation (owner or `admin` only).
-
-**Endpoint:** `DELETE /annotations/:id`
-
-**Headers:**
-- `Authorization: Bearer <token>` (required)
-
-**Response:**
-`204 No Content` on success
-
-### Notes
-
-#### Create Note
-Create a note for a stream or streamer (requires authentication).
-
-**Endpoint:** `POST /notes`
-
-**Headers:**
-- `Authorization: Bearer <token>` (required)
-- `Content-Type: application/json`
-
-**Body:**
-```json
-{
-  "content": "This is a note about the stream",
-  "notable_type": "Stream",
-  "notable_id": 1
-}
-```
-
-**Parameters:**
-- `content` (required): Note content
-- `notable_type` (required): Type of resource - `Stream` or `Streamer`
-- `notable_id` (required): ID of the resource
-
-**Response:**
-```json
-{
-  "id": 1,
-  "content": "This is a note about the stream",
-  "notable_type": "Stream",
-  "notable_id": 1,
-  "created_at": "2024-01-01T12:00:00Z",
-  "updated_at": "2024-01-01T12:00:00Z",
-  "user": {
-    "id": 1,
-    "email": "user@example.com"
-  }
-}
-```
-
-### Stream URLs
-
-#### List Stream URLs
-Get a list of stream URLs.
-
-**Endpoint:** `GET /stream_urls`
-
-**Headers:**
-- `Authorization: Bearer <token>` (required)
-
-**Response:**
-```json
-{
-  "stream_urls": [
-    {
-      "id": 1,
-      "url": "https://youtube.com/watch?v=abc123",
-      "platform": "youtube",
-      "is_active": true,
-      "created_at": "2024-01-01T12:00:00Z",
-      "updated_at": "2024-01-01T12:00:00Z",
-      "streams_count": 5
-    }
-  ]
-}
-```
 
 ### WebSocket Connections
 
@@ -792,8 +576,7 @@ ws://localhost:3000/cable?token=<your-jwt-token>
 ```
 
 **Channels Available:**
-- `StreamChannel`: Real-time stream updates
-- `AnnotationChannel`: Real-time annotation updates
+- `CollaborativeStreamsChannel`: Real-time collaborative editing for streams admin interface
 
 **Example (JavaScript):**
 ```javascript
@@ -801,9 +584,11 @@ import { createConsumer } from '@rails/actioncable';
 
 const consumer = createConsumer(`ws://localhost:3000/cable?token=${authToken}`);
 
-const streamChannel = consumer.subscriptions.create('StreamChannel', {
+// Note: WebSocket channels are primarily used for the admin interface
+// The CollaborativeStreamsChannel is used for real-time collaborative editing
+const collaborativeChannel = consumer.subscriptions.create('CollaborativeStreamsChannel', {
   received(data) {
-    console.log('Stream update:', data);
+    console.log('Collaborative update:', data);
   }
 });
 ```
@@ -931,19 +716,6 @@ curl -X POST http://localhost:3000/api/v1/streams \
   }'
 ```
 
-3. Create an annotation for an incident:
-```bash
-curl -X POST http://localhost:3000/api/v1/annotations \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Stream Interruption",
-    "description": "Technical difficulties during stream",
-    "priority": "high",
-    "occurred_at": "2024-01-01T14:30:00Z",
-    "stream_ids": [1]
-  }'
-```
 
 ### Complete Authentication Flow
 

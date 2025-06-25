@@ -25,9 +25,7 @@ A modern Rails 8 application for managing streamers and streaming sources with b
 - **Role-Based Access Control**: Three-tier role system (default, editor, admin)
 - **Streamer Management**: Manage content creators and their platform accounts
 - **Stream Management**: Full CRUD operations for streaming sources with archiving
-- **Annotation System**: Track and manage incidents/events across streams
-- **Notes System**: Add polymorphic notes to streams and streamers
-- **Stream URLs**: Manage and track stream URLs with platform integration
+- **Timestamp System**: Track and manage incidents/events across streams with time references
 - **Pin/Unpin Functionality**: Highlight important streams
 - **Advanced Filtering**: Filter streams by status, user, platform, and pin state
 - **Real-time Updates**: Hotwire-powered admin interface with Turbo, Stimulus, and ActionCable WebSockets
@@ -137,8 +135,7 @@ The application includes a full-featured admin interface built with Hotwire:
 - `/admin/streams` - Manage streams with archiving and filtering
 - `/admin/streamers` - Manage content creators
 - `/admin/users` - Manage users and roles
-- `/admin/annotations` - Manage incident annotations
-- `/admin/notes` - View and manage notes
+- `/admin/timestamps` - Manage event timestamps and annotations
 - `/admin/feature_flags` - Feature flag management via Flipper UI
 
 ## API Documentation
@@ -188,12 +185,12 @@ Authorization: Bearer <your-jwt-token>
 - `PATCH /api/v1/streamers/:id` - Update streamer
 - `DELETE /api/v1/streamers/:id` - Delete streamer
 
-#### Annotations
-- `GET /api/v1/annotations` - List all annotations
-- `GET /api/v1/annotations/:id` - Get specific annotation
-- `POST /api/v1/annotations` - Create new annotation
-- `PATCH /api/v1/annotations/:id` - Update annotation
-- `DELETE /api/v1/annotations/:id` - Delete annotation
+#### Timestamps
+- `GET /api/v1/timestamps` - List all timestamps
+- `GET /api/v1/timestamps/:id` - Get specific timestamp
+- `POST /api/v1/timestamps` - Create new timestamp
+- `PATCH /api/v1/timestamps/:id` - Update timestamp
+- `DELETE /api/v1/timestamps/:id` - Delete timestamp
 
 #### Additional Features (with feature flags)
 - `GET /api/v1/streams/:id/analytics` - Stream analytics

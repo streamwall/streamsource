@@ -2,7 +2,7 @@
 
 ## Overview
 
-The StreamSource admin interface is a modern web application built with Rails 8 and Hotwire, providing a rich, interactive experience for managing streamers, streams, annotations, users, and application settings without page refreshes. It includes real-time updates via ActionCable for collaborative administration.
+The StreamSource admin interface is a modern web application built with Rails 8 and Hotwire, providing a rich, interactive experience for managing streamers, streams, timestamps, users, and application settings without page refreshes. It includes real-time collaborative editing via ActionCable WebSockets, allowing multiple administrators to work together seamlessly.
 
 ## Technology Stack
 
@@ -19,7 +19,6 @@ The StreamSource admin interface is a modern web application built with Rails 8 
 - **CRUD Operations**: Create, read, update, and delete streamers
 - **Platform Accounts**: Manage streamer accounts across different platforms
 - **Associated Streams**: View and manage all streams for a streamer
-- **Notes**: Add notes to streamers for tracking important information
 
 ### Stream Management
 - **CRUD Operations**: Create, read, update, and delete streams
@@ -30,14 +29,13 @@ The StreamSource admin interface is a modern web application built with Rails 8 
 - **Stream Attributes**: Manage platform, orientation, kind, timestamps
 - **Pagination**: Efficient browsing with Pagy pagination
 - **Modal Forms**: Edit streams in modal dialogs without page refresh
-- **Notes**: Add notes to streams for documentation
+- **Real-time Collaboration**: Multiple admins can edit streams simultaneously with cell-level locking
 
-### Annotation Management
-- **Incident Tracking**: Create and manage incident annotations
-- **Priority Levels**: Set priorities (low, medium, high, critical)
-- **Status Tracking**: Track status (pending, in_progress, resolved, closed)
-- **Stream Association**: Link annotations to multiple streams
-- **Timeline View**: View incidents in chronological order
+### Timestamp Management
+- **Event Tracking**: Create and manage event timestamps across streams
+- **Stream Association**: Link timestamps to multiple streams with time offsets
+- **Timeline View**: View events in chronological order
+- **User Attribution**: Track who added each timestamp
 
 ### User Management
 - **User List**: View all users with their roles and stream counts
@@ -45,10 +43,11 @@ The StreamSource admin interface is a modern web application built with Rails 8 
 - **User Creation**: Add new users with specified roles
 - **User Editing**: Update user information
 
-### Notes System
-- **Polymorphic Notes**: Add notes to streams or streamers
-- **User Attribution**: Track who created each note
-- **Rich Content**: Support for detailed documentation
+### Real-time Collaborative Editing
+- **Cell-level Locking**: Prevents conflicts when multiple users edit
+- **User Presence**: See who else is editing with color-coded indicators
+- **Auto-unlock**: Cells automatically unlock when users disconnect
+- **Edit Timeout**: 5-second timeout ensures cells don't stay locked
 
 ### Feature Flags
 - **Flipper Integration**: Toggle features on/off in real-time
@@ -68,9 +67,8 @@ The StreamSource admin interface is a modern web application built with Rails 8 
 The admin interface features a sidebar with the following sections:
 - **Streams**: Main stream management interface
 - **Streamers**: Content creator management
-- **Annotations**: Incident and event tracking
+- **Timestamps**: Event tracking with time references
 - **Users**: User management
-- **Notes**: View all notes across the system
 - **Feature Flags**: Feature toggle management
 - **Logout**: End admin session
 
@@ -99,14 +97,13 @@ Manages content creators:
 - CRUD operations for streamers
 - Platform account management
 - Associated streams view
-- Notes management
 
-#### `Admin::AnnotationsController`
-Handles incident tracking:
-- Create and manage annotations
-- Priority and status management
-- Stream association
+#### `Admin::TimestampsController`
+Handles event timestamp tracking:
+- Create and manage timestamps
+- Stream association with time offsets
 - Timeline visualization
+- Resolve and dismiss actions
 
 #### `Admin::SessionsController`
 Manages admin authentication:
@@ -132,14 +129,12 @@ app/views/
 │   │   ├── new.html.erb        # New streamer form
 │   │   ├── edit.html.erb       # Edit streamer form
 │   │   └── _form.html.erb      # Shared form partial
-│   ├── annotations/
-│   │   ├── index.html.erb      # Annotations list
-│   │   ├── show.html.erb       # Annotation details
-│   │   ├── new.html.erb        # New annotation form
-│   │   ├── edit.html.erb       # Edit annotation form
+│   ├── timestamps/
+│   │   ├── index.html.erb      # Timestamps list
+│   │   ├── show.html.erb       # Timestamp details
+│   │   ├── new.html.erb        # New timestamp form
+│   │   ├── edit.html.erb       # Edit timestamp form
 │   │   └── _form.html.erb      # Shared form partial
-│   ├── notes/
-│   │   └── index.html.erb      # All notes view
 │   ├── sessions/
 │   │   └── new.html.erb        # Login page
 │   └── shared/
@@ -191,7 +186,7 @@ Used for partial page updates:
 - `#modal` - Modal dialog container
 - `#streams_list` - Streams table and pagination
 - `#streamers_list` - Streamers table and pagination
-- `#annotations_list` - Annotations table and pagination
+- `#timestamps_list` - Timestamps table and pagination
 - `#flash` - Flash message container
 - `#sidebar_counts` - Live count updates
 
@@ -205,10 +200,9 @@ Provides real-time updates after actions:
 
 ### ActionCable Channels
 Real-time WebSocket channels:
-- `AdminChannel` - General admin updates
-- `StreamChannel` - Stream-specific updates
-- `AnnotationChannel` - Annotation updates
+- `CollaborativeStreamsChannel` - Real-time collaborative editing with cell locking
 - Automatic UI updates when other admins make changes
+- User presence tracking and color-coded indicators
 
 ### Stimulus Controllers
 Enhance interactivity:
@@ -218,6 +212,13 @@ Enhance interactivity:
 - **Filters Controller**: Advanced filtering interface
 - **Confirm Controller**: Confirmation dialogs
 - **Flash Controller**: Auto-dismiss flash messages
+- **Character Counter Controller**: Shows character count for text inputs
+- **Mobile Menu Controller**: Responsive navigation menu
+- **Collaborative Spreadsheet Controller**: Manages real-time collaborative editing
+  - Cell locking and unlocking
+  - User presence indicators
+  - Edit timeout management
+  - ActionCable integration
 
 ## Security
 
@@ -411,7 +412,7 @@ tail -f log/development.log
 
 ### Planned Features
 - Dashboard with analytics and metrics
-- Bulk operations for streams and annotations
+- Bulk operations for streams and timestamps
 - Advanced user permissions and roles
 - Comprehensive activity logging
 - Export functionality for all data types

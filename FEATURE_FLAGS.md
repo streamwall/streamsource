@@ -23,7 +23,7 @@ Note: The Flipper UI is protected by basic auth middleware (AdminFlipperAuth) th
 
 ## Available Feature Flags
 
-Note: The application has grown beyond the initial feature set. New features like Streamers, Annotations, and Notes are not feature-flagged but are core functionality. The following flags remain available:
+Note: The application has grown beyond the initial feature set. New features like Streamers and Timestamps are not feature-flagged but are core functionality. The following flags remain available:
 
 ### Stream Features
 
@@ -104,7 +104,7 @@ Note: The application has grown beyond the initial feature set. New features lik
 - **Default**: Enabled (ActionCable is active)
 - **Effects**: 
   - Enables WebSocket connections at `/cable`
-  - Supports StreamChannel, AnnotationChannel, AdminChannel
+  - Supports CollaborativeStreamsChannel for real-time collaborative editing
 
 #### `api_v2`
 - **Description**: Version 2 of the API
