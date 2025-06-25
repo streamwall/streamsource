@@ -9434,76 +9434,106 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
     const cellId = cell.dataset.cellId;
     const currentValue = cell.dataset.originalValue || cell.textContent.trim();
     const selectOptions = JSON.parse(cell.dataset.selectOptions || "{}");
-    const select = document.createElement("select");
-    select.className = "absolute inset-0 w-full h-full px-2 py-1 border-2 border-indigo-500 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm";
-    select.style.zIndex = "30";
+    const dropdown = document.createElement("div");
+    dropdown.className = "absolute left-0 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50";
+    dropdown.style.zIndex = "50";
+    const cellRect = cell.getBoundingClientRect();
+    const tdRect = cell.closest("td").getBoundingClientRect();
+    dropdown.style.top = `${cellRect.height + 2}px`;
+    const optionsList = document.createElement("div");
+    optionsList.className = "py-1";
+    optionsList.setAttribute("role", "menu");
     Object.entries(selectOptions).forEach(([value, label]) => {
-      const option = document.createElement("option");
-      option.value = value;
+      const option = document.createElement("button");
+      option.className = `block w-full text-left px-4 py-2 text-sm ${value === currentValue ? "bg-indigo-100 text-indigo-900 font-medium" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"} transition-colors duration-150 ease-in-out`;
       option.textContent = label;
-      option.selected = value === currentValue;
-      select.appendChild(option);
+      option.dataset.value = value;
+      option.setAttribute("role", "menuitem");
+      if (value === currentValue) {
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "absolute inset-y-0 right-0 flex items-center pr-4";
+        iconSpan.innerHTML = `
+          <svg class="h-5 w-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+          </svg>
+        `;
+        option.style.position = "relative";
+        option.appendChild(iconSpan);
+      }
+      optionsList.appendChild(option);
     });
-    select.dataset.cellId = cellId;
-    select.dataset.originalValue = currentValue;
+    dropdown.appendChild(optionsList);
     const td = cell.closest("td");
     if (!td) return;
     const originalPosition = td.style.position;
     td.style.position = "relative";
-    td.appendChild(select);
-    select.focus();
+    td.appendChild(dropdown);
+    const dropdownRect = dropdown.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    if (dropdownRect.bottom > viewportHeight) {
+      dropdown.style.top = "auto";
+      dropdown.style.bottom = `${cellRect.height + 2}px`;
+    }
+    const firstOption = optionsList.querySelector("button");
+    if (firstOption) firstOption.focus();
     let changeHandled = false;
-    const handleSelectChange = (event) => {
-      const newValue = event.target.value;
+    const handleOptionClick = (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const newValue = button.dataset.value;
       changeHandled = true;
       console.log("Select changed:", { newValue, currentValue, originalValue: cell.dataset.originalValue });
       cell.textContent = newValue;
       this.saveCell(cell);
-      select.removeEventListener("change", handleSelectChange);
-      select.removeEventListener("blur", handleSelectBlur);
-      select.removeEventListener("keydown", handleSelectKeydown);
-      select.remove();
+      dropdown.remove();
       td.style.position = originalPosition;
       this.clearEditTimeout(cellId);
     };
-    const handleSelectBlur = (event) => {
-      if (changeHandled) return;
-      select.removeEventListener("change", handleSelectChange);
-      select.removeEventListener("blur", handleSelectBlur);
-      select.removeEventListener("keydown", handleSelectKeydown);
-      select.remove();
-      td.style.position = originalPosition;
-      this.subscription.perform("unlock_cell", { cell_id: cellId });
-      this.clearEditTimeout(cellId);
-    };
-    const handleSelectKeydown = (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        event.stopPropagation();
-        cell.textContent = select.dataset.originalValue;
-        select.blur();
-      } else if (event.key === "Tab") {
-        event.preventDefault();
-        if (select.value !== select.dataset.originalValue) {
-          cell.textContent = select.value;
-          cell.dataset.originalValue = select.value;
-          this.saveCell(cell);
-        }
-        select.removeEventListener("change", handleSelectChange);
-        select.removeEventListener("blur", handleSelectBlur);
-        select.removeEventListener("keydown", handleSelectKeydown);
-        select.remove();
+    const handleOutsideClick = (event) => {
+      if (!dropdown.contains(event.target) && event.target !== cell) {
+        dropdown.remove();
         td.style.position = originalPosition;
         this.subscription.perform("unlock_cell", { cell_id: cellId });
         this.clearEditTimeout(cellId);
+        document.removeEventListener("click", handleOutsideClick);
+      }
+    };
+    const handleKeydown = (event) => {
+      const options = Array.from(optionsList.querySelectorAll("button"));
+      const currentIndex = options.indexOf(document.activeElement);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        dropdown.remove();
+        td.style.position = originalPosition;
+        this.subscription.perform("unlock_cell", { cell_id: cellId });
+        this.clearEditTimeout(cellId);
+        document.removeEventListener("click", handleOutsideClick);
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        const nextIndex = currentIndex + 1 < options.length ? currentIndex + 1 : 0;
+        options[nextIndex].focus();
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        const prevIndex = currentIndex - 1 >= 0 ? currentIndex - 1 : options.length - 1;
+        options[prevIndex].focus();
+      } else if (event.key === "Enter" && currentIndex >= 0) {
+        event.preventDefault();
+        options[currentIndex].click();
+      } else if (event.key === "Tab") {
+        event.preventDefault();
+        dropdown.remove();
+        td.style.position = originalPosition;
+        this.subscription.perform("unlock_cell", { cell_id: cellId });
+        this.clearEditTimeout(cellId);
+        document.removeEventListener("click", handleOutsideClick);
         const allCells = this.cellTargets;
-        const currentIndex = allCells.indexOf(cell);
+        const cellIndex = allCells.indexOf(cell);
         let nextIndex;
         if (event.shiftKey) {
-          nextIndex = currentIndex - 1;
+          nextIndex = cellIndex - 1;
           if (nextIndex < 0) nextIndex = allCells.length - 1;
         } else {
-          nextIndex = currentIndex + 1;
+          nextIndex = cellIndex + 1;
           if (nextIndex >= allCells.length) nextIndex = 0;
         }
         if (allCells[nextIndex]) {
@@ -9511,9 +9541,11 @@ var collaborative_spreadsheet_controller_default = class extends Controller {
         }
       }
     };
-    select.addEventListener("change", handleSelectChange);
-    select.addEventListener("blur", handleSelectBlur);
-    select.addEventListener("keydown", handleSelectKeydown);
+    optionsList.addEventListener("click", handleOptionClick);
+    dropdown.addEventListener("keydown", handleKeydown);
+    setTimeout(() => {
+      document.addEventListener("click", handleOutsideClick);
+    }, 0);
     this.setEditTimeout(cellId);
   }
 };
