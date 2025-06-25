@@ -51,6 +51,12 @@
             Started At
           </th>
           <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Last Checked
+          </th>
+          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Last Live
+          </th>
+          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Actions
           </th>
         </tr>
@@ -114,7 +120,9 @@
                    data-cell-id="stream_<%= stream.id %>_platform"
                    data-stream-id="<%= stream.id %>"
                    data-field="platform"
+                   data-field-type="select"
                    data-original-value="<%= stream.platform %>"
+                   data-select-options='<%= Stream.platforms.to_json %>'
                    class="text-sm text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors min-h-[1.5rem]">
                 <%= stream.platform || '-' %>
               </div>
@@ -126,7 +134,9 @@
                    data-cell-id="stream_<%= stream.id %>_status"
                    data-stream-id="<%= stream.id %>"
                    data-field="status"
+                   data-field-type="select"
                    data-original-value="<%= stream.status %>"
+                   data-select-options='<%= Stream.statuses.to_json %>'
                    class="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors min-h-[1.5rem]">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                   <%= stream.status == 'Live' ? 'bg-green-100 text-green-800' : 
@@ -181,21 +191,32 @@
                    data-cell-id="stream_<%= stream.id %>_orientation"
                    data-stream-id="<%= stream.id %>"
                    data-field="orientation"
+                   data-field-type="select"
                    data-original-value="<%= stream.orientation %>"
+                   data-select-options='<%= Stream.orientations.to_json %>'
                    class="text-sm text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors min-h-[1.5rem]">
                 <%= stream.orientation || '-' %>
               </div>
             </td>
             
-            <!-- Started At -->
-            <td class="px-3 py-4 whitespace-nowrap relative">
-              <div data-collaborative-spreadsheet-target="cell"
-                   data-cell-id="stream_<%= stream.id %>_started_at"
-                   data-stream-id="<%= stream.id %>"
-                   data-field="started_at"
-                   data-original-value="<%= stream.started_at&.iso8601 %>"
-                   class="text-sm text-gray-500 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors min-h-[1.5rem]">
+            <!-- Started At (non-editable) -->
+            <td class="px-3 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-500 px-2 py-1">
                 <%= stream.started_at&.strftime('%b %d, %Y %I:%M %p') || '-' %>
+              </div>
+            </td>
+            
+            <!-- Last Checked (non-editable) -->
+            <td class="px-3 py-4 whitespace-nowrap">
+              <div id="stream_<%= stream.id %>_last_checked_at" class="text-sm text-gray-500 px-2 py-1">
+                <%= time_ago_in_words_with_nil(stream.last_checked_at) %>
+              </div>
+            </td>
+            
+            <!-- Last Live (non-editable) -->
+            <td class="px-3 py-4 whitespace-nowrap">
+              <div id="stream_<%= stream.id %>_last_live_at" class="text-sm text-gray-500 px-2 py-1">
+                <%= time_ago_in_words_with_nil(stream.last_live_at) %>
               </div>
             </td>
             

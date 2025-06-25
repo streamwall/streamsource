@@ -25,13 +25,6 @@ export class CellEditor {
     if (fieldType === 'select') {
       this.controller.cellRenderer.showSelectDropdown(cell)
     } else {
-      // For status field and other fields with special formatting, 
-      // replace content with plain text for editing
-      if (field === 'status') {
-        const currentValue = cell.dataset.originalValue || cell.textContent.trim()
-        cell.textContent = currentValue
-      }
-      
       // Make cell editable
       cell.contentEditable = true
       cell.focus()
@@ -72,11 +65,6 @@ export class CellEditor {
     
     // Make cell non-editable
     cell.contentEditable = false
-    
-    // For status field, restore the formatted display with current value
-    if (field === 'status') {
-      this.controller.cellRenderer.formatStatusCell(cell)
-    }
     
     // Clear edit timeout
     this.controller.editTimeoutManager.clearEditTimeout(cellId)

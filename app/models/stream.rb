@@ -62,7 +62,10 @@ class Stream < ApplicationRecord
   
   # Callbacks for broadcasting
   after_create_commit -> { broadcast_prepend_later_to "streams", target: "streams", partial: "admin/streams/stream", locals: { stream: self } }
-  after_update_commit -> { broadcast_replace_later_to "streams", target: "stream_#{id}", partial: "admin/streams/stream", locals: { stream: self } }
+  after_update_commit -> { 
+    broadcast_replace_later_to "streams", target: "stream_#{id}", partial: "admin/streams/stream", locals: { stream: self }
+    broadcast_time_updates if saved_change_to_last_checked_at? || saved_change_to_last_live_at?
+  }
   after_destroy_commit -> { broadcast_remove_to "streams", target: "stream_#{id}" }
   
   # Validations
@@ -212,6 +215,15 @@ class Stream < ApplicationRecord
     end
   end
   
+  def broadcast_time_updates
+    ActionCable.server.broadcast('collaborative_streams', {
+      action: 'stream_updated',
+      stream_id: id,
+      last_checked_at: last_checked_at&.iso8601,
+      last_live_at: last_live_at&.iso8601
+    })
+  end
+
   private
   
   def normalize_link

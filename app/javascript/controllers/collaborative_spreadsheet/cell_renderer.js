@@ -112,9 +112,59 @@ export class CellRenderer {
     cell.appendChild(span)
   }
 
+  updateTimeAgoField(streamId, field, timeValue) {
+    const elementId = `stream_${streamId}_${field}`
+    const element = document.getElementById(elementId)
+    if (!element) {
+      console.warn(`Time field element not found: ${elementId}`)
+      return
+    }
+    
+    // Update the time display
+    if (timeValue) {
+      const date = new Date(timeValue)
+      const now = new Date()
+      const diffSeconds = Math.floor((now - date) / 1000)
+      
+      let timeAgo = ''
+      if (diffSeconds < 60) {
+        timeAgo = 'less than a minute ago'
+      } else if (diffSeconds < 3600) {
+        const minutes = Math.floor(diffSeconds / 60)
+        timeAgo = `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
+      } else if (diffSeconds < 86400) {
+        const hours = Math.floor(diffSeconds / 3600)
+        timeAgo = `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
+      } else {
+        const days = Math.floor(diffSeconds / 86400)
+        timeAgo = `${days} ${days === 1 ? 'day' : 'days'} ago`
+      }
+      
+      element.textContent = timeAgo
+    } else {
+      element.textContent = 'Never'
+    }
+    
+    // Flash update animation
+    element.classList.add('bg-green-50')
+    setTimeout(() => {
+      element.classList.remove('bg-green-50')
+    }, 500)
+  }
+
   showSelectDropdown(cell) {
     const cellId = cell.dataset.cellId
-    const currentValue = cell.dataset.originalValue || cell.textContent.trim()
+    const field = cell.dataset.field
+    let currentValue = cell.dataset.originalValue || cell.textContent.trim()
+    
+    // For status field, get the actual value from the span
+    if (field === 'status') {
+      const span = cell.querySelector('span')
+      if (span) {
+        currentValue = span.textContent.trim()
+      }
+    }
+    
     const selectOptions = JSON.parse(cell.dataset.selectOptions || '{}')
     
     // Create dropdown container
@@ -202,7 +252,11 @@ export class CellRenderer {
       
       // Update cell display but NOT the originalValue yet
       // Let saveCell handle updating originalValue after successful save
-      cell.textContent = newValue
+      if (field === 'status') {
+        this.formatStatusCell(cell, newValue)
+      } else {
+        cell.textContent = newValue
+      }
       
       // Save the change
       this.controller.cellEditor.saveCell(cell)

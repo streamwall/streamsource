@@ -9142,6 +9142,14 @@ var ActionCableManager = class {
       case "cell_updated":
         this.controller.cellRenderer.updateCell(data.cell_id, data.field, data.value, data.stream_id);
         break;
+      case "stream_updated":
+        if (data.last_checked_at !== void 0) {
+          this.controller.cellRenderer.updateTimeAgoField(data.stream_id, "last_checked_at", data.last_checked_at);
+        }
+        if (data.last_live_at !== void 0) {
+          this.controller.cellRenderer.updateTimeAgoField(data.stream_id, "last_live_at", data.last_live_at);
+        }
+        break;
     }
   }
 };
@@ -9167,10 +9175,6 @@ var CellEditor = class {
     if (fieldType === "select") {
       this.controller.cellRenderer.showSelectDropdown(cell);
     } else {
-      if (field === "status") {
-        const currentValue = cell.dataset.originalValue || cell.textContent.trim();
-        cell.textContent = currentValue;
-      }
       cell.contentEditable = true;
       cell.focus();
       const range = document.createRange();
@@ -9196,9 +9200,6 @@ var CellEditor = class {
       delete cell.dataset.skipSave;
     }
     cell.contentEditable = false;
-    if (field === "status") {
-      this.controller.cellRenderer.formatStatusCell(cell);
-    }
     this.controller.editTimeoutManager.clearEditTimeout(cellId);
   }
   handleCellInput(event) {
@@ -9349,9 +9350,49 @@ var CellRenderer = class {
     span.textContent = displayValue;
     cell.appendChild(span);
   }
+  updateTimeAgoField(streamId, field, timeValue) {
+    const elementId = `stream_${streamId}_${field}`;
+    const element = document.getElementById(elementId);
+    if (!element) {
+      console.warn(`Time field element not found: ${elementId}`);
+      return;
+    }
+    if (timeValue) {
+      const date = new Date(timeValue);
+      const now3 = /* @__PURE__ */ new Date();
+      const diffSeconds = Math.floor((now3 - date) / 1e3);
+      let timeAgo = "";
+      if (diffSeconds < 60) {
+        timeAgo = "less than a minute ago";
+      } else if (diffSeconds < 3600) {
+        const minutes = Math.floor(diffSeconds / 60);
+        timeAgo = `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
+      } else if (diffSeconds < 86400) {
+        const hours = Math.floor(diffSeconds / 3600);
+        timeAgo = `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+      } else {
+        const days = Math.floor(diffSeconds / 86400);
+        timeAgo = `${days} ${days === 1 ? "day" : "days"} ago`;
+      }
+      element.textContent = timeAgo;
+    } else {
+      element.textContent = "Never";
+    }
+    element.classList.add("bg-green-50");
+    setTimeout(() => {
+      element.classList.remove("bg-green-50");
+    }, 500);
+  }
   showSelectDropdown(cell) {
     const cellId = cell.dataset.cellId;
-    const currentValue = cell.dataset.originalValue || cell.textContent.trim();
+    const field = cell.dataset.field;
+    let currentValue = cell.dataset.originalValue || cell.textContent.trim();
+    if (field === "status") {
+      const span = cell.querySelector("span");
+      if (span) {
+        currentValue = span.textContent.trim();
+      }
+    }
     const selectOptions = JSON.parse(cell.dataset.selectOptions || "{}");
     const dropdown = document.createElement("div");
     dropdown.className = "absolute left-0 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50";
@@ -9402,7 +9443,11 @@ var CellRenderer = class {
       const newValue = button.dataset.value;
       changeHandled = true;
       console.log("Select changed:", { newValue, currentValue, originalValue: cell.dataset.originalValue });
-      cell.textContent = newValue;
+      if (field === "status") {
+        this.formatStatusCell(cell, newValue);
+      } else {
+        cell.textContent = newValue;
+      }
       this.controller.cellEditor.saveCell(cell);
       dropdown.remove();
       td.style.position = originalPosition;

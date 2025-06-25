@@ -47,6 +47,15 @@ export class ActionCableManager {
       case 'cell_updated':
         this.controller.cellRenderer.updateCell(data.cell_id, data.field, data.value, data.stream_id)
         break
+      case 'stream_updated':
+        // Handle updates to non-editable fields like last_checked_at and last_live_at
+        if (data.last_checked_at !== undefined) {
+          this.controller.cellRenderer.updateTimeAgoField(data.stream_id, 'last_checked_at', data.last_checked_at)
+        }
+        if (data.last_live_at !== undefined) {
+          this.controller.cellRenderer.updateTimeAgoField(data.stream_id, 'last_live_at', data.last_live_at)
+        }
+        break
     }
   }
 }
