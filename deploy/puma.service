@@ -1,0 +1,40 @@
+[Unit]
+Description=Puma HTTP Server for StreamSource
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=notify
+WatchdogSec=10
+
+# Puma configuration
+User=deploy
+WorkingDirectory=/var/www/streamsource/current
+ExecStart=/opt/rbenv/shims/bundle exec puma -C config/puma.rb
+ExecReload=/bin/kill -USR1 $MAINPID
+ExecStop=/bin/kill -TERM $MAINPID
+
+# Environment variables
+Environment="RAILS_ENV=production"
+Environment="RBENV_ROOT=/opt/rbenv"
+Environment="PATH=/opt/rbenv/shims:/opt/rbenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+EnvironmentFile=/var/www/streamsource/shared/.env.production
+
+# Process management
+Restart=always
+RestartSec=1
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/streamsource
+
+# Logging
+StandardOutput=append:/var/www/streamsource/shared/log/puma.log
+StandardError=append:/var/www/streamsource/shared/log/puma.log
+
+SyslogIdentifier=puma
+
+[Install]
+WantedBy=multi-user.target

@@ -79,9 +79,10 @@ test:
 #
 production:
   <<: *default
+  # Use DATABASE_URL if available (recommended for production)
+  url: <%= ENV["DATABASE_URL"] %>
+  
+  # Fallback configuration if DATABASE_URL is not set
   database: streamsource_production
   username: streamsource
-  password: <%= ENV["STREAMSOURCE_DATABASE_PASSWORD"] %>
-  
-  # Use DATABASE_URL if available (for Heroku, etc)
-  url: <%= ENV["DATABASE_URL"] %>
+  password: <%= ENV["STREAMSOURCE_DATABASE_PASSWORD"] || ENV["DB_PASSWORD"] %>

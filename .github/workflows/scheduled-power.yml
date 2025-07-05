@@ -1,0 +1,111 @@
+name: Scheduled Power Management
+
+on:
+  schedule:
+    # Power ON at 9 AM EST (14:00 UTC) Monday-Friday
+    - cron: '0 14 * * 1-5'
+    # Power OFF at 6 PM EST (23:00 UTC) Monday-Friday
+    - cron: '0 23 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Power action'
+        required: true
+        default: 'status'
+        type: choice
+        options:
+          - status
+          - power_on
+          - power_off
+
+jobs:
+  power-management:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Determine action
+      id: determine-action
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "action=${{ github.event.inputs.action }}" >> $GITHUB_OUTPUT
+        else
+          # Check current hour to determine if we should power on or off
+          HOUR=$(date -u +%H)
+          if [ "$HOUR" == "14" ]; then
+            echo "action=power_on" >> $GITHUB_OUTPUT
+          elif [ "$HOUR" == "23" ]; then
+            echo "action=power_off" >> $GITHUB_OUTPUT
+          else
+            echo "action=status" >> $GITHUB_OUTPUT
+          fi
+        fi
+    
+    - name: Check droplet status
+      id: check-status
+      run: |
+        STATUS=$(curl -s -X GET \
+          -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+          "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}" \
+          | jq -r '.droplet.status')
+        echo "Current status: $STATUS"
+        echo "status=$STATUS" >> $GITHUB_OUTPUT
+    
+    - name: Power ON droplet
+      if: steps.determine-action.outputs.action == 'power_on' && steps.check-status.outputs.status != 'active'
+      run: |
+        echo "Powering ON droplet..."
+        curl -s -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+          "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}/actions" \
+          -d '{"type":"power_on"}'
+        
+        # Wait for droplet to be active
+        for i in {1..30}; do
+          sleep 10
+          STATUS=$(curl -s -X GET \
+            -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+            "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}" \
+            | jq -r '.droplet.status')
+          if [ "$STATUS" == "active" ]; then
+            echo "Droplet is now active!"
+            break
+          fi
+          echo "Waiting for droplet to be active... ($i/30)"
+        done
+    
+    - name: Power OFF droplet
+      if: steps.determine-action.outputs.action == 'power_off' && steps.check-status.outputs.status == 'active'
+      run: |
+        # First, gracefully stop services via SSH
+        echo "Gracefully stopping services..."
+        ssh -o StrictHostKeyChecking=no \
+            -i <(echo "${{ secrets.DEPLOY_SSH_KEY }}") \
+            deploy@${{ secrets.DROPLET_HOST }} \
+            "sudo systemctl stop puma nginx postgresql redis" || true
+        
+        sleep 5
+        
+        # Then power off the droplet
+        echo "Powering OFF droplet..."
+        curl -s -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+          "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}/actions" \
+          -d '{"type":"power_off"}'
+    
+    - name: Report status
+      if: always()
+      run: |
+        FINAL_STATUS=$(curl -s -X GET \
+          -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+          "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}" \
+          | jq -r '.droplet.status')
+        echo "Final droplet status: $FINAL_STATUS"
+        
+        # Optional: Send notification
+        if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-type: application/json' \
+            -d "{\"text\":\"StreamSource droplet is now $FINAL_STATUS\"}"
+        fi
