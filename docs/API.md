@@ -240,7 +240,23 @@ Content-Type: application/json
   "stream": {
     "url": "https://twitch.tv/newstream",
     "streamer_id": 1,
-    "notes": "New gaming stream"
+    "notes": "New gaming stream",
+    "location": {
+      "city": "Austin",
+      "state_province": "TX",
+      "country": "USA"
+    }
+  }
+}
+```
+
+**Alternative with existing location:**
+```json
+{
+  "stream": {
+    "url": "https://twitch.tv/newstream",
+    "streamer_id": 1,
+    "location_id": 5
   }
 }
 ```
@@ -252,7 +268,15 @@ Content-Type: application/json
   "url": "https://twitch.tv/newstream",
   "status": "checking",
   "streamer_id": 1,
-  "notes": "New gaming stream"
+  "notes": "New gaming stream",
+  "location_id": 5,
+  "location": {
+    "id": 5,
+    "city": "Austin",
+    "state_province": "TX",
+    "country": "USA",
+    "display_name": "Austin, TX"
+  }
 }
 ```
 
@@ -470,6 +494,143 @@ DELETE /api/v1/timestamps/:id
 ```
 
 **Response:** 204 No Content
+
+### Locations
+
+Locations represent cities/regions where streams originate. They support automatic creation when adding streams and provide client-side validation capabilities.
+
+#### List Locations
+```http
+GET /api/v1/locations
+```
+
+**Query Parameters:**
+- `search` - Search in city, state_province, region, or country
+- `country` - Filter by country
+- `state` - Filter by state/province
+- `page` - Page number (default: 1)
+- `per_page` - Items per page (default: 25)
+
+**Response:**
+```json
+{
+  "locations": [
+    {
+      "id": 1,
+      "city": "Austin",
+      "state_province": "TX",
+      "region": "Southwest",
+      "country": "USA",
+      "display_name": "Austin, TX",
+      "full_display_name": "Austin, TX, USA",
+      "normalized_name": "austin, tx, usa",
+      "latitude": "30.2672",
+      "longitude": "-97.7431",
+      "coordinates": [30.2672, -97.7431],
+      "streams_count": 42,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "total_pages": 5,
+    "total_count": 125
+  }
+}
+```
+
+#### Get All Locations (No Pagination)
+```http
+GET /api/v1/locations/all
+```
+
+Returns all locations for client-side validation. This endpoint is cached for 5 minutes.
+
+**Response:**
+```json
+{
+  "locations": [
+    {
+      "id": 1,
+      "city": "Austin",
+      "state_province": "TX",
+      "country": "USA",
+      "display_name": "Austin, TX",
+      "normalized_name": "austin, tx, usa"
+    },
+    // ... all locations
+  ]
+}
+```
+
+#### Get Location
+```http
+GET /api/v1/locations/:id
+```
+
+**Response:**
+```json
+{
+  "id": 1,
+  "city": "Austin",
+  "state_province": "TX",
+  "region": "Southwest",
+  "country": "USA",
+  "display_name": "Austin, TX",
+  "full_display_name": "Austin, TX, USA",
+  "normalized_name": "austin, tx, usa",
+  "latitude": "30.2672",
+  "longitude": "-97.7431",
+  "coordinates": [30.2672, -97.7431],
+  "streams_count": 42,
+  "created_at": "2024-01-15T10:00:00Z",
+  "updated_at": "2024-01-15T10:00:00Z"
+}
+```
+
+#### Create Location
+```http
+POST /api/v1/locations
+Content-Type: application/json
+
+{
+  "location": {
+    "city": "Seattle",
+    "state_province": "WA",
+    "country": "USA",
+    "latitude": 47.6062,
+    "longitude": -122.3321
+  }
+}
+```
+
+**Response:** 201 Created
+
+#### Update Location
+```http
+PATCH /api/v1/locations/:id
+Content-Type: application/json
+
+{
+  "location": {
+    "region": "Pacific Northwest",
+    "latitude": 47.6062,
+    "longitude": -122.3321
+  }
+}
+```
+
+**Response:** 200 OK
+
+#### Delete Location
+```http
+DELETE /api/v1/locations/:id
+```
+
+**Response:** 204 No Content
+
+**Note:** Locations cannot be deleted if they are associated with any streams.
 
 ### Feature-Flagged Endpoints
 

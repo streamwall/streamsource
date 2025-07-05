@@ -1,278 +1,1143 @@
 openapi: 3.0.1
 info:
-  title: StreamSource API V1
+  title: StreamSource API
   version: v1
-  description: API for managing streaming sources
+  description: |
+    StreamSource API provides programmatic access to manage streamers, streams, timestamps, and locations.
+    
+    ## Authentication
+    Most endpoints require JWT authentication. Include the token in the Authorization header:
+    `Authorization: Bearer <your-jwt-token>`
+    
+    ## Rate Limiting
+    - Default: 60 requests per minute per IP
+    - Authenticated users may have higher limits
+    
+    ## Pagination
+    List endpoints support pagination with `page` and `per_page` parameters.
+
 servers:
-- url: http://localhost:3000
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://your-domain.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints
+  - name: Streams
+    description: Stream management
+  - name: Streamers
+    description: Streamer management
+  - name: Timestamps
+    description: Event timestamp management
+  - name: Locations
+    description: Location management
+  - name: Health
+    description: Health check endpoints
+
+security:
+  - bearerAuth: []
+
 paths:
+  # Authentication
+  /api/v1/users/signup:
+    post:
+      summary: Create new user account
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - password_confirmation
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: Password123!
+                password_confirmation:
+                  type: string
+                  format: password
+                  example: Password123!
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/v1/users/login:
+    post:
+      summary: Authenticate user
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: Password123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Streams
   /api/v1/streams:
     get:
       summary: List streams
       tags:
-      - Streams
+        - Streams
       parameters:
-      - name: Authorization
-        in: header
-        required: true
-        schema:
-          type: string
-        description: JWT Bearer token
-      - name: page
-        in: query
-        required: false
-        schema:
-          type: integer
-        description: Page number
-      - name: per_page
-        in: query
-        required: false
-        schema:
-          type: integer
-        description: Items per page (max 100)
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [live, offline, unknown]
+          description: Filter by status
+        - name: platform
+          in: query
+          schema:
+            type: string
+            enum: [tiktok, facebook, twitch, youtube, instagram, other]
+          description: Filter by platform
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by user ID
+        - name: streamer_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by streamer ID
+        - name: location_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by location ID
+        - name: pinned
+          in: query
+          schema:
+            type: boolean
+          description: Filter by pinned status
+        - name: archived
+          in: query
+          schema:
+            type: boolean
+          description: Include archived streams
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in URL, notes, and location
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [created_at, updated_at, checked_at]
+          description: Sort field
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+          description: Sort direction
       responses:
         '200':
-          description: successful
+          description: List of streams
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  data:
+                  streams:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Stream'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create stream
+      tags:
+        - Streams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - source
+                - link
+              properties:
+                source:
+                  type: string
+                  example: City Council Meeting
+                link:
+                  type: string
+                  format: uri
+                  example: https://twitch.tv/example
+                streamer_id:
+                  type: integer
+                  example: 1
+                location_id:
+                  type: integer
+                  example: 5
+                location:
+                  $ref: '#/components/schemas/LocationInput'
+                notes:
+                  type: string
+                  example: Special event stream
+                platform:
+                  type: string
+                  enum: [tiktok, facebook, twitch, youtube, instagram, other]
+                orientation:
+                  type: string
+                  enum: [vertical, horizontal]
+                kind:
+                  type: string
+                  enum: [video, web, overlay, background]
+                  default: video
+      responses:
+        '201':
+          description: Stream created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/v1/streams/{id}:
+    parameters:
+      - $ref: '#/components/parameters/StreamId'
+    get:
+      summary: Get stream details
+      tags:
+        - Streams
+      responses:
+        '200':
+          description: Stream details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Update stream
+      tags:
+        - Streams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                notes:
+                  type: string
+                pinned:
+                  type: boolean
+                location_id:
+                  type: integer
+                location:
+                  $ref: '#/components/schemas/LocationInput'
+      responses:
+        '200':
+          description: Stream updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      summary: Delete stream
+      tags:
+        - Streams
+      responses:
+        '204':
+          description: Stream deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/streams/{id}/pin:
+    parameters:
+      - $ref: '#/components/parameters/StreamId'
+    put:
+      summary: Pin stream
+      tags:
+        - Streams
+      responses:
+        '200':
+          description: Stream pinned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+    delete:
+      summary: Unpin stream
+      tags:
+        - Streams
+      responses:
+        '200':
+          description: Stream unpinned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+
+  /api/v1/streams/{id}/archive:
+    parameters:
+      - $ref: '#/components/parameters/StreamId'
+    post:
+      summary: Archive stream
+      tags:
+        - Streams
+      responses:
+        '200':
+          description: Stream archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+
+  /api/v1/streams/{id}/unarchive:
+    parameters:
+      - $ref: '#/components/parameters/StreamId'
+    post:
+      summary: Unarchive stream
+      tags:
+        - Streams
+      responses:
+        '200':
+          description: Stream unarchived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+
+  /api/v1/streams/{id}/analytics:
+    parameters:
+      - $ref: '#/components/parameters/StreamId'
+    get:
+      summary: Get stream analytics (feature-flagged)
+      tags:
+        - Streams
+      responses:
+        '200':
+          description: Stream analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stream_id:
+                    type: integer
+                  total_duration:
+                    type: integer
+                  average_viewers:
+                    type: integer
+                  peak_viewers:
+                    type: integer
+                  engagement_rate:
+                    type: number
+        '403':
+          description: Feature not enabled
+
+  /api/v1/streams/bulk_import:
+    post:
+      summary: Bulk import streams (feature-flagged)
+      tags:
+        - Streams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                streams:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                      link:
+                        type: string
+                      streamer_id:
+                        type: integer
+      responses:
+        '201':
+          description: Import results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: integer
+                  failed:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: object
+
+  /api/v1/streams/export:
+    get:
+      summary: Export streams (feature-flagged)
+      tags:
+        - Streams
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+          description: Export format
+      responses:
+        '200':
+          description: Exported data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exported_at:
+                    type: string
+                    format: date-time
+                  count:
+                    type: integer
+                  streams:
+                    type: array
+                    items:
+                      type: object
+
+  # Locations
+  /api/v1/locations:
+    get:
+      summary: List locations
+      tags:
+        - Locations
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in city, state, region, or country
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: Filter by country
+        - name: state
+          in: query
+          schema:
+            type: string
+          description: Filter by state/province
+      responses:
+        '200':
+          description: List of locations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Location'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+    post:
+      summary: Create location
+      tags:
+        - Locations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                location:
+                  $ref: '#/components/schemas/LocationInput'
+      responses:
+        '201':
+          description: Location created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/v1/locations/all:
+    get:
+      summary: Get all locations (no pagination)
+      tags:
+        - Locations
+      description: Returns all locations for client-side validation. Cached for 5 minutes.
+      responses:
+        '200':
+          description: All locations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locations:
                     type: array
                     items:
                       type: object
                       properties:
                         id:
                           type: integer
-                        name:
+                        city:
                           type: string
-                        description:
+                        state_province:
                           type: string
-                        source_url:
+                        country:
                           type: string
-                        is_pinned:
-                          type: boolean
-                        created_at:
+                        display_name:
                           type: string
-                          format: date-time
-                        updated_at:
+                        normalized_name:
                           type: string
-                          format: date-time
-                  meta:
-                    type: object
-                    properties:
-                      current_page:
-                        type: integer
-                      total_pages:
-                        type: integer
-                      total_count:
-                        type: integer
-                      per_page:
-                        type: integer
-        '401':
-          description: unauthorized
-    post:
-      summary: Create stream
-      tags:
-      - Streams
-      parameters:
-      - name: Authorization
-        in: header
-        required: true
-        schema:
-          type: string
-        description: JWT Bearer token
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                stream:
-                  type: object
-                  properties:
-                    name:
-                      type: string
-                    description:
-                      type: string
-                    source_url:
-                      type: string
-                    is_pinned:
-                      type: boolean
-                  required:
-                  - name
-                  - source_url
-      responses:
-        '201':
-          description: created
-        '422':
-          description: unprocessable entity
-  /api/v1/streams/{id}:
+
+  /api/v1/locations/{id}:
     parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: string
-      description: Stream ID
-    get:
-      summary: Show stream
-      tags:
-      - Streams
-      parameters:
-      - name: Authorization
-        in: header
+      - name: id
+        in: path
         required: true
         schema:
-          type: string
-        description: JWT Bearer token
+          type: integer
+        description: Location ID
+    get:
+      summary: Get location details
+      tags:
+        - Locations
       responses:
         '200':
-          description: successful
+          description: Location details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
         '404':
-          description: not found
-    put:
-      summary: Update stream
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Update location
       tags:
-      - Streams
-      parameters:
-      - name: Authorization
-        in: header
-        required: true
-        schema:
-          type: string
-        description: JWT Bearer token
+        - Locations
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
               properties:
-                stream:
-                  type: object
-                  properties:
-                    name:
-                      type: string
-                    description:
-                      type: string
-                    source_url:
-                      type: string
-                    is_pinned:
-                      type: boolean
+                location:
+                  $ref: '#/components/schemas/LocationInput'
       responses:
         '200':
-          description: successful
+          description: Location updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+
     delete:
-      summary: Delete stream
+      summary: Delete location
       tags:
-      - Streams
-      parameters:
-      - name: Authorization
-        in: header
-        required: true
-        schema:
-          type: string
-        description: JWT Bearer token
+        - Locations
       responses:
         '204':
-          description: no content
-  /api/v1/users/signup:
-    post:
-      summary: User signup
-      tags:
-      - Authentication
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user:
-                  type: object
-                  properties:
-                    email:
-                      type: string
-                    password:
-                      type: string
-                    username:
-                      type: string
-                  required:
-                  - email
-                  - password
-                  - username
-      responses:
-        '201':
-          description: created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        type: object
-                        properties:
-                          id:
-                            type: integer
-                          email:
-                            type: string
-                          username:
-                            type: string
-                      token:
-                        type: string
+          description: Location deleted
         '422':
-          description: unprocessable entity
-  /api/v1/users/login:
-    post:
-      summary: User login
+          description: Cannot delete location with associated streams
+
+  # Streamers
+  /api/v1/streamers:
+    get:
+      summary: List streamers
       tags:
-      - Authentication
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user:
-                  type: object
-                  properties:
-                    email:
-                      type: string
-                    password:
-                      type: string
-                  required:
-                  - email
-                  - password
+        - Streamers
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name
+        - name: platform
+          in: query
+          schema:
+            type: string
+          description: Filter by platform
       responses:
         '200':
-          description: successful
+          description: List of streamers
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  data:
-                    type: object
-                    properties:
-                      user:
+                  streamers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Streamer'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+    post:
+      summary: Create streamer
+      tags:
+        - Streamers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                streamer:
+                  type: object
+                  required:
+                    - name
+                  properties:
+                    name:
+                      type: string
+                    accounts_attributes:
+                      type: array
+                      items:
                         type: object
                         properties:
-                          id:
-                            type: integer
-                          email:
+                          platform:
                             type: string
                           username:
                             type: string
-                      token:
-                        type: string
-        '401':
-          description: unauthorized
+      responses:
+        '201':
+          description: Streamer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Streamer'
+
+  /api/v1/streamers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get streamer details
+      tags:
+        - Streamers
+      responses:
+        '200':
+          description: Streamer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Streamer'
+
+    patch:
+      summary: Update streamer
+      tags:
+        - Streamers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                streamer:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    accounts_attributes:
+                      type: array
+                      items:
+                        type: object
+      responses:
+        '200':
+          description: Streamer updated
+
+    delete:
+      summary: Delete streamer
+      tags:
+        - Streamers
+      responses:
+        '204':
+          description: Streamer deleted
+
+  # Timestamps
+  /api/v1/timestamps:
+    get:
+      summary: List timestamps
+      tags:
+        - Timestamps
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: stream_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by stream
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high]
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of timestamps
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamps:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Timestamp'
+
+    post:
+      summary: Create timestamp
+      tags:
+        - Timestamps
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timestamp:
+                  type: object
+                  required:
+                    - timestamp
+                    - description
+                    - stream_ids
+                  properties:
+                    timestamp:
+                      type: string
+                      example: "00:15:30"
+                    description:
+                      type: string
+                    priority:
+                      type: string
+                      enum: [low, medium, high]
+                    stream_ids:
+                      type: array
+                      items:
+                        type: integer
+      responses:
+        '201':
+          description: Timestamp created
+
+  /api/v1/timestamps/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get timestamp details
+      tags:
+        - Timestamps
+      responses:
+        '200':
+          description: Timestamp details
+
+    patch:
+      summary: Update timestamp
+      tags:
+        - Timestamps
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timestamp:
+                  type: object
+      responses:
+        '200':
+          description: Timestamp updated
+
+    delete:
+      summary: Delete timestamp
+      tags:
+        - Timestamps
+      responses:
+        '204':
+          description: Timestamp deleted
+
+  # Health checks
+  /health:
+    get:
+      summary: Basic health check
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /health/live:
+    get:
+      summary: Kubernetes liveness probe
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is live
+
+  /health/ready:
+    get:
+      summary: Kubernetes readiness probe
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is ready
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Metrics in Prometheus format
+          content:
+            text/plain:
+              schema:
+                type: string
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: 'JWT authorization token. Format: Bearer <token>'
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number
+
+    PerPageParam:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+      description: Items per page
+
+    StreamId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Stream ID
+
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            email:
+              type: string
+            role:
+              type: string
+              enum: [default, editor, admin]
+
+    Stream:
+      type: object
+      properties:
+        id:
+          type: integer
+        source:
+          type: string
+        link:
+          type: string
+        status:
+          type: string
+          enum: [live, offline, unknown]
+        pinned:
+          type: boolean
+        archived:
+          type: boolean
+        platform:
+          type: string
+        orientation:
+          type: string
+        kind:
+          type: string
+        notes:
+          type: string
+        checked_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        location_id:
+          type: integer
+          nullable: true
+        location:
+          $ref: '#/components/schemas/Location'
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            email:
+              type: string
+        streamer:
+          $ref: '#/components/schemas/Streamer'
+
+    Location:
+      type: object
+      properties:
+        id:
+          type: integer
+        city:
+          type: string
+        state_province:
+          type: string
+          nullable: true
+        region:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        display_name:
+          type: string
+        full_display_name:
+          type: string
+        normalized_name:
+          type: string
+        latitude:
+          type: string
+          nullable: true
+        longitude:
+          type: string
+          nullable: true
+        coordinates:
+          type: array
+          nullable: true
+          items:
+            type: number
+        streams_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    LocationInput:
+      type: object
+      required:
+        - city
+      properties:
+        city:
+          type: string
+        state_province:
+          type: string
+        region:
+          type: string
+        country:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    Streamer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        accounts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              platform:
+                type: string
+              username:
+                type: string
+              profile_url:
+                type: string
+        streams_count:
+          type: integer
+        active_streams_count:
+          type: integer
+
+    Timestamp:
+      type: object
+      properties:
+        id:
+          type: integer
+        timestamp:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        user:
+          type: object
+        streams:
+          type: array
+          items:
+            type: object
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        total_pages:
+          type: integer
+        total_count:
+          type: integer
+        per_page:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: object
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

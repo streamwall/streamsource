@@ -1,9 +1,10 @@
 class StreamSerializer < ActiveModel::Serializer
   attributes :id, :source, :link, :status, :is_pinned, :created_at, :updated_at,
              :city, :state, :platform, :notes, :title, :last_checked_at, 
-             :last_live_at, :posted_by, :orientation, :kind
+             :last_live_at, :posted_by, :orientation, :kind, :location_id
   
   belongs_to :user
+  belongs_to :location
   
   # Conditionally show analytics URL if feature is enabled
   attribute :analytics_url, if: :show_analytics?

@@ -29,6 +29,7 @@ class Stream < ApplicationRecord
   # Associations
   belongs_to :user
   belongs_to :streamer, optional: true # Optional for now during migration
+  belongs_to :location, optional: true
   has_many :timestamp_streams, dependent: :destroy
   has_many :timestamps, through: :timestamp_streams
   
@@ -120,11 +121,13 @@ class Stream < ApplicationRecord
     scope = scope.where(user_id: params[:user_id]) if params[:user_id].present?
     scope = scope.where(is_pinned: params[:is_pinned]) if params[:is_pinned].present?
     scope = scope.where(is_archived: params[:is_archived]) if params[:is_archived].present?
+    scope = scope.where(location_id: params[:location_id]) if params[:location_id].present?
     if params[:search].present?
-      scope = scope.where(
-        'source ILIKE ? OR link ILIKE ? OR title ILIKE ? OR city ILIKE ? OR state ILIKE ? OR notes ILIKE ? OR posted_by ILIKE ?', 
+      scope = scope.left_joins(:location).where(
+        'source ILIKE ? OR link ILIKE ? OR title ILIKE ? OR city ILIKE ? OR state ILIKE ? OR notes ILIKE ? OR posted_by ILIKE ? OR locations.city ILIKE ? OR locations.state_province ILIKE ?', 
         "%#{params[:search]}%", "%#{params[:search]}%", "%#{params[:search]}%", 
-        "%#{params[:search]}%", "%#{params[:search]}%", "%#{params[:search]}%", "%#{params[:search]}%"
+        "%#{params[:search]}%", "%#{params[:search]}%", "%#{params[:search]}%", "%#{params[:search]}%",
+        "%#{params[:search]}%", "%#{params[:search]}%"
       )
     end
     scope

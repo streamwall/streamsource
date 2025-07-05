@@ -2,66 +2,77 @@
 # Development shortcuts for Docker Compose commands
 # All commands run inside Docker containers - no local Ruby/Rails required
 
+# Color definitions
+RED := \033[0;31m
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+BLUE := \033[0;34m
+PURPLE := \033[0;35m
+CYAN := \033[0;36m
+WHITE := \033[0;37m
+BOLD := \033[1m
+RESET := \033[0m
+
 .PHONY: help dev up down restart logs shell console test spec lint rubocop migrate seed reset rebuild clean yarn assets routes
 
 # Default target - show help
 help:
-	@echo "StreamSource Development Commands:"
+	@echo "$(BOLD)$(BLUE)🚀 StreamSource Development Commands$(RESET)"
 	@echo ""
-	@echo "Core Commands:"
-	@echo "  make dev        - Start all services with asset watchers"
-	@echo "  make up         - Start core services only (no asset watchers)"
-	@echo "  make down       - Stop all services"
-	@echo "  make restart    - Restart all services"
-	@echo "  make logs       - Show logs (follow mode)"
-	@echo "  make status     - Show container status"
+	@echo "$(BOLD)$(GREEN)Core Commands:$(RESET)"
+	@echo "  $(CYAN)make dev$(RESET)        - Start all services with asset watchers"
+	@echo "  $(CYAN)make up$(RESET)         - Start core services only (no asset watchers)"
+	@echo "  $(CYAN)make down$(RESET)       - Stop all services"
+	@echo "  $(CYAN)make restart$(RESET)    - Restart all services"
+	@echo "  $(CYAN)make logs$(RESET)       - Show logs (follow mode)"
+	@echo "  $(CYAN)make status$(RESET)     - Show container status"
 	@echo ""
-	@echo "Development:"
-	@echo "  make shell      - Open bash shell in web container"
-	@echo "  make console    - Open Rails console"
-	@echo "  make routes     - Show Rails routes"
-	@echo "  make attach     - Attach to web container (for pry debugging)"
+	@echo "$(BOLD)$(GREEN)Development:$(RESET)"
+	@echo "  $(CYAN)make shell$(RESET)      - Open bash shell in web container"
+	@echo "  $(CYAN)make console$(RESET)    - Open Rails console"
+	@echo "  $(CYAN)make routes$(RESET)     - Show Rails routes"
+	@echo "  $(CYAN)make attach$(RESET)     - Attach to web container (for pry debugging)"
 	@echo ""
-	@echo "Testing:"
-	@echo "  make test       - Run full test suite (RSpec)"
-	@echo "  make spec       - Run specific test (use file=path/to/spec.rb)"
-	@echo "  make coverage   - Open test coverage report"
+	@echo "$(BOLD)$(GREEN)Testing:$(RESET)"
+	@echo "  $(CYAN)make test$(RESET)       - Run full test suite (RSpec)"
+	@echo "  $(CYAN)make spec$(RESET)       - Run specific test (use $(YELLOW)file=path/to/spec.rb$(RESET))"
+	@echo "  $(CYAN)make coverage$(RESET)   - Open test coverage report"
 	@echo ""
-	@echo "Database:"
-	@echo "  make migrate    - Run database migrations"
-	@echo "  make rollback   - Rollback last migration"
-	@echo "  make seed       - Seed the database"
-	@echo "  make reset      - Reset database (drop, create, migrate, seed)"
-	@echo "  make db-console - Open PostgreSQL console"
+	@echo "$(BOLD)$(GREEN)Database:$(RESET)"
+	@echo "  $(CYAN)make migrate$(RESET)    - Run database migrations"
+	@echo "  $(CYAN)make rollback$(RESET)   - Rollback last migration"
+	@echo "  $(CYAN)make seed$(RESET)       - Seed the database"
+	@echo "  $(CYAN)make reset$(RESET)      - Reset database (drop, create, migrate, seed)"
+	@echo "  $(CYAN)make db-console$(RESET) - Open PostgreSQL console"
 	@echo ""
-	@echo "Code Quality:"
-	@echo "  make lint       - Run RuboCop linter"
-	@echo "  make lint-fix   - Auto-fix RuboCop issues"
-	@echo "  make security   - Run Brakeman security analysis"
+	@echo "$(BOLD)$(GREEN)Code Quality:$(RESET)"
+	@echo "  $(CYAN)make lint$(RESET)       - Run RuboCop linter"
+	@echo "  $(CYAN)make lint-fix$(RESET)   - Auto-fix RuboCop issues"
+	@echo "  $(CYAN)make security$(RESET)   - Run Brakeman security analysis"
 	@echo ""
-	@echo "Assets:"
-	@echo "  make assets     - Build all assets (JS and CSS)"
-	@echo "  make watch-js   - Watch and rebuild JavaScript"
-	@echo "  make watch-css  - Watch and rebuild CSS"
+	@echo "$(BOLD)$(GREEN)Assets:$(RESET)"
+	@echo "  $(CYAN)make assets$(RESET)     - Build all assets (JS and CSS)"
+	@echo "  $(CYAN)make watch-js$(RESET)   - Watch and rebuild JavaScript"
+	@echo "  $(CYAN)make watch-css$(RESET)  - Watch and rebuild CSS"
 	@echo ""
-	@echo "Maintenance:"
-	@echo "  make rebuild    - Complete rebuild (clean + build + migrate + seed)"
-	@echo "  make clean      - Remove containers, volumes, and orphans"
-	@echo "  make install    - Install/update dependencies"
+	@echo "$(BOLD)$(GREEN)Maintenance:$(RESET)"
+	@echo "  $(CYAN)make rebuild$(RESET)    - Complete rebuild (clean + build + migrate + seed)"
+	@echo "  $(CYAN)make clean$(RESET)      - Remove containers, volumes, and orphans"
+	@echo "  $(CYAN)make install$(RESET)    - Install/update dependencies"
 
 # Core Commands
 # Start development environment with asset watchers
 dev:
 	docker compose --profile assets up -d
-	@echo "StreamSource is running!"
-	@echo "- API: http://localhost:3000"
-	@echo "- Admin: http://localhost:3000/admin"
-	@echo "- API Docs: http://localhost:3000/api-docs"
+	@echo "$(BOLD)$(GREEN)✓ StreamSource is running!$(RESET)"
+	@echo "$(YELLOW)- API:$(RESET) http://localhost:3000"
+	@echo "$(YELLOW)- Admin:$(RESET) http://localhost:3000/admin"
+	@echo "$(YELLOW)- API Docs:$(RESET) http://localhost:3000/api-docs"
 
 # Start core services only (no asset watchers)
 up:
 	docker compose up -d
-	@echo "StreamSource core services are running (no asset watchers)"
+	@echo "$(BOLD)$(GREEN)✓ StreamSource core services are running$(RESET) $(YELLOW)(no asset watchers)$(RESET)"
 
 # Stop all services
 down:
@@ -103,16 +114,17 @@ test:
 # Run specific test file
 spec:
 	@if [ -z "$(file)" ]; then \
-		echo "Usage: make spec file=spec/models/stream_spec.rb"; \
-		echo "   or: make spec file=spec/models/stream_spec.rb:42"; \
+		echo "$(RED)Error: No file specified$(RESET)"; \
+		echo "$(YELLOW)Usage:$(RESET) make spec file=spec/models/stream_spec.rb"; \
+		echo "$(YELLOW)   or:$(RESET) make spec file=spec/models/stream_spec.rb:42"; \
 	else \
 		docker compose exec web bin/test $(file); \
 	fi
 
 # Open test coverage report
 coverage:
-	@echo "Opening coverage report..."
-	@open coverage/index.html 2>/dev/null || xdg-open coverage/index.html 2>/dev/null || echo "Coverage report at: coverage/index.html"
+	@echo "$(BLUE)Opening coverage report...$(RESET)"
+	@open coverage/index.html 2>/dev/null || xdg-open coverage/index.html 2>/dev/null || echo "$(YELLOW)Coverage report at:$(RESET) coverage/index.html"
 
 # Database Management
 # Run database migrations
@@ -200,24 +212,25 @@ db-prepare:
 # Rails generators
 generate:
 	@if [ -z "$(what)" ]; then \
-		echo "Usage: make generate what='model Stream title:string'"; \
-		echo "   or: make generate what='controller Api::V1::Streams'"; \
-		echo "   or: make generate what='migration AddIndexToStreams'"; \
+		echo "$(RED)Error: No generator specified$(RESET)"; \
+		echo "$(YELLOW)Usage:$(RESET) make generate what='model Stream title:string'"; \
+		echo "$(YELLOW)   or:$(RESET) make generate what='controller Api::V1::Streams'"; \
+		echo "$(YELLOW)   or:$(RESET) make generate what='migration AddIndexToStreams'"; \
 	else \
 		docker compose exec web bin/rails generate $(what); \
 	fi
 
 # Initial setup for new developers
 setup:
-	@echo "Setting up StreamSource development environment..."
+	@echo "$(BOLD)$(BLUE)Setting up StreamSource development environment...$(RESET)"
 	docker compose build
 	docker compose up -d
 	docker compose exec web bin/rails db:prepare
 	@echo ""
-	@echo "Setup complete! StreamSource is running at:"
-	@echo "- API: http://localhost:3000"
-	@echo "- Admin: http://localhost:3000/admin (admin@example.com / Password123!)"
-	@echo "- API Docs: http://localhost:3000/api-docs"
+	@echo "$(BOLD)$(GREEN)✓ Setup complete! StreamSource is running at:$(RESET)"
+	@echo "$(YELLOW)- API:$(RESET) http://localhost:3000"
+	@echo "$(YELLOW)- Admin:$(RESET) http://localhost:3000/admin $(PURPLE)(admin@example.com / Password123!)$(RESET)"
+	@echo "$(YELLOW)- API Docs:$(RESET) http://localhost:3000/api-docs"
 
 # Utility Commands
 .PHONY: exec run yarn bundle
@@ -275,14 +288,14 @@ ps-all:
 
 # Health check
 health:
-	@echo "Checking StreamSource health..."
+	@echo "$(BOLD)$(BLUE)Checking StreamSource health...$(RESET)"
 	@docker compose ps
 	@echo ""
-	@echo "Rails status:"
-	@docker compose exec web bin/rails runner "puts 'Rails: OK'"
+	@echo "$(YELLOW)Rails status:$(RESET)"
+	@docker compose exec web bin/rails runner "puts 'Rails: $(GREEN)OK$(RESET)' if true"
 	@echo ""
-	@echo "Database status:"
-	@docker compose exec web bin/rails runner "puts 'Database: ' + (ActiveRecord::Base.connection.active? ? 'OK' : 'ERROR')"
+	@echo "$(YELLOW)Database status:$(RESET)"
+	@docker compose exec web bin/rails runner "puts 'Database: ' + (ActiveRecord::Base.connection.active? ? '$(GREEN)OK$(RESET)' : '$(RED)ERROR$(RESET)')"
 	@echo ""
-	@echo "Redis status:"
-	@docker compose exec web bin/rails runner "puts 'Redis: ' + (Redis.new.ping == 'PONG' ? 'OK' : 'ERROR')"
+	@echo "$(YELLOW)Redis status:$(RESET)"
+	@docker compose exec web bin/rails runner "puts 'Redis: ' + (Redis.new.ping == 'PONG' ? '$(GREEN)OK$(RESET)' : '$(RED)ERROR$(RESET)')"

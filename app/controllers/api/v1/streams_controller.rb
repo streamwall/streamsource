@@ -45,8 +45,13 @@ module Api
       end
       
       def create
-        stream = current_user.streams.build(stream_params)
+        stream = current_user.streams.build(stream_params.except(:location))
         authorize stream
+        
+        # Handle location creation/lookup
+        if location_params.present?
+          stream.location = Location.find_or_create_from_params(location_params)
+        end
         
         if stream.save
           render json: stream, serializer: StreamSerializer, scope: serialization_scope, status: :created
@@ -58,7 +63,14 @@ module Api
       def update
         authorize @stream
         
-        if @stream.update(stream_params)
+        # Handle location update
+        if location_params.present?
+          @stream.location = Location.find_or_create_from_params(location_params)
+        elsif params.has_key?(:location) && params[:location].nil?
+          @stream.location = nil
+        end
+        
+        if @stream.update(stream_params.except(:location))
           render json: @stream, serializer: StreamSerializer, scope: serialization_scope
         else
           render_error(@stream.errors.full_messages.join(', '), :unprocessable_entity)
@@ -186,7 +198,12 @@ module Api
       
       def stream_params
         params.permit(:source, :link, :status, :platform, :orientation, :kind,
-                      :city, :state, :notes, :title, :posted_by)
+                      :city, :state, :notes, :title, :posted_by, :location_id)
+      end
+      
+      def location_params
+        return nil unless params[:location].is_a?(Hash)
+        params.require(:location).permit(:city, :state_province, :region, :country, :latitude, :longitude)
       end
     end
   end

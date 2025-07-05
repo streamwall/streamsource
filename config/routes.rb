@@ -23,6 +23,13 @@ Rails.application.routes.draw do
           get 'export'
         end
       end
+      
+      # Locations
+      resources :locations do
+        collection do
+          get 'all'
+        end
+      end
     end
   end
   
