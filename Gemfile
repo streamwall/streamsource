@@ -60,7 +60,7 @@ gem "rack-attack", "~> 6.7"
 
 # Pagination
 gem "kaminari", "~> 1.2"
-gem "pagy", "~> 6.2"
+gem "pagy", "~> 9.3"
 
 # Serialization
 gem "active_model_serializers", "~> 0.10.14"
