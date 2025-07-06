@@ -17,10 +17,21 @@ on:
           - status
           - power_on
           - power_off
+          - restart
+          - force_power_off
+      reason:
+        description: 'Reason for manual action'
+        required: false
+        default: 'Manual trigger'
+        type: string
+
+env:
+  MAX_WAIT_TIME: 300  # 5 minutes in seconds
 
 jobs:
   power-management:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
     - name: Determine action
@@ -28,84 +39,307 @@ jobs:
       run: |
         if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
           echo "action=${{ github.event.inputs.action }}" >> $GITHUB_OUTPUT
+          echo "reason=${{ github.event.inputs.reason }}" >> $GITHUB_OUTPUT
         else
           # Check current hour to determine if we should power on or off
           HOUR=$(date -u +%H)
-          if [ "$HOUR" == "14" ]; then
-            echo "action=power_on" >> $GITHUB_OUTPUT
-          elif [ "$HOUR" == "23" ]; then
-            echo "action=power_off" >> $GITHUB_OUTPUT
+          DAY=$(date -u +%u)  # 1-7 (Monday-Sunday)
+          
+          # Only run on weekdays (1-5)
+          if [ "$DAY" -le 5 ]; then
+            if [ "$HOUR" == "14" ]; then
+              echo "action=power_on" >> $GITHUB_OUTPUT
+              echo "reason=Scheduled power on (9 AM EST)" >> $GITHUB_OUTPUT
+            elif [ "$HOUR" == "23" ]; then
+              echo "action=power_off" >> $GITHUB_OUTPUT
+              echo "reason=Scheduled power off (6 PM EST)" >> $GITHUB_OUTPUT
+            else
+              echo "action=status" >> $GITHUB_OUTPUT
+              echo "reason=Status check" >> $GITHUB_OUTPUT
+            fi
           else
             echo "action=status" >> $GITHUB_OUTPUT
+            echo "reason=Weekend - status check only" >> $GITHUB_OUTPUT
           fi
         fi
     
     - name: Check droplet status
       id: check-status
       run: |
-        STATUS=$(curl -s -X GET \
-          -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
-          "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}" \
-          | jq -r '.droplet.status')
-        echo "Current status: $STATUS"
-        echo "status=$STATUS" >> $GITHUB_OUTPUT
+        echo "🔍 Checking droplet status..."
+        
+        # Get droplet information with retry
+        for i in {1..3}; do
+          RESPONSE=$(curl -s -X GET \
+            -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+            "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}" 2>/dev/null)
+          
+          if [ $? -eq 0 ] && [ -n "$RESPONSE" ]; then
+            STATUS=$(echo "$RESPONSE" | jq -r '.droplet.status // "unknown"')
+            MEMORY=$(echo "$RESPONSE" | jq -r '.droplet.memory // "unknown"')
+            VCPUS=$(echo "$RESPONSE" | jq -r '.droplet.vcpus // "unknown"')
+            REGION=$(echo "$RESPONSE" | jq -r '.droplet.region.name // "unknown"')
+            IP=$(echo "$RESPONSE" | jq -r '.droplet.networks.v4[] | select(.type=="public") | .ip_address // "unknown"')
+            
+            echo "✅ Droplet Status: $STATUS"
+            echo "💾 Memory: ${MEMORY}MB"
+            echo "🔧 vCPUs: $VCPUS"
+            echo "🌍 Region: $REGION"
+            echo "🌐 IP: $IP"
+            
+            echo "status=$STATUS" >> $GITHUB_OUTPUT
+            echo "memory=$MEMORY" >> $GITHUB_OUTPUT
+            echo "vcpus=$VCPUS" >> $GITHUB_OUTPUT
+            echo "region=$REGION" >> $GITHUB_OUTPUT
+            echo "ip=$IP" >> $GITHUB_OUTPUT
+            break
+          else
+            echo "⚠️ Attempt $i failed, retrying..."
+            sleep 5
+          fi
+        done
+        
+        if [ -z "$STATUS" ]; then
+          echo "❌ Failed to get droplet status after 3 attempts"
+          exit 1
+        fi
     
     - name: Power ON droplet
-      if: steps.determine-action.outputs.action == 'power_on' && steps.check-status.outputs.status != 'active'
+      if: (steps.determine-action.outputs.action == 'power_on' || steps.determine-action.outputs.action == 'restart') && steps.check-status.outputs.status != 'active'
       run: |
-        echo "Powering ON droplet..."
-        curl -s -X POST \
+        echo "🔌 Powering ON droplet..."
+        echo "Reason: ${{ steps.determine-action.outputs.reason }}"
+        
+        # Send power on command
+        POWER_ON_RESPONSE=$(curl -s -X POST \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
           "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}/actions" \
-          -d '{"type":"power_on"}'
+          -d '{"type":"power_on"}')
         
-        # Wait for droplet to be active
-        for i in {1..30}; do
+        ACTION_ID=$(echo "$POWER_ON_RESPONSE" | jq -r '.action.id // "unknown"')
+        echo "Power on action ID: $ACTION_ID"
+        
+        # Wait for droplet to be active with better progress reporting
+        echo "⏳ Waiting for droplet to become active..."
+        WAIT_TIME=0
+        while [ $WAIT_TIME -lt ${{ env.MAX_WAIT_TIME }} ]; do
           sleep 10
+          WAIT_TIME=$((WAIT_TIME + 10))
+          
           STATUS=$(curl -s -X GET \
             -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
             "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}" \
             | jq -r '.droplet.status')
+          
+          echo "Status: $STATUS (waited ${WAIT_TIME}s)"
+          
           if [ "$STATUS" == "active" ]; then
-            echo "Droplet is now active!"
+            echo "✅ Droplet is now active!"
+            
+            # Wait additional time for services to start
+            echo "⏳ Waiting for services to initialize..."
+            sleep 30
+            
+            # Test if application is responding
+            if curl -f -s --max-time 10 "https://${{ secrets.DROPLET_HOST }}/health" > /dev/null 2>&1; then
+              echo "✅ Application is responding!"
+            else
+              echo "⚠️ Application not yet responding (this is normal for fresh startup)"
+            fi
             break
           fi
-          echo "Waiting for droplet to be active... ($i/30)"
         done
+        
+        if [ $WAIT_TIME -ge ${{ env.MAX_WAIT_TIME }} ]; then
+          echo "❌ Timeout: Droplet did not become active within ${{ env.MAX_WAIT_TIME }} seconds"
+          exit 1
+        fi
     
     - name: Power OFF droplet
-      if: steps.determine-action.outputs.action == 'power_off' && steps.check-status.outputs.status == 'active'
+      if: (steps.determine-action.outputs.action == 'power_off' || steps.determine-action.outputs.action == 'force_power_off') && steps.check-status.outputs.status == 'active'
       run: |
-        # First, gracefully stop services via SSH
-        echo "Gracefully stopping services..."
-        ssh -o StrictHostKeyChecking=no \
-            -i <(echo "${{ secrets.DEPLOY_SSH_KEY }}") \
-            deploy@${{ secrets.DROPLET_HOST }} \
-            "sudo systemctl stop puma nginx postgresql redis" || true
+        echo "🔌 Powering OFF droplet..."
+        echo "Reason: ${{ steps.determine-action.outputs.reason }}"
         
-        sleep 5
+        # For graceful shutdown, try to stop services first
+        if [ "${{ steps.determine-action.outputs.action }}" != "force_power_off" ]; then
+          echo "⏳ Gracefully stopping services..."
+          
+          # Create temporary SSH key file
+          SSH_KEY_FILE=$(mktemp)
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > "$SSH_KEY_FILE"
+          chmod 600 "$SSH_KEY_FILE"
+          
+          # Try to stop services gracefully
+          timeout 60 ssh -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=10 \
+              -i "$SSH_KEY_FILE" \
+              deploy@${{ secrets.DROPLET_HOST }} \
+              "sudo systemctl stop puma nginx postgresql redis-server" || {
+                echo "⚠️ Failed to stop services gracefully, proceeding with power off"
+              }
+          
+          # Clean up SSH key file
+          rm -f "$SSH_KEY_FILE"
+          
+          echo "⏳ Waiting for services to stop..."
+          sleep 10
+        else
+          echo "⚠️ Force power off requested - skipping graceful shutdown"
+        fi
         
-        # Then power off the droplet
-        echo "Powering OFF droplet..."
-        curl -s -X POST \
+        # Power off the droplet
+        echo "🔌 Sending power off command..."
+        POWER_OFF_RESPONSE=$(curl -s -X POST \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
           "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}/actions" \
-          -d '{"type":"power_off"}'
+          -d '{"type":"power_off"}')
+        
+        ACTION_ID=$(echo "$POWER_OFF_RESPONSE" | jq -r '.action.id // "unknown"')
+        echo "Power off action ID: $ACTION_ID"
+        
+        # Wait for droplet to be powered off
+        echo "⏳ Waiting for droplet to power off..."
+        WAIT_TIME=0
+        while [ $WAIT_TIME -lt ${{ env.MAX_WAIT_TIME }} ]; do
+          sleep 10
+          WAIT_TIME=$((WAIT_TIME + 10))
+          
+          STATUS=$(curl -s -X GET \
+            -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+            "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}" \
+            | jq -r '.droplet.status')
+          
+          echo "Status: $STATUS (waited ${WAIT_TIME}s)"
+          
+          if [ "$STATUS" == "off" ]; then
+            echo "✅ Droplet is now powered off!"
+            break
+          fi
+        done
+        
+        if [ $WAIT_TIME -ge ${{ env.MAX_WAIT_TIME }} ]; then
+          echo "❌ Timeout: Droplet did not power off within ${{ env.MAX_WAIT_TIME }} seconds"
+          exit 1
+        fi
     
-    - name: Report status
+    - name: Restart droplet
+      if: steps.determine-action.outputs.action == 'restart' && steps.check-status.outputs.status == 'active'
+      run: |
+        echo "🔄 Restarting droplet..."
+        echo "Reason: ${{ steps.determine-action.outputs.reason }}"
+        
+        # Send restart command
+        RESTART_RESPONSE=$(curl -s -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+          "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}/actions" \
+          -d '{"type":"reboot"}')
+        
+        ACTION_ID=$(echo "$RESTART_RESPONSE" | jq -r '.action.id // "unknown"')
+        echo "Restart action ID: $ACTION_ID"
+        
+        # Wait for restart to complete
+        echo "⏳ Waiting for restart to complete..."
+        sleep 30  # Give it time to go down
+        
+        WAIT_TIME=0
+        while [ $WAIT_TIME -lt ${{ env.MAX_WAIT_TIME }} ]; do
+          sleep 10
+          WAIT_TIME=$((WAIT_TIME + 10))
+          
+          STATUS=$(curl -s -X GET \
+            -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+            "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}" \
+            | jq -r '.droplet.status')
+          
+          echo "Status: $STATUS (waited ${WAIT_TIME}s)"
+          
+          if [ "$STATUS" == "active" ]; then
+            echo "✅ Droplet restart completed!"
+            
+            # Test if application is responding
+            sleep 30  # Give services time to start
+            if curl -f -s --max-time 10 "https://${{ secrets.DROPLET_HOST }}/health" > /dev/null 2>&1; then
+              echo "✅ Application is responding after restart!"
+            else
+              echo "⚠️ Application not yet responding (this is normal after restart)"
+            fi
+            break
+          fi
+        done
+        
+        if [ $WAIT_TIME -ge ${{ env.MAX_WAIT_TIME }} ]; then
+          echo "❌ Timeout: Droplet did not restart within ${{ env.MAX_WAIT_TIME }} seconds"
+          exit 1
+        fi
+
+    - name: Report status and costs
       if: always()
       run: |
+        echo "📊 Generating final report..."
+        
+        # Get final status
         FINAL_STATUS=$(curl -s -X GET \
           -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
           "https://api.digitalocean.com/v2/droplets/${{ secrets.DROPLET_ID }}" \
           | jq -r '.droplet.status')
+        
         echo "Final droplet status: $FINAL_STATUS"
         
-        # Optional: Send notification
+        # Calculate cost savings (rough estimate)
+        CURRENT_HOUR=$(date -u +%H)
+        if [ "$FINAL_STATUS" == "off" ]; then
+          echo "💰 Cost savings: Droplet is powered off"
+        elif [ "$FINAL_STATUS" == "active" ]; then
+          echo "💸 Cost: Droplet is running"
+        fi
+        
+        # Get current date/time for reporting
+        CURRENT_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        
+        echo "🕒 Report generated at: $CURRENT_TIME"
+        
+        # Create summary for GitHub Actions
+        echo "## 🤖 Power Management Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Action**: ${{ steps.determine-action.outputs.action }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Reason**: ${{ steps.determine-action.outputs.reason }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Final Status**: $FINAL_STATUS" >> $GITHUB_STEP_SUMMARY
+        echo "**Timestamp**: $CURRENT_TIME" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.check-status.outputs.memory }}" != "unknown" ]; then
+          echo "**Droplet Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Memory: ${{ steps.check-status.outputs.memory }}MB" >> $GITHUB_STEP_SUMMARY
+          echo "- vCPUs: ${{ steps.check-status.outputs.vcpus }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Region: ${{ steps.check-status.outputs.region }}" >> $GITHUB_STEP_SUMMARY
+          echo "- IP: ${{ steps.check-status.outputs.ip }}" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Enhanced Slack notification
         if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
+          STATUS_EMOJI=""
+          case "$FINAL_STATUS" in
+            "active") STATUS_EMOJI="✅" ;;
+            "off") STATUS_EMOJI="🔌" ;;
+            *) STATUS_EMOJI="⚠️" ;;
+          esac
+          
           curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
             -H 'Content-type: application/json' \
-            -d "{\"text\":\"StreamSource droplet is now $FINAL_STATUS\"}"
+            -d '{
+              "text": "'$STATUS_EMOJI' StreamSource Droplet Power Management",
+              "attachments": [{
+                "color": "'$([ "$FINAL_STATUS" == "active" ] && echo "good" || echo "warning")'',
+                "fields": [
+                  {"title": "Action", "value": "${{ steps.determine-action.outputs.action }}", "short": true},
+                  {"title": "Status", "value": "'$FINAL_STATUS'", "short": true},
+                  {"title": "Reason", "value": "${{ steps.determine-action.outputs.reason }}", "short": false},
+                  {"title": "Timestamp", "value": "'$CURRENT_TIME'", "short": true}
+                ]
+              }]
+            }' || echo "Failed to send Slack notification"
         fi

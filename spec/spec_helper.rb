@@ -1,15 +1,15 @@
-require 'simplecov'
-SimpleCov.start 'rails' do
-  add_filter '/spec/'
-  add_filter '/config/'
-  add_filter '/vendor/'
-  
-  add_group 'Controllers', 'app/controllers'
-  add_group 'Models', 'app/models'
-  add_group 'Serializers', 'app/serializers'
-  add_group 'Policies', 'app/policies'
-  add_group 'Concerns', 'app/controllers/concerns'
-  
+require "simplecov"
+SimpleCov.start "rails" do
+  add_filter "/spec/"
+  add_filter "/config/"
+  add_filter "/vendor/"
+
+  add_group "Controllers", "app/controllers"
+  add_group "Models", "app/models"
+  add_group "Serializers", "app/serializers"
+  add_group "Policies", "app/policies"
+  add_group "Concerns", "app/controllers/concerns"
+
   # minimum_coverage 100  # Temporarily disabled while fixing tests
 end
 

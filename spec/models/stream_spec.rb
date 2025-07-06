@@ -1,173 +1,183 @@
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe Stream, type: :model do
   subject { build(:stream) }
-  
-  describe 'associations' do
-    it { should belong_to(:user) }
-    it { should belong_to(:streamer).optional }
-    it { should have_many(:timestamp_streams).dependent(:destroy) }
-    it { should have_many(:timestamps).through(:timestamp_streams) }
+
+  describe "associations" do
+    it { is_expected.to belong_to(:user) }
+    it { is_expected.to belong_to(:streamer).optional }
+    it { is_expected.to have_many(:timestamp_streams).dependent(:destroy) }
+    it { is_expected.to have_many(:timestamps).through(:timestamp_streams) }
   end
-  
-  describe 'validations' do
-    it { should validate_presence_of(:link) }
-    it { should validate_presence_of(:source) }
-    it { should validate_presence_of(:user) }
-    it { should validate_length_of(:source).is_at_least(1).is_at_most(255) }
-    
-    it 'validates URL format' do
-      stream = build(:stream, link: 'not-a-url')
+
+  describe "validations" do
+    it { is_expected.to validate_presence_of(:link) }
+    it { is_expected.to validate_presence_of(:source) }
+    it { is_expected.to validate_presence_of(:user) }
+    it { is_expected.to validate_length_of(:source).is_at_least(1).is_at_most(255) }
+
+    it "validates URL format" do
+      stream = build(:stream, link: "not-a-url")
       expect(stream).not_to be_valid
-      expect(stream.errors[:link]).to include('must be a valid HTTP or HTTPS URL')
+      expect(stream.errors[:link]).to include("must be a valid HTTP or HTTPS URL")
     end
-    
-    it 'accepts valid HTTP URL' do
-      stream = build(:stream, link: 'http://example.com')
+
+    it "accepts valid HTTP URL" do
+      stream = build(:stream, link: "http://example.com")
       expect(stream).to be_valid
     end
-    
-    it 'accepts valid HTTPS URL' do
-      stream = build(:stream, link: 'https://example.com')
+
+    it "accepts valid HTTPS URL" do
+      stream = build(:stream, link: "https://example.com")
       expect(stream).to be_valid
     end
-    
-    it 'accepts URLs with paths and query strings' do
-      stream = build(:stream, link: 'https://example.com/path?query=value&other=123')
+
+    it "accepts URLs with paths and query strings" do
+      stream = build(:stream, link: "https://example.com/path?query=value&other=123")
       expect(stream).to be_valid
     end
   end
-  
-  describe 'enums' do
-    it { should define_enum_for(:status).with_values(
-      live: 'Live', 
-      offline: 'Offline', 
-      unknown: 'Unknown'
-    ).backed_by_column_of_type(:string) }
-    
-    it { should define_enum_for(:platform).with_values(
-      tiktok: 'TikTok',
-      facebook: 'Facebook',
-      twitch: 'Twitch',
-      youtube: 'YouTube',
-      instagram: 'Instagram',
-      other: 'Other'
-    ).with_prefix(true).backed_by_column_of_type(:string) }
-    
-    it { should define_enum_for(:orientation).with_values(
-      vertical: 'vertical',
-      horizontal: 'horizontal'
-    ).with_prefix(true).backed_by_column_of_type(:string) }
-    
-    it { should define_enum_for(:kind).with_values(
-      video: 'video',
-      web: 'web',
-      overlay: 'overlay',
-      background: 'background'
-    ).with_prefix(true).backed_by_column_of_type(:string) }
-    
-    it 'has unknown status as default' do
-      stream = Stream.new
-      expect(stream.status).to eq('unknown')
+
+  describe "enums" do
+    it {
+      expect(subject).to define_enum_for(:status).with_values(
+        live: "Live",
+        offline: "Offline",
+        unknown: "Unknown",
+      ).backed_by_column_of_type(:string)
+    }
+
+    it {
+      expect(subject).to define_enum_for(:platform).with_values(
+        tiktok: "TikTok",
+        facebook: "Facebook",
+        twitch: "Twitch",
+        youtube: "YouTube",
+        instagram: "Instagram",
+        other: "Other",
+      ).with_prefix(true).backed_by_column_of_type(:string)
+    }
+
+    it {
+      expect(subject).to define_enum_for(:orientation).with_values(
+        vertical: "vertical",
+        horizontal: "horizontal",
+      ).with_prefix(true).backed_by_column_of_type(:string)
+    }
+
+    it {
+      expect(subject).to define_enum_for(:kind).with_values(
+        video: "video",
+        web: "web",
+        overlay: "overlay",
+        background: "background",
+      ).with_prefix(true).backed_by_column_of_type(:string)
+    }
+
+    it "has unknown status as default" do
+      stream = described_class.new
+      expect(stream.status).to eq("unknown")
       # Rails sets the default to the key, not the database value
-      expect(stream.read_attribute(:status)).to eq('unknown')
+      expect(stream.read_attribute(:status)).to eq("unknown")
     end
-    
-    it 'has video kind as default' do
-      stream = Stream.new
-      expect(stream.kind).to eq('video')
+
+    it "has video kind as default" do
+      stream = described_class.new
+      expect(stream.kind).to eq("video")
     end
   end
-  
-  describe 'scopes' do
+
+  describe "scopes" do
     let!(:user) { create(:user) }
     let!(:streamer) { create(:streamer, user: user) }
-    let!(:live_stream) { create(:stream, user: user, status: 'Live', platform: 'YouTube') }
-    let!(:offline_stream) { create(:stream, user: user, status: 'Offline', platform: 'Twitch') }
-    let!(:archived_stream) { create(:stream, user: user, is_archived: true, status: 'Offline', platform: 'Facebook') }
-    let!(:pinned_stream) { create(:stream, user: user, is_pinned: true, status: 'Live', platform: 'Instagram') }
-    let!(:streamer_stream) { create(:stream, user: user, streamer: streamer, status: 'Live', platform: 'Other') }
-    
-    describe '.live' do
-      it 'returns only live streams' do
-        expect(Stream.live).to contain_exactly(live_stream, pinned_stream, streamer_stream)
+    let!(:live_stream) { create(:stream, user: user, status: "Live", platform: "YouTube") }
+    let!(:offline_stream) { create(:stream, user: user, status: "Offline", platform: "Twitch") }
+    let!(:archived_stream) { create(:stream, user: user, is_archived: true, status: "Offline", platform: "Facebook") }
+    let!(:pinned_stream) { create(:stream, user: user, is_pinned: true, status: "Live", platform: "Instagram") }
+    let!(:streamer_stream) { create(:stream, user: user, streamer: streamer, status: "Live", platform: "Other") }
+
+    describe ".live" do
+      it "returns only live streams" do
+        expect(described_class.live).to contain_exactly(live_stream, pinned_stream, streamer_stream)
       end
     end
-    
-    describe '.offline' do
-      it 'returns only offline streams' do
-        expect(Stream.offline).to contain_exactly(offline_stream, archived_stream)
+
+    describe ".offline" do
+      it "returns only offline streams" do
+        expect(described_class.offline).to contain_exactly(offline_stream, archived_stream)
       end
     end
-    
-    describe '.unknown_status' do
-      let!(:unknown_stream) { create(:stream, user: user, status: 'Unknown') }
-      
-      it 'returns only unknown status streams' do
-        expect(Stream.unknown_status).to contain_exactly(unknown_stream)
+
+    describe ".unknown_status" do
+      let!(:unknown_stream) { create(:stream, user: user, status: "Unknown") }
+
+      it "returns only unknown status streams" do
+        expect(described_class.unknown_status).to contain_exactly(unknown_stream)
       end
     end
-    
-    describe '.active' do
-      it 'returns non-archived streams' do
-        expect(Stream.active).not_to include(archived_stream)
-        expect(Stream.active).to include(live_stream, offline_stream, pinned_stream, streamer_stream)
+
+    describe ".active" do
+      it "returns non-archived streams" do
+        expect(described_class.active).not_to include(archived_stream)
+        expect(described_class.active).to include(live_stream, offline_stream, pinned_stream, streamer_stream)
       end
     end
-    
-    describe '.not_archived' do
-      it 'returns streams that are not archived' do
-        expect(Stream.not_archived).not_to include(archived_stream)
-        expect(Stream.not_archived).to include(live_stream, offline_stream, pinned_stream, streamer_stream)
+
+    describe ".not_archived" do
+      it "returns streams that are not archived" do
+        expect(described_class.not_archived).not_to include(archived_stream)
+        expect(described_class.not_archived).to include(live_stream, offline_stream, pinned_stream, streamer_stream)
       end
     end
-    
-    describe '.recent' do
-      it 'orders streams by created_at descending' do
+
+    describe ".recent" do
+      it "orders streams by created_at descending" do
         oldest = create(:stream, user: user, created_at: 3.days.ago)
         newest = create(:stream, user: user, created_at: 1.hour.ago)
         middle = create(:stream, user: user, created_at: 1.day.ago)
-        
-        expect(Stream.recent.first).to eq(newest)
-        expect(Stream.recent.last).to eq(oldest)
-        expect(Stream.recent.to_a).to eq([newest, middle, oldest] + Stream.where.not(id: [oldest.id, newest.id, middle.id]).order(created_at: :desc))
+
+        expect(described_class.recent.first).to eq(newest)
+        expect(described_class.recent.last).to eq(oldest)
+        expect(described_class.recent.to_a).to eq([newest, middle,
+                                                   oldest] + described_class.where.not(id: [oldest.id, newest.id,
+                                                                                            middle.id]).order(created_at: :desc))
       end
     end
-    
-    describe '.recently_checked' do
-      it 'orders streams by last_checked_at descending' do
+
+    describe ".recently_checked" do
+      it "orders streams by last_checked_at descending" do
         stream1 = create(:stream, user: user, last_checked_at: 3.hours.ago)
         stream2 = create(:stream, user: user, last_checked_at: 1.hour.ago)
         stream3 = create(:stream, user: user, last_checked_at: 2.hours.ago)
-        
-        result = Stream.recently_checked
+
+        result = described_class.recently_checked
         expect(result.first).to eq(stream2)
         expect(result.second).to eq(stream3)
         expect(result.third).to eq(stream1)
       end
     end
-    
-    describe '.recently_live' do
-      it 'orders streams by last_live_at descending' do
+
+    describe ".recently_live" do
+      it "orders streams by last_live_at descending" do
         stream1 = create(:stream, user: user, last_live_at: 3.days.ago)
         stream2 = create(:stream, user: user, last_live_at: 1.day.ago)
         stream3 = create(:stream, user: user, last_live_at: 2.days.ago)
-        
-        result = Stream.recently_live
+
+        result = described_class.recently_live
         expect(result.first).to eq(stream2)
         expect(result.second).to eq(stream3)
         expect(result.third).to eq(stream1)
       end
     end
-    
-    describe '.ordered' do
-      it 'orders by pinned first, then by started_at descending' do
+
+    describe ".ordered" do
+      it "orders by pinned first, then by started_at descending" do
         unpinned_old = create(:stream, user: user, is_pinned: false, started_at: 3.days.ago)
         unpinned_new = create(:stream, user: user, is_pinned: false, started_at: 1.day.ago)
         pinned_old = create(:stream, user: user, is_pinned: true, started_at: 4.days.ago)
         pinned_new = create(:stream, user: user, is_pinned: true, started_at: 2.days.ago)
-        
-        result = Stream.ordered.limit(4)
+
+        result = described_class.ordered.limit(4)
         # Pinned streams come first, ordered by started_at desc
         expect(result[0]).to eq(pinned_new)
         expect(result[1]).to eq(pinned_old)
@@ -176,343 +186,343 @@ RSpec.describe Stream, type: :model do
         expect(result[3]).to eq(unpinned_old)
       end
     end
-    
-    describe '.archived' do
-      it 'returns only archived streams' do
-        expect(Stream.archived).to contain_exactly(archived_stream)
+
+    describe ".archived" do
+      it "returns only archived streams" do
+        expect(described_class.archived).to contain_exactly(archived_stream)
       end
     end
-    
-    describe '.pinned' do
-      it 'returns only pinned streams' do
-        expect(Stream.pinned).to contain_exactly(pinned_stream)
+
+    describe ".pinned" do
+      it "returns only pinned streams" do
+        expect(described_class.pinned).to contain_exactly(pinned_stream)
       end
     end
-    
-    describe '.unpinned' do
-      it 'returns only unpinned streams' do
-        expect(Stream.unpinned).not_to include(pinned_stream)
-        expect(Stream.unpinned).to include(live_stream, offline_stream, streamer_stream, archived_stream)
+
+    describe ".unpinned" do
+      it "returns only unpinned streams" do
+        expect(described_class.unpinned).not_to include(pinned_stream)
+        expect(described_class.unpinned).to include(live_stream, offline_stream, streamer_stream, archived_stream)
       end
     end
-    
-    describe '.by_user' do
+
+    describe ".by_user" do
       let!(:other_user) { create(:user) }
-      let!(:other_stream) { create(:stream, user: other_user, platform: 'YouTube') }
-      
-      it 'returns streams for specific user' do
-        expect(Stream.by_user(user)).not_to include(other_stream)
-        expect(Stream.by_user(user)).to include(live_stream, offline_stream, pinned_stream, streamer_stream)
+      let!(:other_stream) { create(:stream, user: other_user, platform: "YouTube") }
+
+      it "returns streams for specific user" do
+        expect(described_class.by_user(user)).not_to include(other_stream)
+        expect(described_class.by_user(user)).to include(live_stream, offline_stream, pinned_stream, streamer_stream)
       end
     end
-    
-    describe '.by_streamer' do
-      it 'returns streams for specific streamer' do
-        expect(Stream.by_streamer(streamer)).to contain_exactly(streamer_stream)
+
+    describe ".by_streamer" do
+      it "returns streams for specific streamer" do
+        expect(described_class.by_streamer(streamer)).to contain_exactly(streamer_stream)
       end
     end
-    
-    describe '.by_platform' do
-      let!(:tiktok_stream) { create(:stream, user: user, platform: 'TikTok') }
-      
-      it 'returns streams for specific platform' do
-        expect(Stream.by_platform('TikTok')).to contain_exactly(tiktok_stream)
+
+    describe ".by_platform" do
+      let!(:tiktok_stream) { create(:stream, user: user, platform: "TikTok") }
+
+      it "returns streams for specific platform" do
+        expect(described_class.by_platform("TikTok")).to contain_exactly(tiktok_stream)
       end
     end
-    
-    describe '.by_kind' do
-      let!(:web_stream) { create(:stream, user: user, kind: 'web') }
-      
-      it 'returns streams for specific kind' do
-        expect(Stream.by_kind('web')).to contain_exactly(web_stream)
+
+    describe ".by_kind" do
+      let!(:web_stream) { create(:stream, user: user, kind: "web") }
+
+      it "returns streams for specific kind" do
+        expect(described_class.by_kind("web")).to contain_exactly(web_stream)
       end
     end
-    
-    describe '.needs_archiving' do
+
+    describe ".needs_archiving" do
       let!(:old_offline_stream) do
-        stream = create(:stream, user: user, status: 'Offline')
+        stream = create(:stream, user: user, status: "Offline")
         stream.update_column(:last_checked_at, 31.minutes.ago)
         stream
       end
       let!(:recent_offline_stream) do
-        stream = create(:stream, user: user, status: 'Offline')
+        stream = create(:stream, user: user, status: "Offline")
         stream.update_column(:last_checked_at, 10.minutes.ago)
         stream
       end
-      
-      it 'returns streams that should be archived' do
-        expect(Stream.needs_archiving).to include(old_offline_stream)
-        expect(Stream.needs_archiving).not_to include(recent_offline_stream, live_stream, archived_stream)
+
+      it "returns streams that should be archived" do
+        expect(described_class.needs_archiving).to include(old_offline_stream)
+        expect(described_class.needs_archiving).not_to include(recent_offline_stream, live_stream, archived_stream)
       end
     end
-    
-    describe '.filtered' do
-      let!(:tiktok_live_pinned) { create(:stream, user: user, status: 'Live', platform: 'TikTok', is_pinned: true) }
-      
-      it 'filters by multiple parameters' do
-        filtered = Stream.filtered(
-          status: 'Live',
-          platform: 'TikTok',
-          is_pinned: true
+
+    describe ".filtered" do
+      let!(:tiktok_live_pinned) { create(:stream, user: user, status: "Live", platform: "TikTok", is_pinned: true) }
+
+      it "filters by multiple parameters" do
+        filtered = described_class.filtered(
+          status: "Live",
+          platform: "TikTok",
+          is_pinned: true,
         )
-        
+
         expect(filtered).to contain_exactly(tiktok_live_pinned)
       end
-      
-      it 'filters by search term' do
-        searchable = create(:stream, user: user, source: 'TestStreamer', title: 'Test Stream')
-        filtered = Stream.filtered(search: 'TestStreamer')
+
+      it "filters by search term" do
+        searchable = create(:stream, user: user, source: "TestStreamer", title: "Test Stream")
+        filtered = described_class.filtered(search: "TestStreamer")
         expect(filtered).to include(searchable)
       end
     end
   end
-  
-  describe 'callbacks' do
-    describe 'status tracking' do
-      let(:stream) { create(:stream, status: 'Unknown') }
-      
-      it 'updates last_checked_at when status changes' do
-        expect { stream.update!(status: 'Live') }.to change { stream.last_checked_at }
+
+  describe "callbacks" do
+    describe "status tracking" do
+      let(:stream) { create(:stream, status: "Unknown") }
+
+      it "updates last_checked_at when status changes" do
+        expect { stream.update!(status: "Live") }.to(change(stream, :last_checked_at))
       end
-      
-      it 'updates last_live_at when going live' do
-        expect { stream.update!(status: 'Live') }.to change { stream.last_live_at }
+
+      it "updates last_live_at when going live" do
+        expect { stream.update!(status: "Live") }.to(change(stream, :last_live_at))
       end
-      
-      it 'sets started_at when going live for first time' do
+
+      it "sets started_at when going live for first time" do
         expect(stream.started_at).to be_nil
-        stream.update!(status: 'Live')
+        stream.update!(status: "Live")
         expect(stream.started_at).to be_present
       end
-      
-      it 'does not override existing started_at' do
+
+      it "does not override existing started_at" do
         original_start = 1.hour.ago
         stream.update!(started_at: original_start)
-        stream.update!(status: 'Live')
+        stream.update!(status: "Live")
         expect(stream.started_at).to be_within(1.second).of(original_start)
       end
     end
-    
-    describe '#normalize_link' do
-      it 'strips whitespace from link' do
-        stream = build(:stream, link: '  https://example.com  ')
+
+    describe "#normalize_link" do
+      it "strips whitespace from link" do
+        stream = build(:stream, link: "  https://example.com  ")
         stream.save!
-        expect(stream.link).to eq('https://example.com')
+        expect(stream.link).to eq("https://example.com")
       end
     end
-    
-    describe '#set_posted_by' do
-      it 'sets posted_by to user email if blank' do
-        user = create(:user, email: 'test@example.com')
+
+    describe "#set_posted_by" do
+      it "sets posted_by to user email if blank" do
+        user = create(:user, email: "test@example.com")
         stream = build(:stream, user: user, posted_by: nil)
         stream.save!
-        expect(stream.posted_by).to eq('test@example.com')
+        expect(stream.posted_by).to eq("test@example.com")
       end
-      
-      it 'does not override existing posted_by' do
-        stream = build(:stream, posted_by: 'CustomPoster')
+
+      it "does not override existing posted_by" do
+        stream = build(:stream, posted_by: "CustomPoster")
         stream.save!
-        expect(stream.posted_by).to eq('CustomPoster')
+        expect(stream.posted_by).to eq("CustomPoster")
       end
     end
   end
-  
-  describe 'instance methods' do
+
+  describe "instance methods" do
     let(:user) { create(:user) }
     let(:admin) { create(:user, :admin) }
     let(:stream) { create(:stream, user: user) }
-    
-    describe '#owned_by?' do
-      it 'returns true for owner' do
+
+    describe "#owned_by?" do
+      it "returns true for owner" do
         expect(stream.owned_by?(user)).to be true
       end
-      
-      it 'returns false for non-owner' do
+
+      it "returns false for non-owner" do
         expect(stream.owned_by?(admin)).to be false
       end
-      
-      it 'returns false for nil user' do
+
+      it "returns false for nil user" do
         expect(stream.owned_by?(nil)).to be false
       end
     end
-    
-    describe '#pin!' do
-      it 'sets is_pinned to true' do
-        expect { stream.pin! }.to change { stream.is_pinned }.from(false).to(true)
+
+    describe "#pin!" do
+      it "sets is_pinned to true" do
+        expect { stream.pin! }.to change(stream, :is_pinned).from(false).to(true)
       end
     end
-    
-    describe '#unpin!' do
+
+    describe "#unpin!" do
       let(:pinned_stream) { create(:stream, user: user, is_pinned: true) }
-      
-      it 'sets is_pinned to false' do
-        expect { pinned_stream.unpin! }.to change { pinned_stream.is_pinned }.from(true).to(false)
+
+      it "sets is_pinned to false" do
+        expect { pinned_stream.unpin! }.to change(pinned_stream, :is_pinned).from(true).to(false)
       end
     end
-    
-    describe '#toggle_pin!' do
-      it 'toggles is_pinned state' do
-        expect { stream.toggle_pin! }.to change { stream.is_pinned }.from(false).to(true)
-        expect { stream.toggle_pin! }.to change { stream.is_pinned }.from(true).to(false)
+
+    describe "#toggle_pin!" do
+      it "toggles is_pinned state" do
+        expect { stream.toggle_pin! }.to change(stream, :is_pinned).from(false).to(true)
+        expect { stream.toggle_pin! }.to change(stream, :is_pinned).from(true).to(false)
       end
     end
-    
-    describe '#mark_as_live!' do
-      let(:offline_stream) { create(:stream, user: user, status: 'Offline', started_at: nil) }
-      
-      it 'updates status and timestamps' do
+
+    describe "#mark_as_live!" do
+      let(:offline_stream) { create(:stream, user: user, status: "Offline", started_at: nil) }
+
+      it "updates status and timestamps" do
         offline_stream.mark_as_live!
-        expect(offline_stream.status).to eq('live')
+        expect(offline_stream.status).to eq("live")
         expect(offline_stream.last_checked_at).to be_present
         expect(offline_stream.last_live_at).to be_present
         expect(offline_stream.started_at).to be_present
       end
-      
-      it 'preserves existing started_at' do
+
+      it "preserves existing started_at" do
         existing_start = 1.hour.ago
-        stream_with_start = create(:stream, user: user, status: 'Offline', started_at: existing_start)
+        stream_with_start = create(:stream, user: user, status: "Offline", started_at: existing_start)
         stream_with_start.mark_as_live!
         expect(stream_with_start.started_at).to be_within(1.second).of(existing_start)
       end
     end
-    
-    describe '#mark_as_offline!' do
-      let(:live_stream) { create(:stream, user: user, status: 'Live') }
-      
-      it 'updates status to offline' do
+
+    describe "#mark_as_offline!" do
+      let(:live_stream) { create(:stream, user: user, status: "Live") }
+
+      it "updates status to offline" do
         live_stream.mark_as_offline!
-        expect(live_stream.status).to eq('offline')
+        expect(live_stream.status).to eq("offline")
         expect(live_stream.last_checked_at).to be_present
       end
-      
-      it 'archives stream if should_archive? returns true' do
+
+      it "archives stream if should_archive? returns true" do
         allow(live_stream).to receive(:should_archive?).and_return(true)
-        expect { live_stream.mark_as_offline! }.to change { live_stream.is_archived }.from(false).to(true)
+        expect { live_stream.mark_as_offline! }.to change(live_stream, :is_archived).from(false).to(true)
       end
     end
-    
-    describe '#mark_as_unknown!' do
-      let(:live_stream) { create(:stream, user: user, status: 'Live') }
-      
-      it 'updates status to unknown' do
+
+    describe "#mark_as_unknown!" do
+      let(:live_stream) { create(:stream, user: user, status: "Live") }
+
+      it "updates status to unknown" do
         live_stream.mark_as_unknown!
-        expect(live_stream.status).to eq('unknown')
+        expect(live_stream.status).to eq("unknown")
         expect(live_stream.last_checked_at).to be_present
       end
-      
-      it 'archives stream if should_archive? returns true' do
+
+      it "archives stream if should_archive? returns true" do
         allow(live_stream).to receive(:should_archive?).and_return(true)
-        expect { live_stream.mark_as_unknown! }.to change { live_stream.is_archived }.from(false).to(true)
+        expect { live_stream.mark_as_unknown! }.to change(live_stream, :is_archived).from(false).to(true)
       end
     end
-    
-    describe '#archive!' do
-      it 'sets is_archived to true' do
-        expect { stream.archive! }.to change { stream.is_archived }.from(false).to(true)
+
+    describe "#archive!" do
+      it "sets is_archived to true" do
+        expect { stream.archive! }.to change(stream, :is_archived).from(false).to(true)
       end
-      
-      it 'sets ended_at if not already set' do
+
+      it "sets ended_at if not already set" do
         stream.archive!
         expect(stream.ended_at).to be_present
       end
-      
-      it 'preserves existing ended_at' do
+
+      it "preserves existing ended_at" do
         existing_end = 1.hour.ago
         stream.update!(ended_at: existing_end)
         stream.archive!
         expect(stream.ended_at).to be_within(1.second).of(existing_end)
       end
-      
-      it 'does not archive if already archived' do
+
+      it "does not archive if already archived" do
         stream.update!(is_archived: true)
-        expect { stream.archive! }.not_to change { stream.updated_at }
+        expect { stream.archive! }.not_to(change(stream, :updated_at))
       end
     end
-    
-    describe '#should_archive?' do
-      it 'returns false if already archived' do
+
+    describe "#should_archive?" do
+      it "returns false if already archived" do
         stream.update!(is_archived: true)
         expect(stream.should_archive?).to be false
       end
-      
-      it 'returns false if live' do
-        stream.update!(status: 'Live')
+
+      it "returns false if live" do
+        stream.update!(status: "Live")
         expect(stream.should_archive?).to be false
       end
-      
-      it 'returns true if offline for more than 30 minutes' do
-        stream.update!(status: 'Offline')
+
+      it "returns true if offline for more than 30 minutes" do
+        stream.update!(status: "Offline")
         stream.update_column(:last_checked_at, 31.minutes.ago)
         expect(stream.should_archive?).to be true
       end
-      
-      it 'returns false if offline for less than 30 minutes' do
-        stream.update!(status: 'Offline')
+
+      it "returns false if offline for less than 30 minutes" do
+        stream.update!(status: "Offline")
         stream.update_column(:last_checked_at, 10.minutes.ago)
         expect(stream.should_archive?).to be false
       end
     end
-    
-    describe '#duration' do
-      it 'returns nil if started_at is nil' do
+
+    describe "#duration" do
+      it "returns nil if started_at is nil" do
         stream.update!(started_at: nil)
         expect(stream.duration).to be_nil
       end
-      
-      it 'calculates duration from started_at to ended_at' do
+
+      it "calculates duration from started_at to ended_at" do
         stream.update!(started_at: 2.hours.ago, ended_at: 1.hour.ago)
         expect(stream.duration).to be_within(1).of(3600)
       end
-      
-      it 'calculates duration from started_at to current time if not ended' do
+
+      it "calculates duration from started_at to current time if not ended" do
         stream.update!(started_at: 1.hour.ago, ended_at: nil)
         expect(stream.duration).to be_within(10).of(3600)
       end
     end
-    
-    describe '#duration_in_words' do
-      it 'returns nil if duration is nil' do
+
+    describe "#duration_in_words" do
+      it "returns nil if duration is nil" do
         stream.update!(started_at: nil)
         expect(stream.duration_in_words).to be_nil
       end
-      
-      it 'formats hours and minutes' do
+
+      it "formats hours and minutes" do
         stream.update!(started_at: 2.hours.ago - 30.minutes, ended_at: Time.current)
-        expect(stream.duration_in_words).to eq('2h 30m')
+        expect(stream.duration_in_words).to eq("2h 30m")
       end
-      
-      it 'formats minutes only when less than an hour' do
+
+      it "formats minutes only when less than an hour" do
         stream.update!(started_at: 45.minutes.ago, ended_at: Time.current)
-        expect(stream.duration_in_words).to eq('45m')
+        expect(stream.duration_in_words).to eq("45m")
       end
     end
-    
-    describe '#broadcast_time_updates' do
-      it 'broadcasts replace_all with correct target' do
+
+    describe "#broadcast_time_updates" do
+      it "broadcasts replace_all with correct target" do
         expect(stream).to receive(:broadcast_replace_all_later_to).with(
-          'streams',
+          "streams",
           target: "stream_#{stream.id}_times",
-          partial: 'admin/streams/times',
-          locals: { stream: stream }
+          partial: "admin/streams/times",
+          locals: { stream: stream },
         )
-        
+
         stream.broadcast_time_updates
       end
-      
-      it 'is called when last_checked_at changes' do
+
+      it "is called when last_checked_at changes" do
         expect(stream).to receive(:broadcast_time_updates)
         stream.update!(last_checked_at: Time.current)
       end
-      
-      it 'is called when last_live_at changes' do
+
+      it "is called when last_live_at changes" do
         expect(stream).to receive(:broadcast_time_updates)
         stream.update!(last_live_at: Time.current)
       end
     end
   end
-  
-  describe 'database indexes' do
-    it 'has required indexes' do
+
+  describe "database indexes" do
+    it "has required indexes" do
       # Single column indexes
       expect(ActiveRecord::Base.connection.index_exists?(:streams, :user_id)).to be true
       expect(ActiveRecord::Base.connection.index_exists?(:streams, :streamer_id)).to be true
@@ -525,90 +535,89 @@ RSpec.describe Stream, type: :model do
       expect(ActiveRecord::Base.connection.index_exists?(:streams, :last_live_at)).to be true
       expect(ActiveRecord::Base.connection.index_exists?(:streams, :started_at)).to be true
       expect(ActiveRecord::Base.connection.index_exists?(:streams, :ended_at)).to be true
-      
+
       # Composite indexes
-      expect(ActiveRecord::Base.connection.index_exists?(:streams, [:user_id, :created_at])).to be true
-      expect(ActiveRecord::Base.connection.index_exists?(:streams, [:streamer_id, :is_archived])).to be true
+      expect(ActiveRecord::Base.connection.index_exists?(:streams, %i[user_id created_at])).to be true
+      expect(ActiveRecord::Base.connection.index_exists?(:streams, %i[streamer_id is_archived])).to be true
     end
   end
-  
-  describe 'edge cases' do
+
+  describe "edge cases" do
     let(:user) { create(:user) }
-    
-    describe 'URL handling' do
-      it 'handles maximum length URLs' do
-        max_url = 'https://example.com/' + 'a' * 2000
+
+    describe "URL handling" do
+      it "handles maximum length URLs" do
+        max_url = "https://example.com/#{'a' * 2000}"
         stream = build(:stream, user: user, link: max_url)
         expect(stream).to be_valid
       end
-      
-      it 'handles URLs with unicode characters' do
-        unicode_url = 'https://example.com/видео/стрим'
+
+      it "handles URLs with unicode characters" do
+        unicode_url = "https://example.com/видео/стрим"
         stream = build(:stream, user: user, link: unicode_url)
         expect(stream).to be_valid
       end
-      
-      it 'handles URLs with special characters' do
-        special_url = 'https://example.com/stream?id=123&title=Test%20Stream'
+
+      it "handles URLs with special characters" do
+        special_url = "https://example.com/stream?id=123&title=Test%20Stream"
         stream = build(:stream, user: user, link: special_url)
         expect(stream).to be_valid
       end
     end
-    
-    describe 'duration edge cases' do
-      it 'handles negative duration (ended before started)' do
+
+    describe "duration edge cases" do
+      it "handles negative duration (ended before started)" do
         stream = create(:stream, user: user, started_at: Time.current, ended_at: 1.hour.ago)
         expect(stream.duration).to be < 0
       end
-      
-      it 'handles very long durations' do
+
+      it "handles very long durations" do
         stream = create(:stream, user: user, started_at: 30.days.ago, ended_at: Time.current)
-        expect(stream.duration_in_words).to include('h')
+        expect(stream.duration_in_words).to include("h")
       end
     end
-    
-    describe 'concurrent updates' do
-      it 'handles simultaneous status updates' do
-        stream = create(:stream, user: user, status: 'Unknown')
-        
+
+    describe "concurrent updates" do
+      it "handles simultaneous status updates" do
+        stream = create(:stream, user: user, status: "Unknown")
+
         # Simulate concurrent updates
-        stream1 = Stream.find(stream.id)
-        stream2 = Stream.find(stream.id)
-        
-        stream1.update!(status: 'Live')
-        expect { stream2.update!(status: 'Offline') }.not_to raise_error
-        
+        stream1 = described_class.find(stream.id)
+        stream2 = described_class.find(stream.id)
+
+        stream1.update!(status: "Live")
+        expect { stream2.update!(status: "Offline") }.not_to raise_error
+
         stream.reload
-        expect(stream.status).to eq('Offline') # Last update wins
+        expect(stream.status).to eq("Offline") # Last update wins
       end
     end
-    
-    describe 'callback failures' do
-      it 'saves successfully even if broadcast fails' do
+
+    describe "callback failures" do
+      it "saves successfully even if broadcast fails" do
         stream = build(:stream, user: user)
         allow(stream).to receive(:broadcast_prepend_later_to).and_raise(StandardError)
-        
+
         expect { stream.save! }.not_to raise_error
         expect(stream).to be_persisted
       end
     end
-    
-    describe 'boundary validations' do
-      it 'accepts source at minimum length' do
-        stream = build(:stream, user: user, source: 'a' * ApplicationConstants::Stream::NAME_MIN_LENGTH)
+
+    describe "boundary validations" do
+      it "accepts source at minimum length" do
+        stream = build(:stream, user: user, source: "a" * ApplicationConstants::Stream::NAME_MIN_LENGTH)
         expect(stream).to be_valid
       end
-      
-      it 'accepts source at maximum length' do
-        stream = build(:stream, user: user, source: 'a' * ApplicationConstants::Stream::NAME_MAX_LENGTH)
+
+      it "accepts source at maximum length" do
+        stream = build(:stream, user: user, source: "a" * ApplicationConstants::Stream::NAME_MAX_LENGTH)
         expect(stream).to be_valid
       end
-      
-      it 'rejects source exceeding maximum length' do
-        stream = build(:stream, user: user, source: 'a' * (ApplicationConstants::Stream::NAME_MAX_LENGTH + 1))
+
+      it "rejects source exceeding maximum length" do
+        stream = build(:stream, user: user, source: "a" * (ApplicationConstants::Stream::NAME_MAX_LENGTH + 1))
         expect(stream).not_to be_valid
       end
     end
   end
-  
 end

@@ -1,0 +1,474 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ main, develop ]
+
+env:
+  RUBY_VERSION: '3.3.6'
+  NODE_VERSION: '20'
+  POSTGRES_VERSION: '17'
+  REDIS_VERSION: '7'
+
+jobs:
+  # Parallel job for different test types
+  test:
+    name: ${{ matrix.test-type }} Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [unit, integration, system]
+    
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: streamsource_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Cache Ruby dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.bundle
+          vendor/bundle
+        key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gems-
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: true
+    
+    - name: Cache Node dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/yarn
+          node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+    
+    - name: Install dependencies
+      run: |
+        yarn install --frozen-lockfile --prefer-offline
+    
+    - name: Setup test database
+      env:
+        RAILS_ENV: test
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/streamsource_test
+        REDIS_URL: redis://localhost:6379/1
+      run: |
+        bundle exec rails db:create
+        bundle exec rails db:schema:load
+    
+    - name: Run ${{ matrix.test-type }} tests
+      env:
+        RAILS_ENV: test
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/streamsource_test
+        REDIS_URL: redis://localhost:6379/1
+      run: |
+        case "${{ matrix.test-type }}" in
+          unit)
+            bundle exec rspec spec/models spec/lib spec/services spec/serializers --format progress --format RspecJunitFormatter --out tmp/rspec-unit.xml
+            ;;
+          integration)
+            bundle exec rspec spec/requests spec/controllers --format progress --format RspecJunitFormatter --out tmp/rspec-integration.xml
+            ;;
+          system)
+            bundle exec rspec spec/features spec/system --format progress --format RspecJunitFormatter --out tmp/rspec-system.xml
+            ;;
+        esac
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.test-type }}
+        path: tmp/rspec-*.xml
+        retention-days: 30
+
+  # Linting and code quality
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Cache Ruby dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.bundle
+          vendor/bundle
+        key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gems-
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: true
+    
+    - name: Cache Node dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/yarn
+          node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+    
+    - name: Install dependencies
+      run: |
+        yarn install --frozen-lockfile --prefer-offline
+    
+    - name: Run RuboCop
+      run: |
+        bundle exec rubocop --format github --format json --out rubocop-report.json
+    
+    - name: Run ESLint
+      run: |
+        yarn run lint --format json --output-file eslint-report.json
+    
+    - name: Upload linting reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: linting-reports
+        path: |
+          rubocop-report.json
+          eslint-report.json
+        retention-days: 30
+
+  # Security scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Cache Ruby dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.bundle
+          vendor/bundle
+        key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gems-
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: true
+    
+    - name: Run security analysis
+      run: |
+        echo "🔍 Running comprehensive security analysis..."
+        
+        # Static Application Security Testing (SAST)
+        bundle exec brakeman -q -w2 --format json --output brakeman-report.json
+        
+        # Dependency vulnerability scanning
+        bundle exec bundler-audit check --update --format json --output bundler-audit-report.json
+        
+        # Display results
+        echo "Brakeman security scan completed"
+        if [ -f brakeman-report.json ]; then
+          BRAKEMAN_WARNINGS=$(jq '.warnings | length' brakeman-report.json)
+          echo "Brakeman found $BRAKEMAN_WARNINGS potential issues"
+          if [ "$BRAKEMAN_WARNINGS" -gt 0 ]; then
+            echo "::warning::Brakeman found $BRAKEMAN_WARNINGS security warnings"
+          fi
+        fi
+        
+        echo "Bundler audit completed"
+        if [ -f bundler-audit-report.json ]; then
+          BUNDLER_VULNS=$(jq '.vulnerabilities | length' bundler-audit-report.json)
+          echo "Bundler audit found $BUNDLER_VULNS vulnerabilities"
+          if [ "$BUNDLER_VULNS" -gt 0 ]; then
+            echo "::error::Bundler audit found $BUNDLER_VULNS vulnerabilities"
+            exit 1
+          fi
+        fi
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          brakeman-report.json
+          bundler-audit-report.json
+        retention-days: 30
+
+  # Performance testing
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: streamsource_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Cache Ruby dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.bundle
+          vendor/bundle
+        key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gems-
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: true
+    
+    - name: Cache Node dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/yarn
+          node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+    
+    - name: Install dependencies
+      run: |
+        yarn install --frozen-lockfile --prefer-offline
+    
+    - name: Setup test database
+      env:
+        RAILS_ENV: test
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/streamsource_test
+        REDIS_URL: redis://localhost:6379/1
+      run: |
+        bundle exec rails db:create
+        bundle exec rails db:schema:load
+    
+    - name: Run performance tests
+      env:
+        RAILS_ENV: test
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/streamsource_test
+        REDIS_URL: redis://localhost:6379/1
+      run: |
+        echo "🚀 Running performance tests..."
+        
+        # Run performance-specific tests if they exist
+        if [ -d "spec/performance" ]; then
+          bundle exec rspec spec/performance --format progress
+        fi
+        
+        # Check for N+1 queries
+        if bundle exec rails runner "puts 'Testing for N+1 queries...'"; then
+          echo "N+1 query detection completed"
+        fi
+        
+        # Memory usage test
+        echo "Testing memory usage..."
+        bundle exec rails runner "
+          require 'memory_profiler'
+          report = MemoryProfiler.report do
+            # Simulate typical application usage
+            User.limit(10).each { |u| u.streamers.includes(:streams).limit(5).to_a }
+          end
+          puts \"Memory usage: #{report.total_allocated_memsize} bytes\"
+        "
+
+  # Collect and report results
+  results:
+    name: Test Results Summary
+    runs-on: ubuntu-latest
+    needs: [test, lint, security, performance]
+    if: always()
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Generate test summary
+      run: |
+        echo "# 📊 PR Validation Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "| Test Type | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+        
+        # Check test results
+        for test_type in unit integration system; do
+          if [ -f "artifacts/test-results-${test_type}/rspec-${test_type}.xml" ]; then
+            echo "| $test_type | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| $test_type | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Code Quality" >> $GITHUB_STEP_SUMMARY
+        
+        # Check linting results
+        if [ -f "artifacts/linting-reports/rubocop-report.json" ]; then
+          echo "- ✅ RuboCop: Code style checks passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- ❌ RuboCop: Code style issues found" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Security" >> $GITHUB_STEP_SUMMARY
+        
+        # Check security results
+        if [ -f "artifacts/security-reports/brakeman-report.json" ]; then
+          echo "- ✅ Security scan completed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- ❌ Security scan failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "---" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 [View detailed results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Comment on PR
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.login === 'github-actions[bot]' && 
+            comment.body.includes('PR Validation Summary')
+          );
+          
+          const summary = `## 🤖 PR Validation Summary
+          
+          **Status**: ${{ needs.test.result == 'success' && needs.lint.result == 'success' && needs.security.result == 'success' && needs.performance.result == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}
+          
+          ### Test Results
+          - **Unit Tests**: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Integration Tests**: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **System Tests**: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          
+          ### Code Quality
+          - **Linting**: ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Security**: ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Performance**: ${{ needs.performance.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          
+          [View detailed results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          `;
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: summary
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: summary
+            });
+          }

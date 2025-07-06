@@ -1,31 +1,31 @@
 class HealthController < ApplicationController
   # Health endpoints don't need authentication
   skip_before_action :authenticate_user!
-  
+
   def index
     render json: {
       status: ApplicationConstants::Messages::HEALTH_HEALTHY,
       timestamp: Time.current.iso8601,
-      version: ApplicationConstants::App::VERSION
+      version: ApplicationConstants::App::VERSION,
     }
   end
-  
+
   def live
     render json: { status: ApplicationConstants::Messages::HEALTH_OK }
   end
-  
+
   def ready
     # Check database connection
     ActiveRecord::Base.connection.execute(ApplicationConstants::Database::HEALTH_CHECK_QUERY)
-    
+
     render json: {
       status: ApplicationConstants::Messages::HEALTH_READY,
-      database: ApplicationConstants::Messages::DATABASE_CONNECTED
+      database: ApplicationConstants::Messages::DATABASE_CONNECTED,
     }
-  rescue => e
+  rescue StandardError => e
     render json: {
       status: ApplicationConstants::Messages::HEALTH_NOT_READY,
-      error: e.message
+      error: e.message,
     }, status: :service_unavailable
   end
 end

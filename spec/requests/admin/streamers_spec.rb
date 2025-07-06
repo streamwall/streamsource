@@ -1,4 +1,4 @@
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe "Admin::Streamers", type: :request do
   let(:admin_user) { create(:user, :admin) }
@@ -27,7 +27,7 @@ RSpec.describe "Admin::Streamers", type: :request do
     end
 
     it "includes streamer accounts information" do
-      account = create(:streamer_account, streamer: streamer, platform: 'TikTok', username: 'test_user')
+      create(:streamer_account, streamer: streamer, platform: "TikTok", username: "test_user")
       get admin_streamers_path
       expect(response.body).to include(streamer.name)
       # The index page shows streamer names, not individual account details
@@ -56,14 +56,14 @@ RSpec.describe "Admin::Streamers", type: :request do
     end
 
     it "displays active streams" do
-      active_stream = create(:stream, :live, streamer: streamer, title: "Test Active Stream")
+      create(:stream, :live, streamer: streamer, title: "Test Active Stream")
       get admin_streamer_path(streamer)
       expect(response.body).to include("Test Active Stream")
       expect(response.body).to include("Active Streams")
     end
 
     it "displays archived streams" do
-      archived_stream = create(:stream, :archived, streamer: streamer, title: "Test Archived Stream")
+      create(:stream, :archived, streamer: streamer, title: "Test Archived Stream")
       get admin_streamer_path(streamer)
       expect(response.body).to include("Test Archived Stream")
       expect(response.body).to include("Recent Archived Streams")
@@ -80,7 +80,7 @@ RSpec.describe "Admin::Streamers", type: :request do
 
     it "displays new streamer form" do
       get admin_new_streamer_path
-      expect(response.body).to include('New Streamer')
+      expect(response.body).to include("New Streamer")
     end
 
     it "includes user selection" do
@@ -95,19 +95,19 @@ RSpec.describe "Admin::Streamers", type: :request do
     let(:valid_params) do
       {
         streamer: {
-          name: 'TestStreamer123',
-          notes: 'Popular gaming streamer',
-          posted_by: 'admin@example.com',
-          user_id: editor_user.id
-        }
+          name: "TestStreamer123",
+          notes: "Popular gaming streamer",
+          posted_by: "admin@example.com",
+          user_id: editor_user.id,
+        },
       }
     end
 
     context "with valid params" do
       it "creates a new streamer" do
-        expect {
+        expect do
           post admin_streamers_path, params: valid_params
-        }.to change(Streamer, :count).by(1)
+        end.to change(Streamer, :count).by(1)
       end
 
       it "assigns current_user as owner" do
@@ -123,7 +123,7 @@ RSpec.describe "Admin::Streamers", type: :request do
 
       it "sets success notice" do
         post admin_streamers_path, params: valid_params
-        expect(flash[:notice]).to eq('Streamer was successfully created.')
+        expect(flash[:notice]).to eq("Streamer was successfully created.")
       end
 
       context "with turbo stream request" do
@@ -136,13 +136,13 @@ RSpec.describe "Admin::Streamers", type: :request do
 
     context "with invalid params" do
       let(:invalid_params) do
-        { streamer: { name: '', user_id: editor_user.id } }
+        { streamer: { name: "", user_id: editor_user.id } }
       end
 
       it "does not create a streamer" do
-        expect {
+        expect do
           post admin_streamers_path, params: invalid_params
-        }.not_to change(Streamer, :count)
+        end.not_to change(Streamer, :count)
       end
 
       it "returns unprocessable entity status" do
@@ -172,9 +172,9 @@ RSpec.describe "Admin::Streamers", type: :request do
     let(:update_params) do
       {
         streamer: {
-          name: 'UpdatedStreamerName',
-          notes: 'Updated notes'
-        }
+          name: "UpdatedStreamerName",
+          notes: "Updated notes",
+        },
       }
     end
 
@@ -182,8 +182,8 @@ RSpec.describe "Admin::Streamers", type: :request do
       it "updates the streamer" do
         patch admin_streamer_path(streamer), params: update_params
         streamer.reload
-        expect(streamer.name).to eq('UpdatedStreamerName')
-        expect(streamer.notes).to eq('Updated notes')
+        expect(streamer.name).to eq("UpdatedStreamerName")
+        expect(streamer.notes).to eq("Updated notes")
       end
 
       it "redirects to streamer page" do
@@ -193,12 +193,13 @@ RSpec.describe "Admin::Streamers", type: :request do
 
       it "sets success notice" do
         patch admin_streamer_path(streamer), params: update_params
-        expect(flash[:notice]).to eq('Streamer was successfully updated.')
+        expect(flash[:notice]).to eq("Streamer was successfully updated.")
       end
 
       context "with turbo stream request" do
         it "returns turbo stream response" do
-          patch admin_streamer_path(streamer), params: update_params, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+          patch admin_streamer_path(streamer), params: update_params,
+                                               headers: { "Accept" => "text/vnd.turbo-stream.html" }
           expect(response.content_type).to include("text/vnd.turbo-stream.html")
         end
       end
@@ -206,7 +207,7 @@ RSpec.describe "Admin::Streamers", type: :request do
 
     context "with invalid params" do
       let(:invalid_params) do
-        { streamer: { name: '' } }
+        { streamer: { name: "" } }
       end
 
       it "does not update the streamer" do
@@ -228,9 +229,9 @@ RSpec.describe "Admin::Streamers", type: :request do
 
     it "deletes the streamer" do
       streamer # ensure it exists
-      expect {
+      expect do
         delete admin_streamer_path(streamer)
-      }.to change(Streamer, :count).by(-1)
+      end.to change(Streamer, :count).by(-1)
     end
 
     it "redirects to streamers index" do
@@ -240,7 +241,7 @@ RSpec.describe "Admin::Streamers", type: :request do
 
     it "sets success notice" do
       delete admin_streamer_path(streamer)
-      expect(flash[:notice]).to eq('Streamer was successfully deleted.')
+      expect(flash[:notice]).to eq("Streamer was successfully deleted.")
     end
 
     context "with turbo stream request" do

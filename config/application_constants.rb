@@ -3,7 +3,7 @@
 module ApplicationConstants
   # JWT Configuration
   module JWT
-    ALGORITHM = 'HS256'
+    ALGORITHM = "HS256"
     EXPIRATION_TIME = 24.hours
   end
 
@@ -17,16 +17,16 @@ module ApplicationConstants
   # Password Requirements
   module Password
     MIN_LENGTH = 8
-    COMPLEXITY_REGEX = /\A(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/
-    COMPLEXITY_MESSAGE = 'must include lowercase, uppercase, and number'
+    COMPLEXITY_REGEX = /\A(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*\z/
+    COMPLEXITY_MESSAGE = "must include lowercase, uppercase, and number"
   end
 
   # Stream Constraints
   module Stream
     NAME_MIN_LENGTH = 1
     NAME_MAX_LENGTH = 255
-    URL_REGEX = URI::regexp(%w[http https])
-    URL_ERROR_MESSAGE = 'must be a valid HTTP or HTTPS URL'
+    URL_REGEX = URI::DEFAULT_PARSER.make_regexp(%w[http https])
+    URL_ERROR_MESSAGE = "must be a valid HTTP or HTTPS URL"
   end
 
   # Rate Limiting
@@ -43,33 +43,33 @@ module ApplicationConstants
     SIGNUP_PERIOD = 1.hour
 
     # Exponential backoff levels
-    BACKOFF_LEVELS = (2..6).freeze
+    BACKOFF_LEVELS = (2..6)
     BACKOFF_BASE = 8
   end
 
   # Application Info
   module App
-    VERSION = '1.0.0'
-    NAME = 'StreamSource API'
+    VERSION = "1.0.0"
+    NAME = "StreamSource API"
   end
 
   # Database
   module Database
-    HEALTH_CHECK_QUERY = 'SELECT 1'
+    HEALTH_CHECK_QUERY = "SELECT 1"
   end
 
   # HTTP Status Messages
   module Messages
-    UNAUTHORIZED = 'Unauthorized'
-    FORBIDDEN = 'You are not authorized to perform this action'
-    NOT_FOUND = 'Record not found'
-    INVALID_CREDENTIALS = 'Invalid email or password'
-    RATE_LIMITED = 'Too many requests. Please try again later.'
-    HEALTH_OK = 'ok'
-    HEALTH_HEALTHY = 'healthy'
-    HEALTH_READY = 'ready'
-    HEALTH_NOT_READY = 'not ready'
-    DATABASE_CONNECTED = 'connected'
+    UNAUTHORIZED = "Unauthorized"
+    FORBIDDEN = "You are not authorized to perform this action"
+    NOT_FOUND = "Record not found"
+    INVALID_CREDENTIALS = "Invalid email or password"
+    RATE_LIMITED = "Too many requests. Please try again later."
+    HEALTH_OK = "ok"
+    HEALTH_HEALTHY = "healthy"
+    HEALTH_READY = "ready"
+    HEALTH_NOT_READY = "not ready"
+    DATABASE_CONNECTED = "connected"
   end
 
   # Feature Flags

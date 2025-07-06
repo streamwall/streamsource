@@ -13,8 +13,8 @@ module AdminHelpers
     post admin_login_path, params: {
       session: {
         email: admin_user.email,
-        password: admin_user.password
-      }
+        password: admin_user.password,
+      },
     }
     admin_user
   end
@@ -22,7 +22,7 @@ module AdminHelpers
   # Helper to assert successful admin page response
   def expect_admin_page_success
     expect(response).to have_http_status(:success)
-    expect(response.content_type).to include('text/html')
+    expect(response.content_type).to include("text/html")
   end
 
   # Helper to assert admin redirect

@@ -1,8 +1,8 @@
-require 'flipper'
-require 'flipper/adapters/active_record'
-require 'flipper/middleware/memoizer'
+require "flipper"
+require "flipper/adapters/active_record"
+require "flipper/middleware/memoizer"
 
-# Note: Flipper::Middleware::Memoizer is already added by the flipper gem
+# NOTE: Flipper::Middleware::Memoizer is already added by the flipper gem
 # No need to add it manually
 
 # Configure Flipper
@@ -38,19 +38,15 @@ end
 
 # Include in User model
 ActiveSupport.on_load(:active_record) do
-  if defined?(User)
-    User.include FlipperActor
-  end
+  User.include FlipperActor if defined?(User)
 end
 
 # Preload all features in production for better performance
 if Rails.env.production?
   Rails.application.config.after_initialize do
-    begin
-      Flipper.preload_all
-    rescue => e
-      Rails.logger.error "Failed to preload Flipper features: #{e.message}"
-    end
+    Flipper.preload_all
+  rescue StandardError => e
+    Rails.logger.error "Failed to preload Flipper features: #{e.message}"
   end
 end
 

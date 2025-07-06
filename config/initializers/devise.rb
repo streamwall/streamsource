@@ -16,28 +16,28 @@ Devise.setup do |config|
   config.jwt do |jwt|
     jwt.secret = Rails.application.credentials.secret_key_base
     jwt.dispatch_requests = [
-      ['POST', %r{^/api/v1/users/login$}]
+      ["POST", %r{^/api/v1/users/login$}],
     ]
     jwt.revocation_requests = [
-      ['DELETE', %r{^/api/v1/users/logout$}]
+      ["DELETE", %r{^/api/v1/users/logout$}],
     ]
     jwt.expiration_time = 1.day.to_i
   end
 
   # ==> Controller configuration
   # Configure the parent class to the devise controllers.
-  config.parent_controller = 'ApplicationController'
+  config.parent_controller = "ApplicationController"
 
   # ==> Mailer Configuration
-  config.mailer_sender = 'please-change-me-at-config-initializers-devise@example.com'
+  config.mailer_sender = "please-change-me-at-config-initializers-devise@example.com"
 
   # ==> ORM configuration
-  require 'devise/orm/active_record'
+  require "devise/orm/active_record"
 
   # ==> Configuration for any authentication mechanism
   config.case_insensitive_keys = [:email]
   config.strip_whitespace_keys = [:email]
-  config.skip_session_storage = [:http_auth, :jwt]
+  config.skip_session_storage = %i[http_auth jwt]
 
   # ==> Configuration for :database_authenticatable
   config.stretches = Rails.env.test? ? 1 : 12
@@ -48,7 +48,7 @@ Devise.setup do |config|
 
   # ==> Navigation configuration
   config.navigational_formats = []
-  
+
   # When using OmniAuth, Devise cannot automatically set OmniAuth path,
   # so you need to do it manually. For the users scope, it would be:
   # config.omniauth_path_prefix = '/my_engine/users/auth'

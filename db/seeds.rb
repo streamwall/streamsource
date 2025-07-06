@@ -3,72 +3,72 @@
 # The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
 
 # Only create default users in development and test environments
-if Rails.env.development? || Rails.env.test?
+if Rails.env.local?
   # Create default admin user
-  admin = User.find_or_create_by!(email: 'admin@example.com') do |user|
-    user.password = 'Password123!'
-    user.role = 'admin'
+  admin = User.find_or_create_by!(email: "admin@example.com") do |user|
+    user.password = "Password123!"
+    user.role = "admin"
   end
 
   if admin.previously_new_record?
-    puts "Admin user created: #{admin.email} (password: Password123!)"
+    Rails.logger.debug { "Admin user created: #{admin.email} (password: Password123!)" }
   else
-    puts "Admin user already exists: #{admin.email}"
+    Rails.logger.debug { "Admin user already exists: #{admin.email}" }
   end
 
   # Create second admin user for testing multiplayer
-  admin2 = User.find_or_create_by!(email: 'admin2@example.com') do |user|
-    user.password = 'Password123!'
-    user.role = 'admin'
+  admin2 = User.find_or_create_by!(email: "admin2@example.com") do |user|
+    user.password = "Password123!"
+    user.role = "admin"
   end
 
   if admin2.previously_new_record?
-    puts "Second admin user created: #{admin2.email} (password: Password123!)"
+    Rails.logger.debug { "Second admin user created: #{admin2.email} (password: Password123!)" }
   else
-    puts "Second admin user already exists: #{admin2.email}"
+    Rails.logger.debug { "Second admin user already exists: #{admin2.email}" }
   end
 
   # Create editor user
-  editor = User.find_or_create_by!(email: 'editor@example.com') do |user|
-    user.password = 'Password123!'
-    user.role = 'editor'
+  editor = User.find_or_create_by!(email: "editor@example.com") do |user|
+    user.password = "Password123!"
+    user.role = "editor"
   end
 
   if editor.previously_new_record?
-    puts "Editor user created: #{editor.email} (password: Password123!)"
+    Rails.logger.debug { "Editor user created: #{editor.email} (password: Password123!)" }
   else
-    puts "Editor user already exists: #{editor.email}"
+    Rails.logger.debug { "Editor user already exists: #{editor.email}" }
   end
 
   # Create default user
-  default_user = User.find_or_create_by!(email: 'user@example.com') do |user|
-    user.password = 'Password123!'
-    user.role = 'default'
+  default_user = User.find_or_create_by!(email: "user@example.com") do |user|
+    user.password = "Password123!"
+    user.role = "default"
   end
 
   if default_user.previously_new_record?
-    puts "Default user created: #{default_user.email} (password: Password123!)"
+    Rails.logger.debug { "Default user created: #{default_user.email} (password: Password123!)" }
   else
-    puts "Default user already exists: #{default_user.email}"
+    Rails.logger.debug { "Default user already exists: #{default_user.email}" }
   end
 
-  puts "\n========================================"
-  puts "Development Admin Login Credentials:"
-  puts "Admin 1: admin@example.com"
-  puts "Admin 2: admin2@example.com"
-  puts "Password: Password123!"
-  puts "========================================\n"
+  Rails.logger.debug "\n========================================"
+  Rails.logger.debug "Development Admin Login Credentials:"
+  Rails.logger.debug "Admin 1: admin@example.com"
+  Rails.logger.debug "Admin 2: admin2@example.com"
+  Rails.logger.debug "Password: Password123!"
+  Rails.logger.debug "========================================\n"
 end
 
 # Create sample streams
-if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
+if Stream.none? && Rails.env.local?
   # Get the admin and editor users
-  admin = User.find_by(email: 'admin@example.com')
-  editor = User.find_by(email: 'editor@example.com')
-  default_user = User.find_by(email: 'user@example.com')
+  admin = User.find_by(email: "admin@example.com")
+  editor = User.find_by(email: "editor@example.com")
+  default_user = User.find_by(email: "user@example.com")
 
   unless admin && editor && default_user
-    puts "Skipping stream creation - users not found"
+    Rails.logger.debug "Skipping stream creation - users not found"
     return
   end
   # Create realistic sample streams for admin
@@ -85,7 +85,7 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       posted_by: "admin_discord",
       orientation: "vertical",
       kind: "video",
-      is_pinned: true
+      is_pinned: true,
     },
     {
       source: "protest_watch",
@@ -99,7 +99,7 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       posted_by: "watcher_twitch",
       orientation: "horizontal",
       kind: "video",
-      is_pinned: true
+      is_pinned: true,
     },
     {
       source: "weather_cam_chicago",
@@ -112,7 +112,7 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       notes: "Downtown Chicago weather camera",
       posted_by: "weatherfan",
       orientation: "horizontal",
-      kind: "video"
+      kind: "video",
     },
     {
       source: "seattle_traffic",
@@ -125,7 +125,7 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       notes: "Traffic monitoring stream",
       posted_by: "trafficwatch",
       orientation: "horizontal",
-      kind: "web"
+      kind: "web",
     },
     {
       source: "miami_beach_cam",
@@ -138,20 +138,20 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       notes: "South Beach live camera",
       posted_by: "beachfan99",
       orientation: "vertical",
-      kind: "video"
-    }
+      kind: "video",
+    },
   ]
 
   sample_streams.each do |stream_data|
-    stream = Stream.create!(
+    Stream.create!(
       **stream_data,
       user: admin,
       last_checked_at: rand(1..24).hours.ago,
-      last_live_at: stream_data[:status] == "live" ? rand(1..6).hours.ago : rand(1..30).days.ago
+      last_live_at: stream_data[:status] == "live" ? rand(1..6).hours.ago : rand(1..30).days.ago,
     )
   end
 
-  puts "Created #{sample_streams.count} sample streams for admin user"
+  Rails.logger.debug { "Created #{sample_streams.count} sample streams for admin user" }
 
   # Create sample streams for editor
   editor_streams = [
@@ -166,7 +166,7 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       notes: "Local news coverage",
       posted_by: "editor_discord",
       orientation: "vertical",
-      kind: "video"
+      kind: "video",
     },
     {
       source: "denver_weather",
@@ -179,7 +179,7 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       notes: "Mountain weather conditions",
       posted_by: "weatherbot",
       orientation: "horizontal",
-      kind: "overlay"
+      kind: "overlay",
     },
     {
       source: "phoenix_traffic",
@@ -192,20 +192,20 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
       notes: "Highway traffic cam",
       posted_by: "editor@example.com",
       orientation: "horizontal",
-      kind: "web"
-    }
+      kind: "web",
+    },
   ]
 
   editor_streams.each do |stream_data|
-    stream = Stream.create!(
+    Stream.create!(
       **stream_data,
       user: editor,
       last_checked_at: rand(1..48).hours.ago,
-      last_live_at: stream_data[:status] == "live" ? rand(1..12).hours.ago : nil
+      last_live_at: stream_data[:status] == "live" ? rand(1..12).hours.ago : nil,
     )
   end
 
-  puts "Created #{editor_streams.count} sample streams for editor user"
+  Rails.logger.debug { "Created #{editor_streams.count} sample streams for editor user" }
 
   # Create a stream for the default user
   Stream.create!(
@@ -221,11 +221,11 @@ if Stream.count.zero? && (Rails.env.development? || Rails.env.test?)
     orientation: "vertical",
     kind: "video",
     user: default_user,
-    last_checked_at: 1.week.ago
+    last_checked_at: 1.week.ago,
   )
 
-  puts "Created 1 sample stream for default user"
+  Rails.logger.debug "Created 1 sample stream for default user"
 end
 
 # Load feature flags
-load Rails.root.join('db/seeds/feature_flags.rb')
+load Rails.root.join("db/seeds/feature_flags.rb")

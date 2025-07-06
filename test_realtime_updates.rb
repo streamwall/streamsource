@@ -22,14 +22,14 @@ puts
 puts "Press Enter to continue..."
 gets
 
-require 'net/http'
-require 'json'
-require 'uri'
+require "net/http"
+require "json"
+require "uri"
 
 # API configuration
-API_BASE_URL = 'http://localhost:3000/api/v1'
-API_EMAIL = 'test@example.com'
-API_PASSWORD = 'Password123!'
+API_BASE_URL = "http://localhost:3000/api/v1".freeze
+API_EMAIL = "test@example.com".freeze
+API_PASSWORD = "Password123!".freeze
 
 # Helper method to make API requests
 def api_request(method, path, body = nil, token = nil)
@@ -38,22 +38,22 @@ def api_request(method, path, body = nil, token = nil)
 
   uri = URI("#{API_BASE_URL}#{path}")
 
-  case method
-  when :post
-    request = Net::HTTP::Post.new(uri)
-  when :put
-    request = Net::HTTP::Put.new(uri)
-  when :delete
-    request = Net::HTTP::Delete.new(uri)
-  else
-    request = Net::HTTP::Get.new(uri)
-  end
+  request = case method
+            when :post
+              Net::HTTP::Post.new(uri)
+            when :put
+              Net::HTTP::Put.new(uri)
+            when :delete
+              Net::HTTP::Delete.new(uri)
+            else
+              Net::HTTP::Get.new(uri)
+            end
 
   puts "Request URI: #{uri}" if method == :get
   puts "Request body: #{body.inspect}" if body
 
-  request['Content-Type'] = 'application/json'
-  request['Authorization'] = "Bearer #{token}" if token
+  request["Content-Type"] = "application/json"
+  request["Authorization"] = "Bearer #{token}" if token
   request.body = body.to_json if body
 
   response = Net::HTTP.start(uri.hostname, uri.port) do |http|
@@ -61,22 +61,22 @@ def api_request(method, path, body = nil, token = nil)
   end
 
   puts "Response status: #{response.code} #{response.message}"
-  puts "Response body: #{response.body}" if response.body && !response.body.empty?
+  puts "Response body: #{response.body}" if response.body.present?
 
-  body = JSON.parse(response.body) if response.body && !response.body.empty?
+  body = JSON.parse(response.body) if response.body.present?
   puts "Parsed response: #{body.inspect}" if body
-  return body
+  body
 end
 
 # Step 1: Login to get JWT token
 puts "\n1. Logging in to API..."
-login_response = api_request(:post, '/users/login', {
-  email: API_EMAIL,
-  password: API_PASSWORD
-})
+login_response = api_request(:post, "/users/login", {
+                               email: API_EMAIL,
+                               password: API_PASSWORD,
+                             })
 
-if login_response && login_response['token']
-  token = login_response['token']
+if login_response && login_response["token"]
+  token = login_response["token"]
   puts "   ✓ Login successful"
 else
   puts "   ✗ Login failed. Make sure the test user exists."
@@ -89,17 +89,17 @@ end
 puts "\n2. Creating a new stream via API..."
 stream_data = {
   link: "https://example.com/stream-#{Time.now.to_i}",
-  source: "Real-time Test Stream #{Time.now.strftime('%H:%M:%S')}",
+  source: "Real-time Test Stream #{Time.zone.now.strftime('%H:%M:%S')}",
   platform: "TikTok",
   status: "Unknown",
-  kind: "video"
+  kind: "video",
 }
 
-create_response = api_request(:post, '/streams', stream_data, token)
+create_response = api_request(:post, "/streams", stream_data, token)
 
-if create_response && create_response['stream']
-  stream = create_response['stream']
-  stream_id = stream['id']
+if create_response && create_response["stream"]
+  stream = create_response["stream"]
+  stream_id = stream["id"]
   puts "   ✓ Stream created (ID: #{stream_id})"
   puts "   → Check your browser - the stream should appear at the top of the list!"
 else
@@ -114,11 +114,11 @@ sleep 3
 # Step 3: Update the stream to Live status
 puts "\n3. Updating stream status to 'Live'..."
 update_response = api_request(:put, "/streams/#{stream_id}", {
-  status: "Live",
-  title: "Now Broadcasting Live!"
-}, token)
+                                status: "Live",
+                                title: "Now Broadcasting Live!",
+                              }, token)
 
-if update_response && update_response['data']
+if update_response && update_response["data"]
   puts "   ✓ Stream updated to Live status"
   puts "   → Check your browser - the stream status should change to a green 'Live' badge!"
 else
@@ -132,10 +132,10 @@ sleep 3
 # Step 4: Update again with different platform
 puts "\n4. Changing platform to 'YouTube'..."
 update_response = api_request(:put, "/streams/#{stream_id}", {
-  platform: "YouTube"
-}, token)
+                                platform: "YouTube",
+                              }, token)
 
-if update_response && update_response['data']
+if update_response && update_response["data"]
   puts "   ✓ Platform updated"
   puts "   → Check your browser - the platform badge should change color!"
 else
@@ -148,7 +148,7 @@ sleep 3
 
 # Step 5: Delete the stream
 puts "\n5. Deleting the stream..."
-delete_response = api_request(:delete, "/streams/#{stream_id}", nil, token)
+api_request(:delete, "/streams/#{stream_id}", nil, token)
 
 puts "   ✓ Stream deleted"
 puts "   → Check your browser - the stream should disappear from the list!"

@@ -5,15 +5,23 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  RUBY_VERSION: '3.3.6'
+  NODE_VERSION: '20'
+  POSTGRES_VERSION: '17'
+  REDIS_VERSION: '7'
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     services:
       postgres:
         image: postgres:17
         env:
           POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: streamsource_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -33,23 +41,46 @@ jobs:
           - 6379:6379
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better caching
     
+    - name: Cache Ruby dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.bundle
+          vendor/bundle
+        key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gems-
+
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.3.6'
+        ruby-version: ${{ env.RUBY_VERSION }}
         bundler-cache: true
     
+    - name: Cache Node dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/yarn
+          node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'yarn'
     
     - name: Install dependencies
       run: |
-        yarn install --frozen-lockfile
+        yarn install --frozen-lockfile --prefer-offline
     
     - name: Setup test database
       env:
@@ -69,18 +100,102 @@ jobs:
     
     - name: Run security checks
       run: |
-        bundle exec brakeman -q -w2
-        bundle exec bundler-audit --update
+        echo "🔍 Running security analysis..."
+        
+        # Static Application Security Testing (SAST)
+        bundle exec brakeman -q -w2 --format json --output brakeman-report.json
+        
+        # Dependency vulnerability scanning
+        bundle exec bundler-audit check --update --format json --output bundler-audit-report.json
+        
+        # Display results
+        echo "Brakeman security scan completed"
+        if [ -f brakeman-report.json ]; then
+          echo "Brakeman found $(jq '.warnings | length' brakeman-report.json) potential issues"
+        fi
+        
+        echo "Bundler audit completed"
+        if [ -f bundler-audit-report.json ]; then
+          echo "Bundler audit found $(jq '.vulnerabilities | length' bundler-audit-report.json) vulnerabilities"
+        fi
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          brakeman-report.json
+          bundler-audit-report.json
+        retention-days: 30
 
   deploy:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://${{ secrets.DROPLET_HOST }}
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Deploy to DigitalOcean
+      id: deploy
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: deploy
+        key: ${{ secrets.DEPLOY_SSH_KEY }}
+        timeout: 900s
+        script: |
+          set -e
+          cd /var/www/streamsource
+          
+          # Set environment variables for deployment
+          export GITHUB_REPOSITORY="${{ github.repository }}"
+          export GITHUB_SHA="${{ github.sha }}"
+          export GITHUB_REF="${{ github.ref }}"
+          
+          # Run deployment with error handling
+          echo "🚀 Starting deployment..."
+          ./deploy/github-deploy.sh
+          
+          echo "✅ Deployment completed successfully"
+
+    - name: Comprehensive health check
+      run: |
+        echo "🏥 Running comprehensive health checks..."
+        
+        # Wait for application to stabilize
+        sleep 30
+        
+        # Test multiple endpoints
+        echo "Testing basic health endpoint..."
+        curl -f -s https://${{ secrets.DROPLET_HOST }}/health || exit 1
+        
+        echo "Testing database connectivity..."
+        curl -f -s https://${{ secrets.DROPLET_HOST }}/health/db || exit 1
+        
+        echo "Testing Redis connectivity..."
+        curl -f -s https://${{ secrets.DROPLET_HOST }}/health/redis || exit 1
+        
+        echo "Testing application responsiveness..."
+        RESPONSE_TIME=$(curl -w "%{time_total}" -s -o /dev/null https://${{ secrets.DROPLET_HOST }}/health)
+        echo "Response time: ${RESPONSE_TIME}s"
+        
+        # Fail if response time is too slow (> 5 seconds)
+        if (( $(echo "$RESPONSE_TIME > 5.0" | bc -l) )); then
+          echo "❌ Application is responding too slowly ($RESPONSE_TIME seconds)"
+          exit 1
+        fi
+        
+        echo "✅ All health checks passed"
+    
+    - name: Rollback on failure
+      if: failure() && steps.deploy.conclusion == 'failure'
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.DROPLET_HOST }}
@@ -88,18 +203,45 @@ jobs:
         key: ${{ secrets.DEPLOY_SSH_KEY }}
         script: |
           cd /var/www/streamsource
-          ./deploy/github-deploy.sh
+          echo "🔄 Initiating automatic rollback..."
+          ./deploy/rollback.sh
+          echo "✅ Rollback completed"
+      continue-on-error: true
 
-    - name: Health check
-      run: |
-        sleep 30
-        curl -f https://${{ secrets.DROPLET_HOST }}/health || exit 1
-    
     - name: Notify deployment status
       if: always()
       uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
-        text: 'StreamSource deployment ${{ job.status }}'
         webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        text: |
+          StreamSource deployment ${{ job.status }}
+          
+          📋 *Deployment Details:*
+          • Commit: `${{ github.sha }}`
+          • Branch: `${{ github.ref_name }}`
+          • Author: ${{ github.actor }}
+          • Workflow: ${{ github.workflow }}
+          
+          ${{ job.status == 'success' && '✅ Deployment successful!' || '❌ Deployment failed - automatic rollback initiated' }}
+          
+          🔗 [View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
       continue-on-error: true
+
+    - name: Record deployment metrics
+      if: always()
+      run: |
+        echo "📊 Recording deployment metrics..."
+        
+        # Create deployment record
+        curl -X POST "https://api.github.com/repos/${{ github.repository }}/deployments" \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "ref": "${{ github.sha }}",
+            "environment": "production",
+            "description": "Deployment via GitHub Actions",
+            "auto_merge": false
+          }' || echo "Failed to record deployment"
+        
+        echo "✅ Deployment metrics recorded"

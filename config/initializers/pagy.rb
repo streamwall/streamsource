@@ -1,5 +1,5 @@
 # Pagy configuration
-require 'pagy/extras/bootstrap'
+require "pagy/extras/bootstrap"
 
 # Set default items per page
 Pagy::DEFAULT[:items] = 20

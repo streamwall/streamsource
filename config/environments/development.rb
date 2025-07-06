@@ -22,7 +22,7 @@ Rails.application.configure do
   if Rails.root.join("tmp/caching-dev.txt").exist?
     config.cache_store = :memory_store
     config.public_file_server.headers = {
-      "Cache-Control" => "public, max-age=#{2.days.to_i}"
+      "Cache-Control" => "public, max-age=#{2.days.to_i}",
     }
   else
     config.action_controller.perform_caching = false
@@ -76,9 +76,9 @@ Rails.application.configure do
     Bullet.console = true
     Bullet.rails_logger = true
     Bullet.add_footer = true
-    
+
     # Bullet.raise = true  # Uncomment to raise errors in development
     # Bullet.unused_eager_loading_enable = false  # Set to true to detect unused eager loading
-    Bullet.counter_cache_enable = false  # Disable counter cache suggestions
+    Bullet.counter_cache_enable = false # Disable counter cache suggestions
   end
 end

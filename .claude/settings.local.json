@@ -49,7 +49,10 @@
       "Bash(else)",
       "Bash(fi)",
       "Bash(done)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(make lint)",
+      "Bash(make lint-fix:*)",
+      "Bash(make:*)"
     ],
     "deny": []
   }
