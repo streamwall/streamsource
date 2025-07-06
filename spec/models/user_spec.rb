@@ -139,6 +139,23 @@ RSpec.describe User, type: :model do
         expect(user.premium?).to be false
       end
     end
+    
+    describe '#display_name' do
+      it 'returns email before @ symbol' do
+        user = build(:user, email: 'john.doe@example.com')
+        expect(user.display_name).to eq('john.doe')
+      end
+      
+      it 'handles emails with multiple dots' do
+        user = build(:user, email: 'first.middle.last@example.com')
+        expect(user.display_name).to eq('first.middle.last')
+      end
+      
+      it 'handles simple emails' do
+        user = build(:user, email: 'admin@example.com')
+        expect(user.display_name).to eq('admin')
+      end
+    end
   end
   
   describe 'secure password' do
@@ -168,6 +185,57 @@ RSpec.describe User, type: :model do
       user = build(:user, email: "test'; DROP TABLE users; --@example.com")
       user.valid?
       expect(User.count).to be >= 0 # Table should still exist
+    end
+    
+    it 'handles password at exact minimum length' do
+      user = build(:user, password: 'Pass123!')  # Exactly 8 chars with required complexity
+      expect(user).to be_valid
+    end
+    
+    it 'handles international email domains' do
+      user = build(:user, email: 'user@пример.рф')
+      # Should be invalid based on current email regex
+      expect(user).not_to be_valid
+    end
+    
+    it 'normalizes emails with multiple spaces' do
+      user = create(:user, email: '  user@example.com  ')
+      expect(user.email).to eq('user@example.com')
+    end
+    
+    it 'handles role changes during concurrent access' do
+      user = create(:user, role: 'default')
+      
+      # Simulate concurrent role check and update
+      user1 = User.find(user.id)
+      user2 = User.find(user.id)
+      
+      expect(user1.can_modify_streams?).to be false
+      user2.update!(role: 'editor')
+      
+      # Original instance still has old role until reload
+      expect(user1.can_modify_streams?).to be false
+      user1.reload
+      expect(user1.can_modify_streams?).to be true
+    end
+    
+    it 'handles password validation skip on update' do
+      user = create(:user)
+      # Update without password should succeed
+      expect(user.update(email: 'new@example.com')).to be true
+      # But invalid password on create should fail
+      new_user = build(:user, password: 'short')
+      expect(new_user).not_to be_valid
+    end
+    
+    it 'handles unicode in email local part' do
+      user = build(:user, email: 'üser@example.com')
+      expect(user).not_to be_valid
+    end
+    
+    it 'rejects email with consecutive dots' do
+      user = build(:user, email: 'user..name@example.com')
+      expect(user).not_to be_valid
     end
   end
 end

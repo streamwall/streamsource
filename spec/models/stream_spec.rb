@@ -115,6 +115,68 @@ RSpec.describe Stream, type: :model do
       end
     end
     
+    describe '.not_archived' do
+      it 'returns streams that are not archived' do
+        expect(Stream.not_archived).not_to include(archived_stream)
+        expect(Stream.not_archived).to include(live_stream, offline_stream, pinned_stream, streamer_stream)
+      end
+    end
+    
+    describe '.recent' do
+      it 'orders streams by created_at descending' do
+        oldest = create(:stream, user: user, created_at: 3.days.ago)
+        newest = create(:stream, user: user, created_at: 1.hour.ago)
+        middle = create(:stream, user: user, created_at: 1.day.ago)
+        
+        expect(Stream.recent.first).to eq(newest)
+        expect(Stream.recent.last).to eq(oldest)
+        expect(Stream.recent.to_a).to eq([newest, middle, oldest] + Stream.where.not(id: [oldest.id, newest.id, middle.id]).order(created_at: :desc))
+      end
+    end
+    
+    describe '.recently_checked' do
+      it 'orders streams by last_checked_at descending' do
+        stream1 = create(:stream, user: user, last_checked_at: 3.hours.ago)
+        stream2 = create(:stream, user: user, last_checked_at: 1.hour.ago)
+        stream3 = create(:stream, user: user, last_checked_at: 2.hours.ago)
+        
+        result = Stream.recently_checked
+        expect(result.first).to eq(stream2)
+        expect(result.second).to eq(stream3)
+        expect(result.third).to eq(stream1)
+      end
+    end
+    
+    describe '.recently_live' do
+      it 'orders streams by last_live_at descending' do
+        stream1 = create(:stream, user: user, last_live_at: 3.days.ago)
+        stream2 = create(:stream, user: user, last_live_at: 1.day.ago)
+        stream3 = create(:stream, user: user, last_live_at: 2.days.ago)
+        
+        result = Stream.recently_live
+        expect(result.first).to eq(stream2)
+        expect(result.second).to eq(stream3)
+        expect(result.third).to eq(stream1)
+      end
+    end
+    
+    describe '.ordered' do
+      it 'orders by pinned first, then by started_at descending' do
+        unpinned_old = create(:stream, user: user, is_pinned: false, started_at: 3.days.ago)
+        unpinned_new = create(:stream, user: user, is_pinned: false, started_at: 1.day.ago)
+        pinned_old = create(:stream, user: user, is_pinned: true, started_at: 4.days.ago)
+        pinned_new = create(:stream, user: user, is_pinned: true, started_at: 2.days.ago)
+        
+        result = Stream.ordered.limit(4)
+        # Pinned streams come first, ordered by started_at desc
+        expect(result[0]).to eq(pinned_new)
+        expect(result[1]).to eq(pinned_old)
+        # Then unpinned streams, ordered by started_at desc
+        expect(result[2]).to eq(unpinned_new)
+        expect(result[3]).to eq(unpinned_old)
+      end
+    end
+    
     describe '.archived' do
       it 'returns only archived streams' do
         expect(Stream.archived).to contain_exactly(archived_stream)
@@ -424,6 +486,29 @@ RSpec.describe Stream, type: :model do
         expect(stream.duration_in_words).to eq('45m')
       end
     end
+    
+    describe '#broadcast_time_updates' do
+      it 'broadcasts replace_all with correct target' do
+        expect(stream).to receive(:broadcast_replace_all_later_to).with(
+          'streams',
+          target: "stream_#{stream.id}_times",
+          partial: 'admin/streams/times',
+          locals: { stream: stream }
+        )
+        
+        stream.broadcast_time_updates
+      end
+      
+      it 'is called when last_checked_at changes' do
+        expect(stream).to receive(:broadcast_time_updates)
+        stream.update!(last_checked_at: Time.current)
+      end
+      
+      it 'is called when last_live_at changes' do
+        expect(stream).to receive(:broadcast_time_updates)
+        stream.update!(last_live_at: Time.current)
+      end
+    end
   end
   
   describe 'database indexes' do
@@ -444,6 +529,85 @@ RSpec.describe Stream, type: :model do
       # Composite indexes
       expect(ActiveRecord::Base.connection.index_exists?(:streams, [:user_id, :created_at])).to be true
       expect(ActiveRecord::Base.connection.index_exists?(:streams, [:streamer_id, :is_archived])).to be true
+    end
+  end
+  
+  describe 'edge cases' do
+    let(:user) { create(:user) }
+    
+    describe 'URL handling' do
+      it 'handles maximum length URLs' do
+        max_url = 'https://example.com/' + 'a' * 2000
+        stream = build(:stream, user: user, link: max_url)
+        expect(stream).to be_valid
+      end
+      
+      it 'handles URLs with unicode characters' do
+        unicode_url = 'https://example.com/видео/стрим'
+        stream = build(:stream, user: user, link: unicode_url)
+        expect(stream).to be_valid
+      end
+      
+      it 'handles URLs with special characters' do
+        special_url = 'https://example.com/stream?id=123&title=Test%20Stream'
+        stream = build(:stream, user: user, link: special_url)
+        expect(stream).to be_valid
+      end
+    end
+    
+    describe 'duration edge cases' do
+      it 'handles negative duration (ended before started)' do
+        stream = create(:stream, user: user, started_at: Time.current, ended_at: 1.hour.ago)
+        expect(stream.duration).to be < 0
+      end
+      
+      it 'handles very long durations' do
+        stream = create(:stream, user: user, started_at: 30.days.ago, ended_at: Time.current)
+        expect(stream.duration_in_words).to include('h')
+      end
+    end
+    
+    describe 'concurrent updates' do
+      it 'handles simultaneous status updates' do
+        stream = create(:stream, user: user, status: 'Unknown')
+        
+        # Simulate concurrent updates
+        stream1 = Stream.find(stream.id)
+        stream2 = Stream.find(stream.id)
+        
+        stream1.update!(status: 'Live')
+        expect { stream2.update!(status: 'Offline') }.not_to raise_error
+        
+        stream.reload
+        expect(stream.status).to eq('Offline') # Last update wins
+      end
+    end
+    
+    describe 'callback failures' do
+      it 'saves successfully even if broadcast fails' do
+        stream = build(:stream, user: user)
+        allow(stream).to receive(:broadcast_prepend_later_to).and_raise(StandardError)
+        
+        expect { stream.save! }.not_to raise_error
+        expect(stream).to be_persisted
+      end
+    end
+    
+    describe 'boundary validations' do
+      it 'accepts source at minimum length' do
+        stream = build(:stream, user: user, source: 'a' * ApplicationConstants::Stream::NAME_MIN_LENGTH)
+        expect(stream).to be_valid
+      end
+      
+      it 'accepts source at maximum length' do
+        stream = build(:stream, user: user, source: 'a' * ApplicationConstants::Stream::NAME_MAX_LENGTH)
+        expect(stream).to be_valid
+      end
+      
+      it 'rejects source exceeding maximum length' do
+        stream = build(:stream, user: user, source: 'a' * (ApplicationConstants::Stream::NAME_MAX_LENGTH + 1))
+        expect(stream).not_to be_valid
+      end
     end
   end
   
