@@ -1,5 +1,5 @@
 module Admin
-  class BaseController < ApplicationController
+  class BaseController < ActionController::Base
     include JwtAuthenticatable
     include Pagy::Backend
 
