@@ -1,6 +1,7 @@
 module Admin
-  class SessionsController < ApplicationController
-    protect_from_forgery with: :exception
+  class SessionsController < Admin::BaseController
+    skip_before_action :authenticate_admin!, only: [:new, :create]
+    skip_before_action :check_maintenance_mode, only: [:new, :create]
     layout "admin_login"
 
     def new

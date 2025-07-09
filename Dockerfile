@@ -46,6 +46,15 @@ RUN if [ -f "package.json" ]; then \
       yarn install; \
     fi
 
+# Build assets (CSS and JavaScript)
+RUN if [ -f "package.json" ]; then \
+      yarn build:css && \
+      yarn build; \
+    fi
+
+# Precompile assets with Propshaft
+RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
+
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
 

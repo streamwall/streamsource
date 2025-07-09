@@ -29,6 +29,9 @@ gem "cssbundling-rails"
 # Bundle and transpile JavaScript
 gem "jsbundling-rails"
 
+# Asset pipeline
+gem "propshaft"
+
 # Use Kredis to get higher-level data types in Redis [https://github.com/rails/kredis]
 # gem "kredis"
 

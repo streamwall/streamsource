@@ -2,7 +2,23 @@
 
 # If running the rails server then create or migrate existing database
 if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
-  bundle exec rails db:prepare
+  echo "Setting up database..."
+  
+  # First ensure database exists
+  bundle exec rails db:create 2>/dev/null || true
+  
+  # Check if schema has been loaded (by checking if any tables exist)
+  if bundle exec rails runner "exit ActiveRecord::Base.connection.tables.empty? ? 1 : 0" 2>/dev/null; then
+    # Tables exist, just migrate
+    echo "Database already initialized, running migrations..."
+    bundle exec rails db:migrate
+  else
+    # No tables, need to load schema
+    echo "Loading database schema..."
+    bundle exec rails db:schema:load
+    echo "Seeding database..."
+    bundle exec rails db:seed
+  fi
 fi
 
 # If running rspec, automatically set RAILS_ENV=test
