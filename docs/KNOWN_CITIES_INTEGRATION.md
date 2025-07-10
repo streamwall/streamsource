@@ -107,7 +107,6 @@ const cities = await getKnownCities();
 
 No direct integration needed, but the service should be aware that:
 - New streams might be rejected if using unknown cities
-- The Google Sheets should ideally contain known cities
 
 ## Admin Interface
 
