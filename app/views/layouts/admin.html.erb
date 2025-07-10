@@ -61,6 +61,14 @@
               <% end %>
             </li>
             <li>
+              <%= link_to admin_ignore_lists_path, class: "flex items-center px-3 py-2 rounded hover:bg-gray-800 transition #{'bg-gray-800' if controller_name == 'ignore_lists'}" do %>
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                </svg>
+                Ignore Lists
+              <% end %>
+            </li>
+            <li>
               <%= link_to admin_users_path, class: "flex items-center px-3 py-2 rounded hover:bg-gray-800 transition #{'bg-gray-800' if controller_name == 'users'}" do %>
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.3.3.6 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
@@ -141,6 +149,14 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
                 Locations
+              <% end %>
+            </li>
+            <li>
+              <%= link_to admin_ignore_lists_path, class: "flex items-center px-3 py-2 rounded hover:bg-gray-800 transition #{'bg-gray-800' if controller_name == 'ignore_lists'}" do %>
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                </svg>
+                Ignore Lists
               <% end %>
             </li>
             <li>

@@ -40,6 +40,15 @@ Rails.application.routes.draw do
           get "known_cities"
         end
       end
+
+      # Ignore Lists
+      resources :ignore_lists do
+        collection do
+          get "by_type"
+          post "bulk_create"
+          delete "bulk_delete"
+        end
+      end
     end
   end
 
@@ -89,6 +98,14 @@ Rails.application.routes.draw do
 
     # Locations
     resources :locations, only: %i[index show new edit create update destroy]
+
+    # Ignore Lists
+    resources :ignore_lists do
+      collection do
+        get "bulk_import"
+        post "bulk_import"
+      end
+    end
 
     root to: "streams#index"
   end

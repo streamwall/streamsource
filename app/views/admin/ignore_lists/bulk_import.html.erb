@@ -1,0 +1,61 @@
+<% content_for :title, "Bulk Import Ignore List" %>
+
+<%= turbo_frame_tag "modal" do %>
+  <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-40"></div>
+  
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex min-h-full items-center justify-center p-4">
+      <div class="relative bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full shadow-xl">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+            Bulk Import Ignore List Entries
+          </h3>
+        </div>
+        
+        <div class="px-6 py-4">
+          <%= form_with url: bulk_import_admin_ignore_lists_path, method: :post, local: true do |form| %>
+            <div class="space-y-4">
+              <div>
+                <%= form.label :list_type, "Type", class: "block text-sm font-medium text-gray-700 dark:text-gray-300" %>
+                <%= form.select :list_type, 
+                    options_for_select(IgnoreList::LIST_TYPES.map { |t| [t.humanize, t] }),
+                    { prompt: "Select a type..." },
+                    class: "form-select mt-1",
+                    required: true %>
+              </div>
+
+              <div>
+                <%= form.label :import_data, "Values to Import", class: "block text-sm font-medium text-gray-700 dark:text-gray-300" %>
+                <%= form.text_area :import_data, 
+                    rows: 10,
+                    class: "form-textarea mt-1 font-mono text-sm",
+                    placeholder: "Enter one value per line...",
+                    required: true %>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Enter one value per line. Empty lines will be ignored. Duplicate values will be skipped.
+                </p>
+              </div>
+
+              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Format Examples:</h4>
+                <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                  <p><strong>Twitch Users:</strong> One username per line (e.g., spammer123)</p>
+                  <p><strong>Discord Users:</strong> Username or username#discriminator</p>
+                  <p><strong>URLs:</strong> Full URLs (e.g., https://example.com/spam)</p>
+                  <p><strong>Domains:</strong> Domain names (e.g., spam-site.com)</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+              <%= link_to "Cancel", admin_ignore_lists_path, 
+                  class: "btn btn-outline",
+                  data: { turbo_frame: "_top" } %>
+              <%= form.submit "Import", class: "btn btn-primary" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

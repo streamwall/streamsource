@@ -1,0 +1,82 @@
+<%= form_with model: [:admin, ignore_list], local: true do |form| %>
+  <% if ignore_list.errors.any? %>
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+      <h4 class="font-bold">Please fix the following errors:</h4>
+      <ul class="list-disc list-inside">
+        <% ignore_list.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="space-y-4">
+    <div>
+      <%= form.label :list_type, class: "block text-sm font-medium text-gray-700 dark:text-gray-300" %>
+      <%= form.select :list_type, 
+          options_for_select(IgnoreList::LIST_TYPES.map { |t| [t.humanize, t] }, ignore_list.list_type),
+          { prompt: "Select a type..." },
+          class: "form-select mt-1",
+          required: true %>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        Choose the type of entry to ignore
+      </p>
+    </div>
+
+    <div>
+      <%= form.label :value, class: "block text-sm font-medium text-gray-700 dark:text-gray-300" %>
+      <%= form.text_field :value, 
+          class: "form-input mt-1", 
+          placeholder: "Enter the value to ignore...",
+          required: true %>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <span class="list-type-hint" data-type="twitch_user" style="display: none;">
+          Enter the Twitch username (without @)
+        </span>
+        <span class="list-type-hint" data-type="discord_user" style="display: none;">
+          Enter the Discord username#discriminator or just username
+        </span>
+        <span class="list-type-hint" data-type="url" style="display: none;">
+          Enter the full URL to block
+        </span>
+        <span class="list-type-hint" data-type="domain" style="display: none;">
+          Enter the domain name (e.g., example.com)
+        </span>
+      </p>
+    </div>
+
+    <div>
+      <%= form.label :notes, class: "block text-sm font-medium text-gray-700 dark:text-gray-300" %>
+      <%= form.text_area :notes, 
+          rows: 3,
+          class: "form-textarea mt-1",
+          placeholder: "Optional notes about why this entry is ignored..." %>
+    </div>
+  </div>
+
+  <div class="mt-6 flex justify-end gap-3">
+    <%= link_to "Cancel", admin_ignore_lists_path, 
+        class: "btn btn-outline",
+        data: { turbo_frame: "_top" } %>
+    <%= form.submit class: "btn btn-primary" %>
+  </div>
+<% end %>
+
+<script>
+  // Show appropriate hint based on selected type
+  document.addEventListener('turbo:load', function() {
+    const typeSelect = document.querySelector('#ignore_list_list_type');
+    const hints = document.querySelectorAll('.list-type-hint');
+    
+    if (typeSelect) {
+      function updateHint() {
+        hints.forEach(hint => {
+          hint.style.display = hint.dataset.type === typeSelect.value ? 'block' : 'none';
+        });
+      }
+      
+      typeSelect.addEventListener('change', updateHint);
+      updateHint(); // Show initial hint
+    }
+  });
+</script>

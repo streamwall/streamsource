@@ -1,0 +1,108 @@
+<% content_for :title, "Ignore Lists" %>
+
+<div class="max-w-7xl mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Ignore Lists</h1>
+    <div class="flex gap-2">
+      <%= link_to "Add Entry", new_admin_ignore_list_path, 
+          class: "btn btn-primary", 
+          data: { turbo_frame: "modal" } %>
+      <%= link_to "Bulk Import", bulk_import_admin_ignore_lists_path, 
+          class: "btn btn-secondary", 
+          data: { turbo_frame: "modal" } %>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 p-4">
+    <%= form_with url: admin_ignore_lists_path, method: :get, class: "flex flex-wrap gap-4" do |f| %>
+      <div class="flex-1 min-w-[200px]">
+        <%= f.text_field :search, 
+            placeholder: "Search by value...", 
+            value: params[:search],
+            class: "form-input w-full",
+            data: { turbo_permanent: true } %>
+      </div>
+      
+      <div class="min-w-[200px]">
+        <%= f.select :list_type, 
+            options_for_select([
+              ["All Types", ""],
+              ["Twitch Users", "twitch_user"],
+              ["Discord Users", "discord_user"],
+              ["URLs", "url"],
+              ["Domains", "domain"]
+            ], params[:list_type]),
+            {},
+            class: "form-select",
+            data: { turbo_permanent: true } %>
+      </div>
+      
+      <%= f.submit "Filter", class: "btn btn-secondary" %>
+      <%= link_to "Clear", admin_ignore_lists_path, class: "btn btn-outline" %>
+    <% end %>
+  </div>
+
+  <!-- Statistics -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <% IgnoreList::LIST_TYPES.each do |list_type| %>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <%= list_type.humanize.pluralize %>
+        </h3>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+          <%= IgnoreList.where(list_type: list_type).count %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-900">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Type
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Value
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Notes
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Added
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <% @ignore_lists.each do |ignore_list| %>
+            <%= turbo_frame_tag dom_id(ignore_list) do %>
+              <%= render "ignore_list", ignore_list: ignore_list %>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if @ignore_lists.empty? %>
+      <div class="text-center py-12">
+        <p class="text-gray-500 dark:text-gray-400">No ignore list entries found.</p>
+      </div>
+    <% end %>
+
+    <!-- Pagination -->
+    <% if @ignore_lists.total_pages > 1 %>
+      <div class="bg-gray-50 dark:bg-gray-900 px-6 py-3">
+        <%= paginate @ignore_lists, theme: 'tailwind' %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%= turbo_frame_tag "modal" %>
