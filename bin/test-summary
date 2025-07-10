@@ -1,0 +1,72 @@
+#!/bin/bash
+# Script to run tests and provide a clean summary using jq
+
+# Color definitions
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+# Set test environment
+export RAILS_ENV=test
+export DATABASE_URL="postgres://streamsource:streamsource_password@db:5432/streamsource_test"
+
+# Ensure test database is prepared
+echo -e "${BLUE}Preparing test database...${RESET}"
+bundle exec rails db:prepare 2>/dev/null
+
+# Run tests with JSON output
+echo -e "${BLUE}Running tests...${RESET}"
+bundle exec rspec --format progress --format json --out tmp/rspec_results.json "$@"
+
+# Parse results with jq
+if [ -f tmp/rspec_results.json ]; then
+    echo -e "\n${BOLD}${CYAN}Test Results Summary${RESET}"
+    echo -e "${CYAN}═══════════════════════════════════════════${RESET}"
+    
+    # Extract summary data
+    TOTAL=$(jq -r '.summary.example_count' tmp/rspec_results.json)
+    FAILURES=$(jq -r '.summary.failure_count' tmp/rspec_results.json)
+    PENDING=$(jq -r '.summary.pending_count' tmp/rspec_results.json)
+    DURATION=$(jq -r '.summary.duration' tmp/rspec_results.json)
+    
+    # Calculate pass count and rate
+    PASSED=$((TOTAL - FAILURES - PENDING))
+    if [ $TOTAL -gt 0 ]; then
+        PASS_RATE=$((PASSED * 100 / TOTAL))
+    else
+        PASS_RATE=0
+    fi
+    
+    # Display summary
+    echo -e "${BOLD}Total Tests:${RESET} $TOTAL"
+    echo -e "${GREEN}${BOLD}Passed:${RESET} ${GREEN}$PASSED${RESET}"
+    echo -e "${RED}${BOLD}Failed:${RESET} ${RED}$FAILURES${RESET}"
+    echo -e "${YELLOW}${BOLD}Pending:${RESET} ${YELLOW}$PENDING${RESET}"
+    echo -e "${BOLD}Pass Rate:${RESET} ${PASS_RATE}%"
+    echo -e "${BOLD}Duration:${RESET} ${DURATION}s"
+    
+    # Show failed tests if any
+    if [ $FAILURES -gt 0 ]; then
+        echo -e "\n${RED}${BOLD}Failed Tests:${RESET}"
+        jq -r '.examples[] | select(.status == "failed") | "  • \(.full_description)"' tmp/rspec_results.json | head -20
+        
+        if [ $FAILURES -gt 20 ]; then
+            echo -e "${YELLOW}  ... and $((FAILURES - 20)) more failures${RESET}"
+        fi
+    fi
+    
+    # Show coverage if available
+    if [ -f coverage/.last_run.json ]; then
+        echo -e "\n${BOLD}${CYAN}Test Coverage${RESET}"
+        echo -e "${CYAN}═══════════════════════════════════════════${RESET}"
+        COVERAGE=$(jq -r '.result.line' coverage/.last_run.json 2>/dev/null || echo "N/A")
+        echo -e "${BOLD}Line Coverage:${RESET} ${COVERAGE}%"
+    fi
+else
+    echo -e "${RED}Error: Test results file not found${RESET}"
+    exit 1
+fi

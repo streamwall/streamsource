@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe AdminFlipperAuth do
   let(:app) { double("app") }
   let(:middleware) { described_class.new(app) }
-  let(:env) { Rack::MockRequest.env_for("/") }
+  let(:env) { Rack::MockRequest.env_for("/admin/flipper") }
 
   describe "#call" do
     context "when user is admin" do
@@ -11,6 +11,7 @@ RSpec.describe AdminFlipperAuth do
 
       before do
         allow_any_instance_of(described_class).to receive(:current_user).and_return(admin_user)
+        allow(app).to receive(:call).and_return([200, {}, ["OK"]])
       end
 
       it "allows access" do
@@ -19,8 +20,6 @@ RSpec.describe AdminFlipperAuth do
       end
 
       it "passes through to the app" do
-        allow(app).to receive(:call).and_return([200, {}, ["OK"]])
-
         status, _, body = middleware.call(env)
 
         expect(status).to eq(200)
@@ -135,20 +134,21 @@ RSpec.describe AdminFlipperAuth do
   describe "integration" do
     let(:admin_user) { create(:user, :admin) }
     let(:regular_user) { create(:user) }
+    let(:env_with_session) { Rack::MockRequest.env_for("/admin/flipper") }
 
     it "integrates with rack session" do
-      env["rack.session"] = { user_id: admin_user.id }
+      env_with_session["rack.session"] = { user_id: admin_user.id }
       allow(app).to receive(:call).and_return([200, {}, ["Success"]])
 
-      status, = middleware.call(env)
+      status, = middleware.call(env_with_session)
 
       expect(status).to eq(200)
     end
 
     it "denies access for non-admin in session" do
-      env["rack.session"] = { user_id: regular_user.id }
+      env_with_session["rack.session"] = { user_id: regular_user.id }
 
-      status, = middleware.call(env)
+      status, = middleware.call(env_with_session)
 
       expect(status).to eq(403)
     end

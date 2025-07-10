@@ -93,6 +93,11 @@ RSpec.configure do |config|
 
   config.before do
     DatabaseCleaner.strategy = :transaction
+    
+    # Stub Flipper to return false for all features by default
+    if defined?(Flipper)
+      allow(Flipper).to receive(:enabled?).and_return(false)
+    end
   end
 
   config.before(:each, :js) do

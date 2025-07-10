@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_21_001814) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_10_010745) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -28,6 +28,35 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_21_001814) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["feature_key", "key"], name: "index_flipper_gates_on_feature_key_and_key", unique: true
+  end
+
+  create_table "jwt_denylists", force: :cascade do |t|
+    t.string "jti", null: false
+    t.datetime "exp", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["exp"], name: "index_jwt_denylists_on_exp"
+    t.index ["jti"], name: "index_jwt_denylists_on_jti", unique: true
+  end
+
+  create_table "locations", force: :cascade do |t|
+    t.string "city", null: false
+    t.string "state_province"
+    t.string "region"
+    t.string "country"
+    t.string "normalized_name", null: false
+    t.decimal "latitude", precision: 10, scale: 6
+    t.decimal "longitude", precision: 10, scale: 6
+    t.boolean "is_known_city", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["city", "state_province", "country"], name: "index_locations_on_city_and_state_province_and_country"
+    t.index ["city"], name: "index_locations_on_city"
+    t.index ["country"], name: "index_locations_on_country"
+    t.index ["is_known_city"], name: "index_locations_on_is_known_city"
+    t.index ["latitude", "longitude"], name: "index_locations_on_latitude_and_longitude"
+    t.index ["normalized_name"], name: "index_locations_on_normalized_name", unique: true
+    t.index ["state_province"], name: "index_locations_on_state_province"
   end
 
   create_table "streamer_accounts", force: :cascade do |t|
@@ -76,12 +105,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_21_001814) do
     t.datetime "started_at"
     t.datetime "ended_at"
     t.boolean "is_archived", default: false
+    t.bigint "location_id"
     t.index ["ended_at"], name: "index_streams_on_ended_at"
     t.index ["is_archived"], name: "index_streams_on_is_archived"
     t.index ["is_pinned"], name: "index_streams_on_is_pinned"
     t.index ["kind"], name: "index_streams_on_kind"
     t.index ["last_checked_at"], name: "index_streams_on_last_checked_at"
     t.index ["last_live_at"], name: "index_streams_on_last_live_at"
+    t.index ["location_id"], name: "index_streams_on_location_id"
     t.index ["platform"], name: "index_streams_on_platform"
     t.index ["started_at"], name: "index_streams_on_started_at"
     t.index ["status"], name: "index_streams_on_status"
@@ -119,16 +150,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_21_001814) do
 
   create_table "users", force: :cascade do |t|
     t.string "email", null: false
-    t.string "password_digest", null: false
     t.string "role", default: "default"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "encrypted_password", default: "", null: false
+    t.string "reset_password_token"
+    t.datetime "reset_password_sent_at"
+    t.datetime "remember_created_at"
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
     t.index ["role"], name: "index_users_on_role"
   end
 
   add_foreign_key "streamer_accounts", "streamers"
   add_foreign_key "streamers", "users"
+  add_foreign_key "streams", "locations"
   add_foreign_key "streams", "streamers"
   add_foreign_key "streams", "users"
   add_foreign_key "timestamp_streams", "streams"

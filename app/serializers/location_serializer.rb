@@ -1,7 +1,8 @@
 class LocationSerializer < ActiveModel::Serializer
   attributes :id, :city, :state_province, :region, :country,
              :display_name, :full_display_name, :normalized_name,
-             :latitude, :longitude, :coordinates, :created_at, :updated_at
+             :latitude, :longitude, :coordinates, :is_known_city,
+             :created_at, :updated_at
 
   attribute :streams_count
 

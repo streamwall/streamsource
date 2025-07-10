@@ -1,6 +1,5 @@
 module Admin
   class BaseController < ActionController::Base
-    include JwtAuthenticatable
     include Pagy::Backend
 
     # Include helpers for session and flash
@@ -11,13 +10,12 @@ module Admin
     # Enable CSRF protection for web forms
     protect_from_forgery with: :exception
 
-    # Skip JWT auth for session-based auth
-    skip_before_action :authenticate_user!
-
     before_action :authenticate_admin!
     before_action :check_maintenance_mode
 
     layout "admin"
+    
+    helper_method :current_user, :user_signed_in?, :current_admin_user
 
     rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
     rescue_from ActiveRecord::RecordInvalid, with: :record_invalid
@@ -26,13 +24,26 @@ module Admin
     private
 
     def authenticate_admin!
-      return if current_admin_user&.admin?
+      unless user_signed_in?
+        redirect_to admin_login_path, alert: "You must be logged in to access this area."
+        return
+      end
+      
+      return if current_user&.admin? || current_user&.editor?
 
-      redirect_to admin_login_path, alert: "You must be logged in as an admin to access this area."
+      redirect_to admin_login_path, alert: "You must be logged in as an admin or editor to access this area."
     end
 
     def current_admin_user
-      @current_admin_user ||= User.find_by(id: session[:admin_user_id]) if session[:admin_user_id]
+      @current_admin_user ||= current_user if current_user&.admin?
+    end
+    
+    def current_user
+      @current_user ||= User.find_by(id: session[:admin_user_id]) if session[:admin_user_id]
+    end
+    
+    def user_signed_in?
+      current_user.present?
     end
 
     def check_maintenance_mode

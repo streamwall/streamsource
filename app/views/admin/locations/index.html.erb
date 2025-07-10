@@ -1,0 +1,47 @@
+<% content_for :title, "Locations" %>
+
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-3xl font-bold text-gray-900">Locations</h1>
+  <%= link_to "New Location", new_admin_location_path, class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded", data: { turbo_frame: "modal" } %>
+</div>
+
+<div class="mb-6">
+  <%= form_with url: admin_locations_path, method: :get, data: { turbo_frame: "_top", controller: "search" } do |f| %>
+    <div class="flex gap-4">
+      <%= f.text_field :search, value: params[:search], placeholder: "Search by city, state, region, or country...", class: "flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", data: { action: "input->search#submit" } %>
+      <%= f.submit "Search", class: "bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="bg-white shadow overflow-hidden rounded-lg">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">City</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State/Province</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Streams</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coordinates</th>
+        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200" id="locations">
+      <% @locations.each do |location| %>
+        <%= render "location", location: location %>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<% if @locations.empty? %>
+  <div class="text-center py-12">
+    <p class="text-gray-500">No locations found.</p>
+  </div>
+<% end %>
+
+<div class="mt-6">
+  <%= raw pagy_nav(@pagy) %>
+</div>
+
+<%= turbo_frame_tag "modal" %>

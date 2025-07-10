@@ -9,11 +9,24 @@ module ApplicationCable
     private
 
     def find_verified_user
-      if verified_user = User.find_by(id: cookies.encrypted[:user_id])
-        verified_user
-      else
-        reject_unauthorized_connection
+      # Try JWT token first (from cookies or params)
+      token = cookies["jwt_token"] || request.params["token"]
+      
+      if token.present?
+        decoded = JsonWebToken.decode(token)
+        if verified_user = User.find_by(id: decoded["user_id"])
+          return verified_user
+        end
       end
+      
+      # Fall back to session-based auth
+      if verified_user = User.find_by(id: cookies.encrypted[:user_id])
+        return verified_user
+      end
+      
+      reject_unauthorized_connection
+    rescue JWT::DecodeError
+      reject_unauthorized_connection
     end
   end
 end

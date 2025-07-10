@@ -49,7 +49,17 @@ module Api
         authorize stream
 
         # Handle location creation/lookup
-        stream.location = Location.find_or_create_from_params(location_params) if location_params.present?
+        if location_params.present?
+          location_result = Location.find_or_create_from_params(location_params)
+          
+          # Check if location validation failed
+          if location_result.respond_to?(:errors) && !location_result.valid?
+            render_error("Location validation failed: #{location_result.errors.full_messages.join(', ')}", :unprocessable_entity)
+            return
+          end
+          
+          stream.location = location_result
+        end
 
         if stream.save
           render json: stream, serializer: StreamSerializer, scope: serialization_scope, status: :created
@@ -63,7 +73,15 @@ module Api
 
         # Handle location update
         if location_params.present?
-          @stream.location = Location.find_or_create_from_params(location_params)
+          location_result = Location.find_or_create_from_params(location_params)
+          
+          # Check if location validation failed
+          if location_result.respond_to?(:errors) && !location_result.valid?
+            render_error("Location validation failed: #{location_result.errors.full_messages.join(', ')}", :unprocessable_entity)
+            return
+          end
+          
+          @stream.location = location_result
         elsif params.key?(:location) && params[:location].nil?
           @stream.location = nil
         end

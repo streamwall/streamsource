@@ -8,6 +8,7 @@ class CreateLocations < ActiveRecord::Migration[8.0]
       t.string :normalized_name, null: false
       t.decimal :latitude, precision: 10, scale: 6
       t.decimal :longitude, precision: 10, scale: 6
+      t.boolean :is_known_city, default: false, null: false
       
       t.timestamps
     end
@@ -18,5 +19,6 @@ class CreateLocations < ActiveRecord::Migration[8.0]
     add_index :locations, :normalized_name, unique: true
     add_index :locations, [:latitude, :longitude]
     add_index :locations, [:city, :state_province, :country]
+    add_index :locations, :is_known_city
   end
 end

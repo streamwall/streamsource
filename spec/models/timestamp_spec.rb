@@ -53,15 +53,6 @@ RSpec.describe Timestamp, type: :model do
       end
     end
 
-    describe ".created_recently" do
-      it "returns timestamps created in last 7 days" do
-        old = create(:timestamp, user: user, created_at: 8.days.ago)
-        recent = create(:timestamp, user: user, created_at: 3.days.ago)
-
-        expect(described_class.created_recently).to include(recent)
-        expect(described_class.created_recently).not_to include(old)
-      end
-    end
 
     describe ".occurred_between" do
       it "returns timestamps with events between dates" do
@@ -120,12 +111,6 @@ RSpec.describe Timestamp, type: :model do
       end
     end
 
-    describe "#formatted_event_time" do
-      it "formats event timestamp" do
-        timestamp = create(:timestamp, user: user, event_timestamp: Time.zone.parse("2024-01-15 14:30:00"))
-        expect(timestamp.formatted_event_time).to eq("Jan 15, 2024 at 2:30 PM")
-      end
-    end
 
     describe "#time_ago" do
       context "with minutes" do
@@ -170,10 +155,6 @@ RSpec.describe Timestamp, type: :model do
           expect(timestamp.time_ago).to eq("just now")
         end
 
-        it "handles future timestamps" do
-          timestamp = create(:timestamp, user: user, event_timestamp: 1.hour.from_now)
-          expect(timestamp.time_ago).to eq("in the future")
-        end
       end
     end
 

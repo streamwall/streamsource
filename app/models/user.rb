@@ -10,7 +10,11 @@
 #  updated_at      :datetime         not null
 #
 class User < ApplicationRecord
-  has_secure_password
+  # Include default devise modules. Others available are:
+  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+  devise :database_authenticatable, :registerable,
+         :recoverable, :rememberable, :validatable,
+         :jwt_authenticatable, jwt_revocation_strategy: JwtDenylist
 
   # Associations
   has_many :streams, dependent: :destroy
@@ -30,23 +34,24 @@ class User < ApplicationRecord
     admin: "admin",
   }, default: "default"
 
-  # Validations
-  validates :email, presence: true, uniqueness: { case_sensitive: false },
-                    format: { with: URI::MailTo::EMAIL_REGEXP }
-  validates :password, length: { minimum: ApplicationConstants::Password::MIN_LENGTH },
-                       format: {
-                         with: ApplicationConstants::Password::COMPLEXITY_REGEX,
-                         message: ApplicationConstants::Password::COMPLEXITY_MESSAGE,
-                       },
-                       on: :create
+  # Validations (Devise handles email and password validations)
   validates :role, inclusion: { in: roles.keys }
+  
+  # Override Devise password complexity requirements
+  validate :password_complexity, if: :password_required?
+  
+  def password_complexity
+    return if password.blank? || password =~ ApplicationConstants::Password::COMPLEXITY_REGEX
+    
+    errors.add :password, ApplicationConstants::Password::COMPLEXITY_MESSAGE
+  end
 
   # Scopes
   scope :editors, -> { where(role: "editor") }
   scope :admins, -> { where(role: "admin") }
 
   # Callbacks
-  before_validation :normalize_email
+  # Devise handles email normalization
 
   # Instance methods
   def can_modify_streams?
@@ -69,10 +74,15 @@ class User < ApplicationRecord
     # Could check subscription status, role, etc.
     admin?
   end
-
-  private
-
-  def normalize_email
-    self.email = email&.downcase&.strip
+  
+  # Flipper actor
+  def flipper_id
+    "User:#{id}"
+  end
+  
+  protected
+  
+  def password_required?
+    new_record? || password.present?
   end
 end

@@ -4,6 +4,12 @@ RSpec.describe "Admin::FeatureFlags", type: :request do
   let(:admin_user) { create(:user, :admin) }
 
   before do
+    # Allow real Flipper calls for these tests
+    allow(Flipper).to receive(:enabled?).and_call_original
+    allow(Flipper).to receive(:enable).and_call_original
+    allow(Flipper).to receive(:disable).and_call_original
+    allow(Flipper).to receive(:add).and_call_original
+    
     # Reset all feature flags to a known state
     ApplicationConstants::Features.constants.each do |const|
       feature_name = ApplicationConstants::Features.const_get(const)

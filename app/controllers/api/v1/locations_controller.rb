@@ -15,10 +15,7 @@ module Api
         @pagy, @locations = pagy(@locations)
 
         render json: {
-          locations: ActiveModelSerializers::SerializableResource.new(
-            @locations,
-            each_serializer: LocationSerializer,
-          ),
+          locations: @locations.map { |location| LocationSerializer.new(location).as_json },
           meta: pagy_metadata(@pagy),
         }
       end
@@ -26,10 +23,33 @@ module Api
       # GET /api/v1/locations/all
       # Returns all locations without pagination for client-side validation
       def all
-        @locations = Location.ordered.select(:id, :city, :state_province, :country, :normalized_name)
+        @locations = Location.ordered.select(:id, :city, :state_province, :country, :normalized_name, :is_known_city)
 
         # Cache this response for 5 minutes
         expires_in 5.minutes, public: true
+
+        render json: {
+          locations: @locations.map do |loc|
+            {
+              id: loc.id,
+              city: loc.city,
+              state_province: loc.state_province,
+              country: loc.country,
+              display_name: loc.display_name,
+              normalized_name: loc.normalized_name,
+              is_known_city: loc.is_known_city,
+            }
+          end,
+        }
+      end
+
+      # GET /api/v1/locations/known_cities
+      # Returns only known/verified cities for validation
+      def known_cities
+        @locations = Location.known_cities.ordered.select(:id, :city, :state_province, :country, :normalized_name)
+
+        # Cache this response for 15 minutes
+        expires_in 15.minutes, public: true
 
         render json: {
           locations: @locations.map do |loc|
@@ -92,7 +112,7 @@ module Api
       end
 
       def location_params
-        params.expect(location: %i[city state_province region country latitude longitude])
+        params.expect(location: %i[city state_province region country latitude longitude is_known_city])
       end
     end
   end

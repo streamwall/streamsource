@@ -3,6 +3,11 @@ FactoryBot.define do
     city { Faker::Address.city }
     state_province { Faker::Address.state_abbr }
     country { Faker::Address.country }
+    is_known_city { false }
+
+    trait :known_city do
+      is_known_city { true }
+    end
 
     trait :with_coordinates do
       latitude { Faker::Address.latitude }

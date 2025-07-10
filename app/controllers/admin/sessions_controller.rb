@@ -11,7 +11,8 @@ module Admin
     def create
       user = User.find_by(email: params[:email]&.downcase)
 
-      if user&.authenticate(params[:password]) && user.admin?
+      if user&.valid_password?(params[:password]) && (user.admin? || user.editor?)
+        sign_in(:user, user)
         session[:admin_user_id] = user.id
         cookies.encrypted[:user_id] = user.id
         redirect_to admin_streams_path, notice: "Successfully logged in."
@@ -22,6 +23,7 @@ module Admin
     end
 
     def destroy
+      sign_out(:user)
       session[:admin_user_id] = nil
       cookies.encrypted[:user_id] = nil
       redirect_to admin_login_path, notice: "Successfully logged out."
@@ -30,7 +32,7 @@ module Admin
     private
 
     def current_admin_user
-      @current_admin_user ||= User.find_by(id: session[:admin_user_id]) if session[:admin_user_id]
+      @current_admin_user ||= current_user if current_user&.admin?
     end
   end
 end

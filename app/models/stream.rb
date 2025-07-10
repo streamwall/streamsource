@@ -134,14 +134,33 @@ class Stream < ApplicationRecord
     scope
   end
 
+  after_initialize :process_pending_location
   # Callbacks
   before_validation :normalize_link
   before_validation :set_posted_by
+  before_validation :create_or_validate_location
   before_save :update_last_checked_at, if: :status_changed?
   before_save :update_last_live_at, if: -> { status_changed? && live? }
   before_save :set_started_at, if: -> { status_changed? && live? && started_at.blank? }
 
   # Instance methods
+
+  # Location helpers - delegate to location association
+  def city=(value)
+    # Store the value for later processing
+    @pending_city = value
+    super
+  end
+
+  def state=(value)
+    # Store the value for later processing
+    @pending_state = value
+    super
+  end
+
+  def display_location
+    location&.display_name || [city, state].compact.join(", ")
+  end
 
   def pin!
     update!(is_pinned: true)
@@ -157,6 +176,20 @@ class Stream < ApplicationRecord
 
   def owned_by?(user)
     user_id == user&.id
+  end
+
+  def duration_in_words
+    return nil unless duration
+
+    seconds = duration.to_i
+    hours = seconds / 3600
+    minutes = (seconds % 3600) / 60
+
+    if hours.positive?
+      "#{hours}h #{minutes}m"
+    else
+      "#{minutes}m"
+    end
   end
 
   def mark_as_live!
@@ -205,20 +238,6 @@ class Stream < ApplicationRecord
     end_time - started_at
   end
 
-  def duration_in_words
-    return nil unless duration
-
-    seconds = duration.to_i
-    hours = seconds / 3600
-    minutes = (seconds % 3600) / 60
-
-    if hours.positive?
-      "#{hours}h #{minutes}m"
-    else
-      "#{minutes}m"
-    end
-  end
-
   def broadcast_time_updates
     ActionCable.server.broadcast("collaborative_streams", {
                                    action: "stream_updated",
@@ -229,6 +248,43 @@ class Stream < ApplicationRecord
   end
 
   private
+
+  def table_exists?(table_name)
+    ActiveRecord::Base.connection.table_exists?(table_name)
+  rescue StandardError
+    false
+  end
+
+  def process_pending_location
+    # This ensures we don't lose pending values
+    @pending_city ||= city
+    @pending_state ||= state
+  end
+
+  def create_or_validate_location
+    return unless (@pending_city.present? || @pending_state.present?) && table_exists?(:locations)
+
+    # Use the pending values or fall back to the attributes
+    city_value = @pending_city || city
+    state_value = @pending_state || state
+
+    return if city_value.blank?
+
+    location_result = Location.find_or_create_from_params(
+      city: city_value,
+      state_province: state_value,
+    )
+
+    # Handle the result
+    if location_result.is_a?(Location)
+      self.location = location_result
+    elsif location_result.nil? && Flipper.enabled?(ApplicationConstants::Features::LOCATION_VALIDATION)
+      # Location validation is enabled and city is not recognized
+      errors.add(:city, "is not a recognized city. Please contact an admin to add it.")
+      throw(:abort)
+    end
+  end
+
 
   def normalize_link
     self.link = link&.strip

@@ -35,14 +35,14 @@ class Timestamp < ApplicationRecord
     scope = all
 
     if params[:start_date].present? && params[:end_date].present?
-      start_time = Date.parse(params[:start_date]).beginning_of_day
-      end_time = Date.parse(params[:end_date]).end_of_day
+      start_time = params[:start_date].is_a?(String) ? Date.parse(params[:start_date]).beginning_of_day : params[:start_date].beginning_of_day
+      end_time = params[:end_date].is_a?(String) ? Date.parse(params[:end_date]).end_of_day : params[:end_date].end_of_day
       scope = scope.occurred_between(start_time, end_time)
     elsif params[:start_date].present?
-      start_time = Date.parse(params[:start_date]).beginning_of_day
+      start_time = params[:start_date].is_a?(String) ? Date.parse(params[:start_date]).beginning_of_day : params[:start_date].beginning_of_day
       scope = scope.where(event_timestamp: start_time..)
     elsif params[:end_date].present?
-      end_time = Date.parse(params[:end_date]).end_of_day
+      end_time = params[:end_date].is_a?(String) ? Date.parse(params[:end_date]).end_of_day : params[:end_date].end_of_day
       scope = scope.where(event_timestamp: ..end_time)
     end
 

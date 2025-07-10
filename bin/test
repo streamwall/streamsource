@@ -12,6 +12,7 @@ RESET='\033[0m'
 
 # Set Rails environment to test
 export RAILS_ENV=test
+export DATABASE_URL="postgres://streamsource:streamsource_password@db:5432/streamsource_test"
 
 # Enable colorized RSpec output
 export SPEC_OPTS="--color --format documentation"

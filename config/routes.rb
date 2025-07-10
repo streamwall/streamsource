@@ -1,14 +1,23 @@
 Rails.application.routes.draw do
+  devise_for :users
   # Mount ActionCable
   mount ActionCable.server => "/cable"
 
   # API routes
   namespace :api do
     namespace :v1 do
-      # Authentication
-      devise_for :users, skip: %i[registrations sessions passwords]
-      post "users/signup", to: "users#signup"
-      post "users/login", to: "users#login"
+      # Authentication with Devise
+      devise_for :users,
+                 path: '',
+                 path_names: {
+                   sign_in: 'login',
+                   sign_out: 'logout',
+                   registration: 'signup'
+                 },
+                 controllers: {
+                   sessions: 'api/v1/sessions',
+                   registrations: 'api/v1/registrations'
+                 }
 
       # Streams
       resources :streams do
@@ -28,6 +37,7 @@ Rails.application.routes.draw do
       resources :locations do
         collection do
           get "all"
+          get "known_cities"
         end
       end
     end
@@ -82,6 +92,11 @@ Rails.application.routes.draw do
         post "add_stream"
       end
     end
+
+    # Define locations routes with new and edit
+    get "locations/new", to: "locations#new", as: "new_location"
+    get "locations/:id/edit", to: "locations#edit", as: "edit_location"
+    resources :locations, only: %i[index show create update destroy]
 
     root to: "streams#index"
   end

@@ -14,7 +14,7 @@ This guide will help you set up and run StreamSource locally for development and
 
 ```bash
 # Navigate to the project directory
-cd /Users/sayhiben/dev/streamsource
+cd ~/dev/streamsource
 
 # One-command setup (handles everything automatically)
 make setup
@@ -22,7 +22,7 @@ make setup
 
 This automated setup will:
 - ✅ Create `.env` file from template
-- ✅ Install Ruby gems and JavaScript dependencies  
+- ✅ Install Ruby gems and JavaScript dependencies
 - ✅ Start PostgreSQL database
 - ✅ Run database migrations
 - ✅ Seed the database with sample data
@@ -101,7 +101,7 @@ make test
 
 # Specific test types
 make test-models      # Model tests only
-make test-requests    # API/request tests only  
+make test-requests    # API/request tests only
 make test-features    # Feature/system tests only
 make test-parallel    # Faster parallel execution
 ```
@@ -126,7 +126,7 @@ curl http://localhost:3000/health
 # Test database connectivity
 curl http://localhost:3000/health/db
 
-# Test Redis connectivity  
+# Test Redis connectivity
 curl http://localhost:3000/health/redis
 
 # Test API endpoints (may require authentication)
@@ -303,7 +303,7 @@ For faster development, use these shortcut commands:
 
 ```bash
 make d    # dev
-make u    # up  
+make u    # up
 make l    # logs
 make r    # restart
 make s    # status
@@ -333,7 +333,7 @@ If you encounter issues:
 Once you have StreamSource running locally:
 
 - ✅ **Admin Interface**: http://localhost:3000/admin
-- ✅ **API Documentation**: http://localhost:3000/api-docs  
+- ✅ **API Documentation**: http://localhost:3000/api-docs
 - ✅ **Health Monitoring**: http://localhost:3000/health
 - ✅ **Real-time Features**: WebSocket support enabled
 - ✅ **Development Tools**: Rails console, logs, debugging

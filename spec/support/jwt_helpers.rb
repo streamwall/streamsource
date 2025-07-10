@@ -1,11 +1,20 @@
 module JwtHelpers
-  # Generate a JWT token with custom options
+  # Generate a JWT token with Devise JWT format
   def generate_jwt_token(user, options = {})
-    payload = build_jwt_payload(user, options)
-    JWT.encode(payload, jwt_secret, ApplicationConstants::JWT::ALGORITHM)
+    # Use Devise JWT format
+    payload = {
+      sub: user.id.to_s,
+      scp: 'user',
+      aud: nil,
+      iat: Time.current.to_i,
+      exp: (options[:exp] || 1.day.from_now).to_i,
+      jti: SecureRandom.uuid
+    }
+    
+    JWT.encode(payload, jwt_secret, 'HS256')
   end
 
-  # Build JWT payload with default and custom attributes
+  # Build JWT payload with default and custom attributes (legacy method)
   def build_jwt_payload(user, options = {})
     default_payload = {
       user_id: user.id,

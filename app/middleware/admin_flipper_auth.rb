@@ -8,15 +8,33 @@ class AdminFlipperAuth
 
     # Only protect Flipper UI routes
     if request.path.start_with?("/admin/flipper")
-      session = env["rack.session"]
-      user_id = session[:admin_user_id]
+      begin
+        user = current_user(env)
 
-      unless user_id && User.find_by(id: user_id)&.admin?
-        # Redirect to admin login
-        return [302, { "Location" => "/admin/login", "Content-Type" => "text/html" }, []]
+        unless user&.admin?
+          # Return 403 Forbidden instead of redirect for consistency with tests
+          return [403, { "Content-Type" => "text/plain" }, ["Forbidden"]]
+        end
+      rescue StandardError
+        # Return 403 Forbidden if current_user raises an error
+        return [403, { "Content-Type" => "text/plain" }, ["Forbidden"]]
       end
     end
 
     @app.call(env)
+  end
+
+  private
+
+  def current_user(env)
+    session = env["rack.session"]
+    return nil unless session
+
+    user_id = session[:user_id] || session[:admin_user_id]
+    return nil unless user_id
+
+    @current_user ||= User.find_by(id: user_id)
+  rescue StandardError
+    nil
   end
 end

@@ -97,6 +97,7 @@ module ApplicationConstants
     ADVANCED_SEARCH = :advanced_search
     REAL_TIME_NOTIFICATIONS = :real_time_notifications
     MAINTENANCE_MODE = :maintenance_mode
+    LOCATION_VALIDATION = :location_validation
 
     # Experimental features
     AI_STREAM_RECOMMENDATIONS = :ai_stream_recommendations

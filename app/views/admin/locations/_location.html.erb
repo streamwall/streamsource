@@ -1,0 +1,37 @@
+<tr id="<%= dom_id(location) %>">
+  <td class="px-6 py-4 whitespace-nowrap">
+    <div class="flex items-center">
+      <%= link_to location.city, admin_location_path(location), class: "text-blue-600 hover:text-blue-900" %>
+      <% if location.is_known_city %>
+        <svg class="ml-2 w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+        </svg>
+        <span class="sr-only">Verified</span>
+      <% end %>
+    </div>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+    <%= location.state_province || "-" %>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+    <%= location.country || "-" %>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+      <%= location.streams.count %>
+    </span>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-gray-500 text-sm">
+    <% if location.coordinates? %>
+      <%= "#{location.latitude.round(4)}, #{location.longitude.round(4)}" %>
+    <% else %>
+      -
+    <% end %>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+    <%= link_to "Edit", edit_admin_location_path(location), class: "text-indigo-600 hover:text-indigo-900 mr-3", data: { turbo_frame: "modal" } %>
+    <%= button_to "Delete", admin_location_path(location), method: :delete, 
+        data: { turbo_confirm: "Are you sure? This will not affect existing streams." }, 
+        class: "text-red-600 hover:text-red-900" %>
+  </td>
+</tr>
