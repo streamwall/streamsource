@@ -218,24 +218,16 @@ make logs HOST=your-droplet-ip
 
 ## Feature Flags
 
-Access at `/admin/feature_flags` when logged in as admin.
+Access Flipper UI at `/admin/flipper` when logged in as admin (opens in new tab from sidebar).
 
-### Stream Features
-- `analytics` - Advanced analytics
-- `bulk_import` - Bulk data import
-- `export` - Data export
-- `webhooks` - Webhook notifications
-
-### User Features
-- `two_factor_auth` - 2FA support
-- `api_keys` - API key management
-- `activity_log` - Audit logging
-
-### System Features
-- `maintenance_mode` - Maintenance page
-- `real_time_notifications` - Live alerts
-- `ai_stream_recommendations` - AI features
-- `collaborative_playlists` - Playlist sharing
+### Active Feature Flags
+- `stream_analytics` - Advanced analytics for streams
+- `stream_bulk_import` - Bulk importing of streams (enabled for editors)
+- `stream_export` - Data export functionality
+- `stream_tags` - Tagging system for streams (enabled for admins)
+- `advanced_search` - Enhanced search functionality (enabled by default)
+- `maintenance_mode` - Application maintenance mode (disabled by default)
+- `location_validation` - Validate stream locations against known cities
 
 ## API Quick Reference
 

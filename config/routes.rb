@@ -78,12 +78,6 @@ Rails.application.routes.draw do
     patch "users/:id/toggle_admin", to: "users#toggle_admin", as: "toggle_admin_user"
     resources :users, only: %i[index show create update destroy]
 
-    resources :feature_flags, only: [:index] do
-      member do
-        patch :update
-      end
-    end
-
     # Timestamps routes
     resources :timestamps, only: %i[index show new edit create update destroy] do
       member do
@@ -93,10 +87,8 @@ Rails.application.routes.draw do
       end
     end
 
-    # Define locations routes with new and edit
-    get "locations/new", to: "locations#new", as: "new_location"
-    get "locations/:id/edit", to: "locations#edit", as: "edit_location"
-    resources :locations, only: %i[index show create update destroy]
+    # Locations
+    resources :locations, only: %i[index show new edit create update destroy]
 
     root to: "streams#index"
   end

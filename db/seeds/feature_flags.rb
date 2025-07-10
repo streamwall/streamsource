@@ -18,9 +18,7 @@ Rails.logger.debug "Enabled STREAM_BULK_IMPORT for editors group"
 Flipper.enable_group(ApplicationConstants::Features::STREAM_TAGS, :admins)
 Rails.logger.debug "Enabled STREAM_TAGS for admins group"
 
-# Enable for percentage of actors
-Flipper.enable_percentage_of_actors(ApplicationConstants::Features::AI_STREAM_RECOMMENDATIONS, 10)
-Rails.logger.debug "Enabled AI_STREAM_RECOMMENDATIONS for 10% of users"
+# All used feature flags are set above - no experimental features enabled
 
 # Disable maintenance mode by default
 Flipper.disable(ApplicationConstants::Features::MAINTENANCE_MODE)
