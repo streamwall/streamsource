@@ -19,7 +19,7 @@ module Admin
       @ignore_lists = @ignore_lists.order(created_at: :desc)
 
       # Pagination
-      @ignore_lists = @ignore_lists.page(params[:page]).per(25)
+      @pagy, @ignore_lists = pagy(@ignore_lists, items: 25)
 
       respond_to do |format|
         format.html

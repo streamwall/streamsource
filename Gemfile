@@ -62,7 +62,6 @@ gem "pundit", "~> 2.3"
 gem "rack-attack", "~> 6.7"
 
 # Pagination
-gem "kaminari", "~> 1.2"
 gem "pagy", "~> 6.2"
 
 # Serialization

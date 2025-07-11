@@ -244,9 +244,10 @@ module Admin
     before_action :set_item, only: [:show, :edit, :update, :destroy]
 
     def index
-      @items = YourModel.includes(:associations)
-                        .page(params[:page])
-                        .per(25)
+      @pagy, @items = pagy(
+        YourModel.includes(:associations),
+        items: 25
+      )
     end
 
     def new

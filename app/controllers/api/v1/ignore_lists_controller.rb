@@ -20,7 +20,7 @@ module Api
         end
 
         # Pagination
-        @ignore_lists = @ignore_lists.page(params[:page]).per(params[:per_page] || 100)
+        @ignore_lists = paginate(@ignore_lists)
 
         render json: {
           ignore_lists: @ignore_lists.as_json,

@@ -101,7 +101,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_10_203831) do
     t.boolean "is_pinned", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "location_id"
     t.string "city"
     t.string "state"
     t.string "platform"
@@ -117,6 +116,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_10_203831) do
     t.datetime "started_at"
     t.datetime "ended_at"
     t.boolean "is_archived", default: false
+    t.bigint "location_id"
     t.index ["ended_at"], name: "index_streams_on_ended_at"
     t.index ["is_archived"], name: "index_streams_on_is_archived"
     t.index ["is_pinned"], name: "index_streams_on_is_pinned"

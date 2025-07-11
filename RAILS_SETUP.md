@@ -99,7 +99,7 @@ The StreamSource Rails 8 application includes:
 - **Rate Limiting**: Rack::Attack configuration
 - **CORS**: Rack::Cors for API access control
 - **Caching**: Redis integration
-- **Pagination**: Pagy for admin, Kaminari available
+- **Pagination**: Pagy for all pagination needs
 - **N+1 Detection**: Bullet in development
 - **Logging**: Lograge for structured logs
 

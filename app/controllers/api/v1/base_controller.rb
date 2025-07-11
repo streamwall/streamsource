@@ -17,7 +17,7 @@ module Api
         offset = (page - 1) * per_page
         paginated = collection.offset(offset).limit(per_page)
 
-        # Add singleton methods for Kaminari compatibility
+        # Add singleton methods for pagination metadata
         paginated.define_singleton_method(:current_page) { page }
         paginated.define_singleton_method(:limit_value) { per_page }
         paginated.define_singleton_method(:total_count) { collection.count }

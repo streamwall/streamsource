@@ -97,9 +97,9 @@
     <% end %>
 
     <!-- Pagination -->
-    <% if @ignore_lists.total_pages > 1 %>
+    <% if @pagy.pages > 1 %>
       <div class="bg-gray-50 dark:bg-gray-900 px-6 py-3">
-        <%= paginate @ignore_lists, theme: 'tailwind' %>
+        <%== pagy_bootstrap_nav(@pagy) %>
       </div>
     <% end %>
   </div>

@@ -100,7 +100,7 @@ Rails.application.routes.draw do
     resources :locations, only: %i[index show new edit create update destroy]
 
     # Ignore Lists
-    resources :ignore_lists do
+    resources :ignore_lists, only: %i[index show new edit create update destroy] do
       collection do
         get "bulk_import"
         post "bulk_import"

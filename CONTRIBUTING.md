@@ -174,10 +174,11 @@ class StreamsController < ApplicationController
   before_action :set_stream, only: %i[show update destroy]
 
   def index
-    @streams = policy_scope(Stream)
-                .includes(:streamer, :user)
-                .filter_by(filter_params)
-                .page(params[:page])
+    @pagy, @streams = pagy(
+      policy_scope(Stream)
+        .includes(:streamer, :user)
+        .filter_by(filter_params)
+    )
   end
 
   private
