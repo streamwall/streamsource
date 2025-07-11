@@ -34,6 +34,10 @@ class User < ApplicationRecord
     admin: "admin",
   }, default: "default"
 
+  # Service account flag  
+  scope :service_accounts, -> { where(is_service_account: true) }
+  scope :regular_users, -> { where(is_service_account: false) }
+
   # Validations (Devise handles email and password validations)
   validates :role, inclusion: { in: roles.keys }
   
@@ -73,6 +77,28 @@ class User < ApplicationRecord
     # Placeholder for premium user logic
     # Could check subscription status, role, etc.
     admin?
+  end
+
+  # Custom JWT payload for Devise JWT
+  def jwt_payload
+    # Service accounts get longer token expiration (30 days)
+    # Regular users get standard expiration (1 day)
+    expiration = is_service_account? ? 30.days.from_now : 1.day.from_now
+    
+    {
+      'sub' => id.to_s,
+      'scp' => 'user',
+      'aud' => nil,
+      'iat' => Time.current.to_i,
+      'exp' => expiration.to_i,
+      'jti' => SecureRandom.uuid,
+      'service_account' => is_service_account?
+    }
+  end
+
+  # Helper method to identify service accounts
+  def service_account?
+    is_service_account?
   end
   
   # Flipper actor

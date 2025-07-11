@@ -109,6 +109,9 @@ Rails.application.routes.draw do
 
     root to: "streams#index"
   end
+  
+  # Redirect /admin to admin dashboard
+  get "/admin", to: redirect("/admin/streams")
 
   # Mount Flipper UI without authentication - we'll handle it via Rack middleware
   mount Flipper::UI.app(Flipper) => "/admin/flipper"

@@ -1,8 +1,8 @@
 module Api
   module V1
-    class IgnoreListsController < ApplicationController
+    class IgnoreListsController < BaseController
       before_action :authenticate_user!
-      before_action :require_admin!, except: [:index]
+      before_action :require_admin!
       before_action :set_ignore_list, only: [:show, :update, :destroy]
 
       # GET /api/v1/ignore_lists

@@ -24,4 +24,8 @@ Rails.logger.debug "Enabled STREAM_TAGS for admins group"
 Flipper.disable(ApplicationConstants::Features::MAINTENANCE_MODE)
 Rails.logger.debug "Disabled MAINTENANCE_MODE"
 
+# Disable location validation by default
+Flipper.disable(ApplicationConstants::Features::LOCATION_VALIDATION)
+Rails.logger.debug "Disabled LOCATION_VALIDATION"
+
 Rails.logger.debug "Feature flags setup complete!"
