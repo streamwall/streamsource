@@ -99,8 +99,8 @@ class StreamSourceBackend extends StreamBackend {
   }
 }
 
-// Google Sheets backend (existing)
-class GoogleSheetsBackend extends StreamBackend {
+// Legacy backend (if needed)
+class LegacyBackend extends StreamBackend {
   // Your existing implementation
 }
 
@@ -109,7 +109,7 @@ class BackendManager {
   constructor(config) {
     this.backends = {
       streamSource: new StreamSourceBackend(config.streamSource.url, config.streamSource.token),
-      googleSheets: new GoogleSheetsBackend(config.googleSheets)
+      // legacy: new LegacyBackend(config.legacy) // if needed
     };
     this.primaryBackend = config.primaryBackend || 'streamSource';
   }
@@ -130,12 +130,12 @@ class BackendManager {
 
 ## Step 3: Map Data Between Backends
 
-Create mappers to handle differences between Google Sheets and StreamSource:
+Create mappers to handle differences between backends:
 
 ```javascript
 class DataMapper {
-  // Google Sheets to StreamSource
-  sheetsToStreamSource(sheetRow) {
+  // Legacy to StreamSource
+  legacyToStreamSource(legacyRow) {
     return {
       source: sheetRow.streamerName,
       link: sheetRow.streamUrl,
@@ -146,8 +146,8 @@ class DataMapper {
     };
   }
 
-  // StreamSource to Google Sheets
-  streamSourceToSheets(stream) {
+  // StreamSource to Legacy format
+  streamSourceToLegacy(stream) {
     return {
       id: stream.id,
       streamerName: stream.source,
@@ -251,14 +251,14 @@ class RateLimitedBackend extends StreamSourceBackend {
 ## Step 6: Migration Strategy
 
 ### 1. Dual-Write Phase
-- Continue using Google Sheets as primary
+- Continue using legacy backend as primary
 - Write new data to both backends
 - Monitor for consistency
 
 ### 2. Migration Script
 ```javascript
 async function migrateFromSheets() {
-  const sheets = new GoogleSheetsBackend();
+  const legacy = new LegacyBackend();
   const streamSource = new StreamSourceBackend();
   const mapper = new DataMapper();
   
@@ -278,7 +278,7 @@ async function migrateFromSheets() {
 
 ### 3. Cutover
 - Switch primary backend to StreamSource
-- Keep Google Sheets as read-only backup
+- Keep legacy backend as read-only backup
 
 ## Step 7: Configuration
 
@@ -290,11 +290,9 @@ const config = {
       token: process.env.STREAMSOURCE_TOKEN,
       enabled: true
     },
-    googleSheets: {
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      credentials: require('./google-credentials.json'),
-      enabled: true
-    }
+    // legacy: {
+    //   enabled: false
+    // }
   },
   primaryBackend: 'streamSource',
   syncBackends: true,
@@ -456,4 +454,4 @@ Common HTTP status codes:
 - `429`: Rate limit exceeded
 - `500`: Server error
 
-This guide provides a complete integration path from your Google Sheets backend to StreamSource, with a flexible architecture that supports multiple backends. The key is the abstraction layer that allows you to switch between or combine backends as needed.
+This guide provides a complete integration path to StreamSource, with a flexible architecture that supports multiple backends. The key is the abstraction layer that allows you to switch between or combine backends as needed.
