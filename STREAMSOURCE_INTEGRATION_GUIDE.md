@@ -128,51 +128,8 @@ class BackendManager {
 }
 ```
 
-## Step 3: Map Data Between Backends
 
-Create mappers to handle differences between backends:
-
-```javascript
-class DataMapper {
-  // Legacy to StreamSource
-  legacyToStreamSource(legacyRow) {
-    return {
-      source: sheetRow.streamerName,
-      link: sheetRow.streamUrl,
-      status: this.mapStatus(sheetRow.status),
-      platform: this.detectPlatform(sheetRow.streamUrl),
-      title: sheetRow.title,
-      notes: sheetRow.description
-    };
-  }
-
-  // StreamSource to Legacy format
-  streamSourceToLegacy(stream) {
-    return {
-      id: stream.id,
-      streamerName: stream.source,
-      streamUrl: stream.link,
-      status: stream.status,
-      platform: stream.platform,
-      title: stream.title,
-      description: stream.notes,
-      lastChecked: stream.last_checked_at,
-      createdAt: stream.created_at
-    };
-  }
-
-  detectPlatform(url) {
-    if (url.includes('tiktok.com')) return 'TikTok';
-    if (url.includes('facebook.com')) return 'Facebook';
-    if (url.includes('twitch.tv')) return 'Twitch';
-    if (url.includes('youtube.com')) return 'YouTube';
-    if (url.includes('instagram.com')) return 'Instagram';
-    return 'Other';
-  }
-}
-```
-
-## Step 4: Implement Core Operations
+## Step 3: Implement Core Operations
 
 ```javascript
 class StreamManager {
@@ -218,7 +175,7 @@ class StreamManager {
 }
 ```
 
-## Step 5: Handle Rate Limiting and Errors
+## Step 4: Handle Rate Limiting and Errors
 
 ```javascript
 class RateLimitedBackend extends StreamSourceBackend {
@@ -248,39 +205,7 @@ class RateLimitedBackend extends StreamSourceBackend {
 }
 ```
 
-## Step 6: Migration Strategy
-
-### 1. Dual-Write Phase
-- Continue using legacy backend as primary
-- Write new data to both backends
-- Monitor for consistency
-
-### 2. Migration Script
-```javascript
-async function migrateFromSheets() {
-  const legacy = new LegacyBackend();
-  const streamSource = new StreamSourceBackend();
-  const mapper = new DataMapper();
-  
-  const sheetData = await sheets.getAllStreams();
-  
-  for (const row of sheetData) {
-    const streamData = mapper.sheetsToStreamSource(row);
-    try {
-      await streamSource.createStream(streamData);
-      console.log(`Migrated: ${streamData.source}`);
-    } catch (error) {
-      console.error(`Failed to migrate ${row.id}:`, error);
-    }
-  }
-}
-```
-
-### 3. Cutover
-- Switch primary backend to StreamSource
-- Keep legacy backend as read-only backup
-
-## Step 7: Configuration
+## Step 5: Configuration
 
 ```javascript
 const config = {

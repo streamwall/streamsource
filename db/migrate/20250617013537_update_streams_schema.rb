@@ -1,13 +1,13 @@
-class UpdateStreamsToMatchGoogleSheet < ActiveRecord::Migration[8.0]
+class UpdateStreamsSchema < ActiveRecord::Migration[8.0]
   def change
-    # Rename existing fields to match Google Sheet naming
+    # Rename existing fields for better clarity
     rename_column :streams, :name, :source
     rename_column :streams, :url, :link
     
     # Remove the existing status column (we'll recreate it with new values)
     remove_column :streams, :status, :string
     
-    # Add new fields from Google Sheet
+    # Add new fields for enhanced stream tracking
     add_column :streams, :city, :string
     add_column :streams, :state, :string
     add_column :streams, :platform, :string
