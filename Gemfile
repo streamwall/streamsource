@@ -62,7 +62,7 @@ gem "pundit", "~> 2.3"
 gem "rack-attack", "~> 6.7"
 
 # Pagination
-gem "pagy", "~> 6.2"
+gem "pagy", "~> 9.4"
 
 # Serialization
 gem "active_model_serializers", "~> 0.10.14"
