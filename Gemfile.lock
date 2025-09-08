@@ -213,6 +213,8 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.8-arm64-darwin)
       racc (~> 1.4)
+    nokogiri (1.18.8-x86_64-linux-gnu)
+      racc (~> 1.4)
     orm_adapter (0.5.0)
     pagy (6.5.0)
     parallel (1.27.0)
@@ -233,7 +235,7 @@ GEM
       date
       stringio
     public_suffix (6.0.2)
-    puma (6.6.0)
+    puma (7.0.1)
       nio4r (~> 2.0)
     pundit (2.5.0)
       activesupport (>= 3.0.0)
@@ -413,6 +415,7 @@ GEM
 PLATFORMS
   aarch64-linux-gnu
   arm64-darwin-24
+  x86_64-linux
 
 DEPENDENCIES
   active_model_serializers (~> 0.10.14)
