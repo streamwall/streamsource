@@ -90,11 +90,11 @@ group :development, :test do
   gem "rubocop-rspec", require: false
 
   # Testing
-  gem "rspec-rails", "~> 6.1"
-  gem "factory_bot_rails", "~> 6.4"
-  gem "faker", "~> 3.2"
-  gem "shoulda-matchers", "~> 6.0"
-  gem "database_cleaner-active_record", "~> 2.1"
+  gem "rspec-rails", "~> 8.0"
+  gem "factory_bot_rails", "~> 6.5"
+  gem "faker", "~> 3.5"
+  gem "shoulda-matchers", "~> 7.0"
+  gem "database_cleaner-active_record", "~> 2.2"
   gem "rails-controller-testing", "~> 1.0"
 end
 
@@ -113,7 +113,7 @@ end
 group :test do
   gem "rswag-specs"
   gem "simplecov", require: false
-  gem "webmock", "~> 3.19"
+  gem "webmock", "~> 3.26"
   gem "vcr", "~> 6.2"
 end
 
