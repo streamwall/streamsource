@@ -1,9 +1,10 @@
 # StreamSource
 # Usage: make [command]
 
-.PHONY: help up down shell test migrate seed setup reset logs lint rebuild
+.PHONY: help up down stop restart shell test migrate seed setup reset logs lint rebuild browse
 
 STREAMSOURCE_ENV ?= dev
+APP_URL ?= http://localhost:3001/admin
 
 ifeq ($(STREAMSOURCE_ENV),prod)
 COMPOSE_FILES := -f docker-compose.yml -f docker-compose.prod.yml
@@ -19,6 +20,9 @@ help:
 	@echo "Commands:"
 	@echo "  up       - Start services (STREAMSOURCE_ENV=prod for production)"
 	@echo "  down     - Stop services"
+	@echo "  stop     - Stop services without removing containers"
+	@echo "  restart  - Restart services without removing containers"
+	@echo "  browse   - Open the app in your browser (APP_URL=$(APP_URL))"
 	@echo "  shell    - Rails console"
 	@echo "  test     - Run tests"
 	@echo "  lint     - Run lint checks (RuboCop, ESLint)"
@@ -34,6 +38,27 @@ up:
 
 down:
 	$(COMPOSE) down
+
+stop:
+	$(COMPOSE) stop
+
+restart:
+	$(COMPOSE) restart
+
+browse:
+	@url="$(APP_URL)"; \
+	if [ "$(STREAMSOURCE_ENV)" != "prod" ]; then \
+	  echo "Admin login (dev): admin@example.com / Password123!"; \
+	  echo "Alternate admin: admin2@example.com / Password123!"; \
+	  echo "Run \`make seed\` if these users are missing."; \
+	fi; \
+	if command -v open >/dev/null 2>&1; then \
+	  open "$$url"; \
+	elif command -v xdg-open >/dev/null 2>&1; then \
+	  xdg-open "$$url"; \
+	else \
+	  echo "Open $$url in your browser."; \
+	fi
 
 shell:
 	$(COMPOSE) exec web bin/rails console
