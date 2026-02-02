@@ -113,8 +113,8 @@ group :development do
 end
 
 group :test do
-  gem "rswag-specs"
   gem "rspec_junit_formatter"
+  gem "rswag-specs"
   gem "simplecov", require: false
   gem "vcr"
   gem "webmock"

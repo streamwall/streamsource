@@ -1,7 +1,7 @@
 # StreamSource
 # Usage: make [command]
 
-.PHONY: help up down shell test migrate seed setup reset logs
+.PHONY: help up down shell test migrate seed setup reset logs lint
 
 STREAMSOURCE_ENV ?= dev
 
@@ -21,6 +21,7 @@ help:
 	@echo "  down     - Stop services"
 	@echo "  shell    - Rails console"
 	@echo "  test     - Run tests"
+	@echo "  lint     - Run lint checks (RuboCop, ESLint)"
 	@echo "  migrate  - Run migrations"
 	@echo "  seed     - Seed the database"
 	@echo "  setup    - Create, migrate, and seed the database"
@@ -38,6 +39,10 @@ shell:
 
 test:
 	$(COMPOSE) exec web bin/test
+
+lint:
+	$(COMPOSE) exec web bundle exec rubocop
+	$(COMPOSE) exec web yarn lint
 
 migrate:
 	$(COMPOSE) exec web bin/rails db:migrate
