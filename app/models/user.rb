@@ -17,10 +17,10 @@ class User < ApplicationRecord
          :jwt_authenticatable, jwt_revocation_strategy: JwtDenylist
 
   # Associations
-  has_many :streams, dependent: :destroy
-  has_many :streamers, dependent: :destroy
-  has_many :timestamps, dependent: :destroy
-  has_many :timestamp_streams, foreign_key: "added_by_user_id", dependent: :destroy
+  has_many :streams, dependent: :destroy, inverse_of: :user
+  has_many :streamers, dependent: :destroy, inverse_of: :user
+  has_many :timestamps, dependent: :destroy, inverse_of: :user
+  has_many :timestamp_streams, foreign_key: "added_by_user_id", dependent: :destroy, inverse_of: :added_by_user
 
   # Flipper actor
   def flipper_id
@@ -99,11 +99,6 @@ class User < ApplicationRecord
   # Helper method to identify service accounts
   def service_account?
     is_service_account?
-  end
-
-  # Flipper actor
-  def flipper_id
-    "User:#{id}"
   end
 
   protected

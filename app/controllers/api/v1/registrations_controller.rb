@@ -1,5 +1,6 @@
 module Api
   module V1
+    # API endpoints for user registration.
     class RegistrationsController < Devise::RegistrationsController
       skip_before_action :verify_authenticity_token
       respond_to :json

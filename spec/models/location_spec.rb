@@ -68,25 +68,29 @@ RSpec.describe Location, type: :model do
       end
 
       context "when location does not exist" do
-        it "creates new location" do
-          params = {
+        let(:new_location_params) do
+          {
             city: "San Francisco",
             state_province: "CA",
             country: "USA",
             latitude: 37.7749,
             longitude: -122.4194,
           }
+        end
 
+        it "creates new location" do
           expect do
-            described_class.find_or_create_from_params(params)
+            described_class.find_or_create_from_params(new_location_params)
           end.to change(described_class, :count).by(1)
 
           location = described_class.last
-          expect(location.city).to eq("San Francisco")
-          expect(location.state_province).to eq("CA")
-          expect(location.latitude).to eq(37.7749)
-          expect(location.longitude).to eq(-122.4194)
-          expect(location.is_known_city).to be(false)
+          expect(location).to have_attributes(
+            city: "San Francisco",
+            state_province: "CA",
+            latitude: 37.7749,
+            longitude: -122.4194,
+            is_known_city: false,
+          )
         end
       end
     end
@@ -96,7 +100,6 @@ RSpec.describe Location, type: :model do
 
       context "with known cities" do
         let!(:austin) { create(:location, :known_city, city: "Austin", state_province: "TX", country: "USA") }
-        let!(:dallas) { create(:location, :known_city, city: "Dallas", state_province: "TX", country: "USA") }
 
         it "returns known city when exact match found" do
           result = described_class.find_or_create_from_params(city: "Austin", state_province: "TX", country: "USA")

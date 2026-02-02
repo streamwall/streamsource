@@ -6,9 +6,11 @@ RSpec.describe "Api::V1::Streams", type: :request do
   let(:default_user) { create(:user, role: "default") }
 
   describe "GET /api/v1/streams" do
-    let!(:live_stream) { create(:stream, user: user, status: "live") }
-    let!(:offline_stream) { create(:stream, user: user, status: "offline") }
-    let!(:pinned_stream) { create(:stream, user: user, is_pinned: true) }
+    before do
+      create(:stream, user: user, status: "live")
+      create(:stream, user: user, status: "offline")
+      create(:stream, user: user, is_pinned: true)
+    end
 
     context "with valid authentication" do
       it "returns all non-archived streams" do
@@ -43,7 +45,7 @@ RSpec.describe "Api::V1::Streams", type: :request do
       { link: "https://example.com/stream", source: "Test Stream" }
     end
 
-    context "as editor" do
+    context "when editor" do
       it "creates a new stream" do
         expect do
           post "/api/v1/streams", params: valid_attributes, headers: auth_headers(user)
@@ -53,7 +55,7 @@ RSpec.describe "Api::V1::Streams", type: :request do
       end
     end
 
-    context "as default user" do
+    context "when default user" do
       it "returns forbidden" do
         post "/api/v1/streams", params: valid_attributes, headers: auth_headers(default_user)
 

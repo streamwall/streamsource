@@ -118,13 +118,42 @@ jobs:
       run: |
         case "${{ matrix.test-type }}" in
           unit)
-            bundle exec rspec spec/models spec/lib spec/services spec/serializers --format progress --format RspecJunitFormatter --out tmp/rspec-unit.xml
+            UNIT_DIRS="spec/models spec/serializers"
+            if [ -d "spec/lib" ]; then
+              UNIT_DIRS="$UNIT_DIRS spec/lib"
+            fi
+            if [ -d "spec/services" ]; then
+              UNIT_DIRS="$UNIT_DIRS spec/services"
+            fi
+            bundle exec rspec $UNIT_DIRS --format progress --format RspecJunitFormatter --out tmp/rspec-unit.xml
             ;;
           integration)
-            bundle exec rspec spec/requests spec/controllers --format progress --format RspecJunitFormatter --out tmp/rspec-integration.xml
+            INTEGRATION_DIRS=""
+            if [ -d "spec/requests" ]; then
+              INTEGRATION_DIRS="$INTEGRATION_DIRS spec/requests"
+            fi
+            if [ -d "spec/controllers" ]; then
+              INTEGRATION_DIRS="$INTEGRATION_DIRS spec/controllers"
+            fi
+            if [ -z "$INTEGRATION_DIRS" ]; then
+              echo "No integration specs found. Skipping."
+              exit 0
+            fi
+            bundle exec rspec $INTEGRATION_DIRS --format progress --format RspecJunitFormatter --out tmp/rspec-integration.xml
             ;;
           system)
-            bundle exec rspec spec/features spec/system --format progress --format RspecJunitFormatter --out tmp/rspec-system.xml
+            SYSTEM_DIRS=""
+            if [ -d "spec/features" ]; then
+              SYSTEM_DIRS="$SYSTEM_DIRS spec/features"
+            fi
+            if [ -d "spec/system" ]; then
+              SYSTEM_DIRS="$SYSTEM_DIRS spec/system"
+            fi
+            if [ -z "$SYSTEM_DIRS" ]; then
+              echo "No system specs found. Skipping."
+              exit 0
+            fi
+            bundle exec rspec $SYSTEM_DIRS --format progress --format RspecJunitFormatter --out tmp/rspec-system.xml
             ;;
         esac
     

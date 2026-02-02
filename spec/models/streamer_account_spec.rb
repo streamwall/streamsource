@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe StreamerAccount, type: :model do
-  subject { build(:streamer_account) }
+  subject(:streamer_account) { build(:streamer_account) }
 
   describe "associations" do
     it { is_expected.to belong_to(:streamer) }
@@ -55,7 +55,7 @@ RSpec.describe StreamerAccount, type: :model do
 
   describe "enums" do
     it {
-      expect(subject).to define_enum_for(:platform).with_values(
+      expect(streamer_account).to define_enum_for(:platform).with_values(
         tiktok: "TikTok",
         facebook: "Facebook",
         twitch: "Twitch",

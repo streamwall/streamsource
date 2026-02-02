@@ -1,18 +1,13 @@
 module Api
   module V1
+    # API endpoints for location data.
     class LocationsController < BaseController
       before_action :authenticate_user!
       before_action :set_location, only: %i[show update destroy]
 
       # GET /api/v1/locations
       def index
-        @locations = Location.all
-        @locations = @locations.search(params[:search]) if params[:search].present?
-        @locations = @locations.by_country(params[:country]) if params[:country].present?
-        @locations = @locations.by_state(params[:state]) if params[:state].present?
-        @locations = @locations.ordered
-
-        @pagy, @locations = pagy(@locations)
+        @pagy, @locations = pagy(filtered_locations)
 
         render json: {
           locations: @locations.map { |location| LocationSerializer.new(location).as_json },
@@ -113,6 +108,19 @@ module Api
 
       def location_params
         params.expect(location: %i[city state_province region country latitude longitude is_known_city])
+      end
+
+      def filtered_locations
+        filters = {
+          search: :search,
+          country: :by_country,
+          state: :by_state,
+        }
+
+        filters.reduce(Location.all) do |scope, (param_key, scope_method)|
+          value = params[param_key]
+          value.present? ? scope.public_send(scope_method, value) : scope
+        end.ordered
       end
     end
   end

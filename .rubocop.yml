@@ -1,16 +1,15 @@
 # StreamSource RuboCop Configuration
-# Rails-focused linting with sensible defaults
 
 plugins:
   - rubocop-rails
-  - rubocop-performance  
+  - rubocop-performance
   - rubocop-rspec
 
 AllCops:
-  TargetRubyVersion: 3.3
-  TargetRailsVersion: 8.0
-  SuggestExtensions: false
+  TargetRubyVersion: 4.0
+  TargetRailsVersion: 8.1
   NewCops: enable
+  SuggestExtensions: false
   Exclude:
     - 'bin/**/*'
     - 'tmp/**/*'
@@ -23,41 +22,57 @@ AllCops:
     - 'public/**/*'
     - 'storage/**/*'
     - 'Gemfile.lock'
-    - 'config/environments/production.rb'
     - 'config/boot.rb'
     - 'config/application.rb'
+    - 'config/environments/production.rb'
 
-# Project-specific overrides
 Rails:
   Enabled: true
 
-# Allow longer lines for API documentation and complex queries
+# Keep Rails conventions; allow slightly more flexibility in specs.
 Layout/LineLength:
   Max: 120
   AllowedPatterns:
-    - '\A\s*#.*\z'  # Comments
-    - '\A\s*it\s.*\z'  # RSpec test descriptions
-    - '\A\s*describe\s.*\z'  # RSpec describe blocks
-    - '\A\s*context\s.*\z'  # RSpec context blocks
+    - '\\A\\s*#.*\\z'
+    - '\\A\\s*it\\s.*\\z'
+    - '\\A\\s*describe\\s.*\\z'
+    - '\\A\\s*context\\s.*\\z'
 
-# Allow longer methods for complex Rails actions and RSpec tests
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+  ConsistentQuotesInMultiline: true
+
+Style/ClassAndModuleChildren:
+  EnforcedStyle: nested
+
+Style/FrozenStringLiteralComment:
+  EnforcedStyle: never
+
+Style/SingleLineMethods:
+  AllowIfMethodIsEmpty: true
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma
+
 Metrics/MethodLength:
   Max: 20
   CountAsOne: ['array', 'heredoc']
   Exclude:
     - 'spec/**/*'
-    - 'app/controllers/**/*'
     - 'config/routes.rb'
 
-# Allow longer classes for controllers and models with many methods
 Metrics/ClassLength:
   Max: 150
   CountAsOne: ['array', 'heredoc']
   Exclude:
     - 'spec/**/*'
-    - 'app/controllers/**/*'
 
-# Allow longer blocks for RSpec and routes
 Metrics/BlockLength:
   Max: 25
   CountAsOne: ['array', 'heredoc']
@@ -68,120 +83,32 @@ Metrics/BlockLength:
     - 'Guardfile'
     - 'Rakefile'
 
-# Disable ABC size for complex methods (often needed in Rails)
 Metrics/AbcSize:
-  Enabled: false
+  Max: 25
+  Exclude:
+    - 'spec/**/*'
 
-# Allow complexity in controllers and specs
 Metrics/CyclomaticComplexity:
   Max: 10
   Exclude:
     - 'spec/**/*'
 
-# More flexible on parameter counts for controllers
+Metrics/PerceivedComplexity:
+  Max: 10
+  Exclude:
+    - 'spec/**/*'
+
 Metrics/ParameterLists:
   Max: 8
 
-# Allow assignment in conditions (common Rails pattern)
-Lint/AssignmentInCondition:
-  Enabled: false
+RSpec/ExampleLength:
+  Max: 12
 
-# Allow empty when (useful for case statements)
-Lint/EmptyWhen:
-  Enabled: false
+RSpec/MultipleExpectations:
+  Max: 3
 
-# Documentation requirements - be more lenient
-Style/Documentation:
-  Enabled: false
+RSpec/MultipleMemoizedHelpers:
+  Max: 7
 
-# Allow compact module/class definitions
-Style/ClassAndModuleChildren:
-  Enabled: false
-
-# Flexible on frozen string literals (Rails handles this)
-Style/FrozenStringLiteralComment:
-  Enabled: false
-
-# Allow single line methods
-Style/SingleLineMethods:
-  AllowIfMethodIsEmpty: true
-
-# Allow guard clauses
-Style/GuardClause:
-  Enabled: true
-
-# Be flexible with hash syntax in Rails
-Style/HashSyntax:
-  EnforcedStyle: ruby19
-
-# Allow trailing commas (good for Git diffs)
-Style/TrailingCommaInArrayLiteral:
-  EnforcedStyleForMultiline: comma
-
-Style/TrailingCommaInHashLiteral:
-  EnforcedStyleForMultiline: comma
-
-Style/TrailingCommaInArguments:
-  EnforcedStyleForMultiline: comma
-
-# Be more flexible with string literals
-Style/StringLiterals:
-  EnforcedStyle: double_quotes
-  ConsistentQuotesInMultiline: true
-
-# Allow both lambda styles
-Style/Lambda:
-  Enabled: false
-
-# Naming conventions
-Naming/VariableNumber:
-  EnforcedStyle: snake_case
-
-Naming/PredicatePrefix:
-  ForbiddenPrefixes:
-    - is_
-    - have_
-  AllowedMethods:
-    - is_a?
-
-# Rails cops will be loaded from rubocop-rails gem
-
-# Performance cops will be loaded from rubocop-performance gem
-
-# Security cops
-Security/YAMLLoad:
-  Enabled: true
-
-Security/Eval:
-  Enabled: true
-
-# RSpec cops will be loaded from rubocop-rspec gem
-
-# Bundler cops
-Bundler/OrderedGems:
-  Enabled: false
-
-# Disable cops that conflict with Rails conventions
-Layout/EmptyLinesAroundAttributeAccessor:
-  Enabled: false
-
-Layout/SpaceAroundMethodCallOperator:
-  Enabled: true
-
-Lint/RaiseException:
-  Enabled: true
-
-Lint/StructNewOverride:
-  Enabled: true
-
-Style/ExponentialNotation:
-  Enabled: true
-
-Style/HashEachMethods:
-  Enabled: true
-
-Style/HashTransformKeys:
-  Enabled: true
-
-Style/HashTransformValues:
-  Enabled: true
+RSpec/NestedGroups:
+  Max: 4

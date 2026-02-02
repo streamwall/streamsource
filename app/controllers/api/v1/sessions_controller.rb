@@ -1,5 +1,6 @@
 module Api
   module V1
+    # API endpoints for authentication sessions.
     class SessionsController < BaseController
       skip_before_action :authenticate_user!, only: %i[create destroy]
 

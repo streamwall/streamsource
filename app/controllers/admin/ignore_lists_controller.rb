@@ -1,4 +1,5 @@
 module Admin
+  # CRUD for admin-managed ignore lists.
   class IgnoreListsController < BaseController
     before_action :set_ignore_list, only: %i[edit update destroy]
 
@@ -33,7 +34,7 @@ module Admin
       @ignore_list = IgnoreList.new(ignore_list_params)
 
       if @ignore_list.save
-        redirect_to admin_ignore_lists_path, notice: "Ignore list entry was successfully created."
+        redirect_to admin_ignore_lists_path, notice: t("admin.ignore_lists.created")
       else
         render :new, status: :unprocessable_content
       end
@@ -41,7 +42,7 @@ module Admin
 
     def update
       if @ignore_list.update(ignore_list_params)
-        redirect_to admin_ignore_lists_path, notice: "Ignore list entry was successfully updated."
+        redirect_to admin_ignore_lists_path, notice: t("admin.ignore_lists.updated")
       else
         render :edit, status: :unprocessable_content
       end
@@ -49,7 +50,7 @@ module Admin
 
     def destroy
       @ignore_list.destroy
-      redirect_to admin_ignore_lists_path, notice: "Ignore list entry was successfully deleted."
+      redirect_to admin_ignore_lists_path, notice: t("admin.ignore_lists.deleted")
     end
 
     # Bulk import action

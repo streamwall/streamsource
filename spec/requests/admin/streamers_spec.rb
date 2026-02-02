@@ -255,21 +255,17 @@ RSpec.describe "Admin::Streamers", type: :request do
   describe "authorization" do
     context "when not logged in" do
       it "redirects to login" do
-        # Clear any session
-        allow_any_instance_of(Admin::BaseController).to receive(:current_admin_user).and_return(nil)
-
         get admin_streamers_path
         expect(response).to redirect_to(admin_login_path)
       end
     end
 
-    context "when logged in as non-admin" do
-      it "redirects to login" do
-        # Mock current_admin_user to return a non-admin user
-        allow_any_instance_of(Admin::BaseController).to receive(:current_admin_user).and_return(editor_user)
+    context "when logged in as editor" do
+      it "allows access" do
+        sign_in_admin(editor_user)
 
         get admin_streamers_path
-        expect(response).to redirect_to(admin_login_path)
+        expect(response).to have_http_status(:success)
       end
     end
   end

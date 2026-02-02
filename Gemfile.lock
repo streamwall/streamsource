@@ -204,6 +204,7 @@ GEM
       net-pop
       net-smtp
     marcel (1.1.0)
+    memory_profiler (1.1.0)
     mini_magick (5.3.1)
       logger
     mini_mime (1.1.5)
@@ -459,6 +460,7 @@ DEPENDENCIES
   jsbundling-rails
   jwt
   lograge
+  memory_profiler
   ostruct
   pagy
   pg

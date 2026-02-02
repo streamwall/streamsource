@@ -1,3 +1,4 @@
+# Serializer for location data.
 class LocationSerializer < ActiveModel::Serializer
   attributes :id, :city, :state_province, :region, :country,
              :display_name, :full_display_name, :normalized_name,

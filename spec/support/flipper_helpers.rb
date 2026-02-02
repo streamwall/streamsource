@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module FlipperHelpers
   def enable_feature(feature, actor = nil)
     if actor

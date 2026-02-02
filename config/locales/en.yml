@@ -1,0 +1,56 @@
+en:
+  admin:
+    auth:
+      login_required: "You must be logged in to access this area."
+      admin_or_editor_required: "You must be logged in as an admin or editor to access this area."
+    errors:
+      not_found: "The requested resource could not be found."
+      request_failed: "There was an error processing your request: %{message}"
+      request_failed_generic: "There was an error processing your request."
+      parameter_missing: "Required parameter missing: %{param}"
+      parameter_missing_generic: "Required information is missing."
+    ignore_lists:
+      created: "Ignore list entry was successfully created."
+      updated: "Ignore list entry was successfully updated."
+      deleted: "Ignore list entry was successfully deleted."
+    locations:
+      created: "Location was successfully created."
+      updated: "Location was successfully updated."
+      deleted: "Location was successfully deleted."
+    sessions:
+      login_success: "Successfully logged in."
+      login_failed: "Invalid email or password, or insufficient privileges."
+      logout_success: "Successfully logged out."
+    streamers:
+      created: "Streamer was successfully created."
+      updated: "Streamer was successfully updated."
+      deleted: "Streamer was successfully deleted."
+    streams:
+      created: "Stream was successfully created."
+      updated: "Stream was successfully updated."
+      deleted: "Stream was successfully deleted."
+      invalid_city: "is not a recognized city. Please contact an admin to add it."
+    timestamps:
+      created: "Timestamp was successfully created."
+      updated: "Timestamp was successfully updated."
+      deleted: "Timestamp was successfully deleted."
+      stream_added: "Stream added to timestamp."
+    users:
+      created: "User was successfully created."
+      updated: "User was successfully updated."
+      deleted: "User was successfully deleted."
+      cannot_delete_self: "You cannot delete your own account."
+      role_updated: "User role was successfully updated."
+  activerecord:
+    errors:
+      models:
+        streamer_account:
+          attributes:
+            profile_url:
+              invalid_url: "must be a valid URL starting with http:// or https://"
+            username:
+              taken_on_platform: "already exists for this platform"
+        stream:
+          attributes:
+            city:
+              unrecognized_city: "is not a recognized city. Please contact an admin to add it."

@@ -1,3 +1,4 @@
+# View helpers shared across the app.
 module ApplicationHelper
   def user_color(user)
     colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E2"]
@@ -14,8 +15,6 @@ module ApplicationHelper
     case status
     when "live"
       "bg-green-100 text-green-800"
-    when "offline"
-      "bg-gray-100 text-gray-800"
     when "error"
       "bg-red-100 text-red-800"
     when "checking"

@@ -1,3 +1,4 @@
+# Base Pundit policy.
 class ApplicationPolicy
   attr_reader :user, :record
 
@@ -34,6 +35,7 @@ class ApplicationPolicy
     false
   end
 
+  # Base policy scope.
   class Scope
     def initialize(user, scope)
       @user = user

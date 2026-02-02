@@ -1,4 +1,5 @@
 module Admin
+  # CRUD for users in the admin UI.
   class UsersController < BaseController
     before_action :set_user, only: %i[show edit update destroy toggle_admin]
 
@@ -21,7 +22,7 @@ module Admin
       @user = User.new(user_params)
 
       if @user.save
-        redirect_to admin_users_path, notice: "User was successfully created."
+        redirect_to admin_users_path, notice: t("admin.users.created")
       else
         render :new, status: :unprocessable_content
       end
@@ -29,7 +30,7 @@ module Admin
 
     def update
       if @user.update(update_user_params)
-        redirect_to admin_user_path(@user), notice: "User was successfully updated."
+        redirect_to admin_user_path(@user), notice: t("admin.users.updated")
       else
         render :edit, status: :unprocessable_content
       end
@@ -37,10 +38,10 @@ module Admin
 
     def destroy
       if @user == current_admin_user
-        redirect_to admin_users_path, alert: "You cannot delete your own account."
+        redirect_to admin_users_path, alert: t("admin.users.cannot_delete_self")
       else
         @user.destroy
-        redirect_to admin_users_path, notice: "User was successfully deleted."
+        redirect_to admin_users_path, notice: t("admin.users.deleted")
       end
     end
 
@@ -51,7 +52,7 @@ module Admin
         @user.update(role: "admin")
       end
 
-      redirect_to admin_users_path, notice: "User role was successfully updated."
+      redirect_to admin_users_path, notice: t("admin.users.role_updated")
     end
 
     private

@@ -54,9 +54,9 @@ gem "image_processing"
 gem "rack-cors"
 
 # Authentication
-gem "jwt"
 gem "devise"
 gem "devise-jwt"
+gem "jwt"
 
 # Authorization
 gem "pundit"
@@ -89,19 +89,22 @@ group :development, :test do
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", require: false
 
+  # Performance profiling for CI performance checks
+  gem "memory_profiler", require: false
+
   # Ruby style guide enforcement
   gem "rubocop", require: false
-  gem "rubocop-rails", require: false
   gem "rubocop-performance", require: false
+  gem "rubocop-rails", require: false
   gem "rubocop-rspec", require: false
 
   # Testing
-  gem "rspec-rails"
+  gem "database_cleaner-active_record"
   gem "factory_bot_rails"
   gem "faker"
-  gem "shoulda-matchers"
-  gem "database_cleaner-active_record"
   gem "rails-controller-testing"
+  gem "rspec-rails"
+  gem "shoulda-matchers"
 end
 
 group :development do
@@ -115,8 +118,8 @@ end
 group :test do
   gem "rswag-specs"
   gem "simplecov", require: false
-  gem "webmock"
   gem "vcr"
+  gem "webmock"
 end
 
 # Performance monitoring

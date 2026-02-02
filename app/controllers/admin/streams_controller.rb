@@ -1,4 +1,5 @@
 module Admin
+  # CRUD for streams in the admin UI.
   class StreamsController < BaseController
     before_action :set_stream, only: %i[show edit update destroy toggle_pin]
 
@@ -45,103 +46,25 @@ module Admin
     def create
       @stream = Stream.new(stream_params)
 
-      # Handle location validation if feature is enabled
-      if Flipper.enabled?(ApplicationConstants::Features::LOCATION_VALIDATION) && params[:stream][:city].present?
-        location_result = Location.find_or_create_from_params(
-          city: params[:stream][:city],
-          state_province: params[:stream][:state],
-        )
-
-        if location_result.respond_to?(:errors) && !location_result.valid?
-          @stream.errors.add(:city, location_result.errors[:city].first)
-
-          respond_to do |format|
-            @users = User.order(:email)
-            format.html { render :new, status: :unprocessable_content }
-            format.turbo_stream do
-              render turbo_stream: turbo_stream.replace(
-                "stream_form",
-                partial: "admin/streams/form",
-                locals: { stream: @stream, users: @users },
-              )
-            end
-          end
-          return
-        end
-      end
-
       respond_to do |format|
+        return render_stream_form(format, :new) unless location_valid?
+
         if @stream.save
-          format.html { redirect_to admin_streams_path, notice: "Stream was successfully created." }
-          format.turbo_stream do
-            render turbo_stream: [
-              turbo_stream.prepend("streams", partial: "admin/streams/stream", locals: { stream: @stream }),
-              turbo_stream.replace("flash", partial: "admin/shared/flash",
-                                            locals: { notice: "Stream was successfully created." }),
-              turbo_stream.replace("modal", ""),
-            ]
-          end
+          render_create_success(format)
         else
-          @users = User.order(:email)
-          format.html { render :new, status: :unprocessable_content }
-          format.turbo_stream do
-            render turbo_stream: turbo_stream.replace(
-              "stream_form",
-              partial: "admin/streams/form",
-              locals: { stream: @stream, users: @users },
-            )
-          end
+          render_stream_form(format, :new)
         end
       end
     end
 
     def update
-      # Handle location validation if feature is enabled
-      if Flipper.enabled?(ApplicationConstants::Features::LOCATION_VALIDATION) && params[:stream][:city].present?
-        location_result = Location.find_or_create_from_params(
-          city: params[:stream][:city],
-          state_province: params[:stream][:state],
-        )
-
-        if location_result.respond_to?(:errors) && !location_result.valid?
-          @stream.errors.add(:city, location_result.errors[:city].first)
-
-          respond_to do |format|
-            @users = User.order(:email)
-            format.html { render :edit, status: :unprocessable_content }
-            format.turbo_stream do
-              render turbo_stream: turbo_stream.replace(
-                "stream_form",
-                partial: "admin/streams/form",
-                locals: { stream: @stream, users: @users },
-              )
-            end
-          end
-          return
-        end
-      end
-
       respond_to do |format|
+        return render_stream_form(format, :edit) unless location_valid?
+
         if @stream.update(stream_params)
-          format.html { redirect_to admin_streams_path, notice: "Stream was successfully updated." }
-          format.turbo_stream do
-            render turbo_stream: [
-              turbo_stream.replace(@stream, partial: "admin/streams/stream", locals: { stream: @stream }),
-              turbo_stream.replace("flash", partial: "admin/shared/flash",
-                                            locals: { notice: "Stream was successfully updated." }),
-              turbo_stream.replace("modal", ""),
-            ]
-          end
+          render_update_success(format)
         else
-          @users = User.order(:email)
-          format.html { render :edit, status: :unprocessable_content }
-          format.turbo_stream do
-            render turbo_stream: turbo_stream.replace(
-              "stream_form",
-              partial: "admin/streams/form",
-              locals: { stream: @stream, users: @users },
-            )
-          end
+          render_stream_form(format, :edit)
         end
       end
     end
@@ -150,12 +73,13 @@ module Admin
       @stream.destroy!
 
       respond_to do |format|
-        format.html { redirect_to admin_streams_path, notice: "Stream was successfully deleted." }
+        notice = t("admin.streams.deleted")
+        format.html { redirect_to admin_streams_path, notice: notice }
         format.turbo_stream do
           render turbo_stream: [
             turbo_stream.remove(@stream),
             turbo_stream.replace("flash", partial: "admin/shared/flash",
-                                          locals: { notice: "Stream was successfully deleted." }),
+                                          locals: { notice: notice }),
           ]
         end
       end
@@ -180,6 +104,67 @@ module Admin
 
     def set_stream
       @stream = Stream.find(params[:id])
+    end
+
+    def render_create_success(format)
+      notice = t("admin.streams.created")
+      format.html { redirect_to admin_streams_path, notice: notice }
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.prepend("streams", partial: "admin/streams/stream", locals: { stream: @stream }),
+          turbo_stream.replace("flash", partial: "admin/shared/flash", locals: { notice: notice }),
+          turbo_stream.replace("modal", ""),
+        ]
+      end
+    end
+
+    def render_update_success(format)
+      notice = t("admin.streams.updated")
+      format.html { redirect_to admin_streams_path, notice: notice }
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(@stream, partial: "admin/streams/stream", locals: { stream: @stream }),
+          turbo_stream.replace("flash", partial: "admin/shared/flash", locals: { notice: notice }),
+          turbo_stream.replace("modal", ""),
+        ]
+      end
+    end
+
+    def render_stream_form(format, template)
+      load_users
+      format.html { render template, status: :unprocessable_content }
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "stream_form",
+          partial: "admin/streams/form",
+          locals: { stream: @stream, users: @users },
+        )
+      end
+    end
+
+    def location_valid?
+      return true unless location_validation_enabled?
+
+      city = params.dig(:stream, :city)
+      return true if city.blank?
+
+      location = Location.find_or_create_from_params(
+        city: city,
+        state_province: params.dig(:stream, :state),
+      )
+
+      return true if location.present?
+
+      @stream.errors.add(:city, t("admin.streams.invalid_city"))
+      false
+    end
+
+    def location_validation_enabled?
+      Flipper.enabled?(ApplicationConstants::Features::LOCATION_VALIDATION)
+    end
+
+    def load_users
+      @users = User.order(:email)
     end
 
     def stream_params

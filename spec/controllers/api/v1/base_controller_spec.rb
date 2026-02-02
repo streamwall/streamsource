@@ -73,9 +73,8 @@ RSpec.describe Api::V1::BaseController, type: :controller do
   end
 
   describe "#paginate" do
-    let!(:users) { create_list(:user, 30) }
-
     before do
+      create_list(:user, 30)
       request.headers.merge!(auth_headers(user))
     end
 
@@ -92,6 +91,12 @@ RSpec.describe Api::V1::BaseController, type: :controller do
 
       expect(json["meta"]["current_page"]).to eq(2)
       expect(json["meta"]["per_page"]).to eq(10)
+    end
+
+    it "includes pagination totals" do
+      get :paginated_action, params: { page: 2, per_page: 10 }
+      json = response.parsed_body
+
       expect(json["meta"]["total_pages"]).to eq(4) # 31 users total (30 + the auth user)
       expect(json["meta"]["total_count"]).to eq(31)
     end
@@ -119,7 +124,7 @@ RSpec.describe Api::V1::BaseController, type: :controller do
 
     it "handles Pundit NotAuthorizedError" do
       request.headers.merge!(auth_headers(user))
-      allow_any_instance_of(described_class).to receive(:authorize).and_raise(Pundit::NotAuthorizedError)
+      allow(controller).to receive(:authorize).and_raise(Pundit::NotAuthorizedError)
 
       get :pundit_action
 

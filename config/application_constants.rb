@@ -1,9 +1,7 @@
-# frozen_string_literal: true
-
 module ApplicationConstants
   # JWT Configuration
   module JWT
-    ALGORITHM = "HS256"
+    ALGORITHM = "HS256".freeze
     EXPIRATION_TIME = 24.hours
   end
 
@@ -18,7 +16,7 @@ module ApplicationConstants
   module Password
     MIN_LENGTH = 8
     COMPLEXITY_REGEX = /\A(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*\z/
-    COMPLEXITY_MESSAGE = "must include lowercase, uppercase, and number"
+    COMPLEXITY_MESSAGE = "must include lowercase, uppercase, and number".freeze
   end
 
   # Stream Constraints
@@ -26,7 +24,7 @@ module ApplicationConstants
     NAME_MIN_LENGTH = 1
     NAME_MAX_LENGTH = 255
     URL_REGEX = URI::DEFAULT_PARSER.make_regexp(%w[http https])
-    URL_ERROR_MESSAGE = "must be a valid HTTP or HTTPS URL"
+    URL_ERROR_MESSAGE = "must be a valid HTTP or HTTPS URL".freeze
   end
 
   # Rate Limiting
@@ -49,27 +47,27 @@ module ApplicationConstants
 
   # Application Info
   module App
-    VERSION = "1.0.0"
-    NAME = "StreamSource API"
+    VERSION = "1.0.0".freeze
+    NAME = "StreamSource API".freeze
   end
 
   # Database
   module Database
-    HEALTH_CHECK_QUERY = "SELECT 1"
+    HEALTH_CHECK_QUERY = "SELECT 1".freeze
   end
 
   # HTTP Status Messages
   module Messages
-    UNAUTHORIZED = "Unauthorized"
-    FORBIDDEN = "You are not authorized to perform this action"
-    NOT_FOUND = "Record not found"
-    INVALID_CREDENTIALS = "Invalid email or password"
-    RATE_LIMITED = "Too many requests. Please try again later."
-    HEALTH_OK = "ok"
-    HEALTH_HEALTHY = "healthy"
-    HEALTH_READY = "ready"
-    HEALTH_NOT_READY = "not ready"
-    DATABASE_CONNECTED = "connected"
+    UNAUTHORIZED = "Unauthorized".freeze
+    FORBIDDEN = "You are not authorized to perform this action".freeze
+    NOT_FOUND = "Record not found".freeze
+    INVALID_CREDENTIALS = "Invalid email or password".freeze
+    RATE_LIMITED = "Too many requests. Please try again later.".freeze
+    HEALTH_OK = "ok".freeze
+    HEALTH_HEALTHY = "healthy".freeze
+    HEALTH_READY = "ready".freeze
+    HEALTH_NOT_READY = "not ready".freeze
+    DATABASE_CONNECTED = "connected".freeze
   end
 
   # Feature Flags

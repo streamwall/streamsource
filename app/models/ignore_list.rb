@@ -1,3 +1,4 @@
+# Blocklist of entities by type.
 class IgnoreList < ApplicationRecord
   # List types
   LIST_TYPES = %w[twitch_user discord_user url domain].freeze

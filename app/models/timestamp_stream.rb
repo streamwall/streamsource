@@ -13,9 +13,9 @@
 #
 class TimestampStream < ApplicationRecord
   # Associations
-  belongs_to :timestamp
-  belongs_to :stream
-  belongs_to :added_by_user, class_name: "User"
+  belongs_to :timestamp, inverse_of: :timestamp_streams
+  belongs_to :stream, inverse_of: :timestamp_streams
+  belongs_to :added_by_user, class_name: "User", inverse_of: :timestamp_streams
 
   # Validations
   validates :stream_timestamp_seconds, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
@@ -42,9 +42,9 @@ class TimestampStream < ApplicationRecord
     remaining_seconds = seconds % 60
 
     if hours.positive?
-      format("%d:%02d:%02d", hours, minutes, remaining_seconds)
+      format("%<hours>d:%<minutes>02d:%<seconds>02d", hours: hours, minutes: minutes, seconds: remaining_seconds)
     else
-      format("%d:%02d", minutes, remaining_seconds)
+      format("%<minutes>d:%<seconds>02d", minutes: minutes, seconds: remaining_seconds)
     end
   end
 

@@ -1,4 +1,5 @@
 module Api
+  # Base controller for API endpoints.
   class BaseController < ActionController::API
     include JwtAuthenticatable
     include Pagy::Method

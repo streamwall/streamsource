@@ -104,9 +104,11 @@ RSpec.describe Timestamp, type: :model do
         end.to change { timestamp.timestamp_streams.count }.by(1)
 
         timestamp_stream = timestamp.timestamp_streams.last
-        expect(timestamp_stream.stream).to eq(stream)
-        expect(timestamp_stream.added_by_user).to eq(user)
-        expect(timestamp_stream.stream_timestamp_seconds).to eq(120)
+        expect(timestamp_stream).to have_attributes(
+          stream: stream,
+          added_by_user: user,
+          stream_timestamp_seconds: 120,
+        )
       end
     end
 

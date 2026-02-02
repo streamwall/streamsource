@@ -12,7 +12,7 @@
 #
 class Timestamp < ApplicationRecord
   # Associations
-  belongs_to :user
+  belongs_to :user, inverse_of: :timestamps
   has_many :timestamp_streams, dependent: :destroy
   has_many :streams, through: :timestamp_streams
 
@@ -24,25 +24,25 @@ class Timestamp < ApplicationRecord
   # Scopes
   scope :recent, -> { order(event_timestamp: :desc) }
   scope :created_recently, -> { order(created_at: :desc) }
-  scope :occurred_between, ->(start_time, end_time) {
+  scope :occurred_between, lambda { |start_time, end_time|
     where(event_timestamp: start_time..end_time)
   }
   scope :occurred_today, -> { occurred_between(Date.current.beginning_of_day, Date.current.end_of_day) }
   scope :occurred_this_week, -> { occurred_between(1.week.ago, Time.current) }
 
   # Filtering scope for admin interface
-  scope :filtered, ->(params) do
+  scope :filtered, lambda { |params|
     scope = all
 
     if params[:start_date].present? && params[:end_date].present?
-      start_time = params[:start_date].is_a?(String) ? Date.parse(params[:start_date]).beginning_of_day : params[:start_date].beginning_of_day
-      end_time = params[:end_date].is_a?(String) ? Date.parse(params[:end_date]).end_of_day : params[:end_date].end_of_day
+      start_time = klass.parse_boundary(params[:start_date], :beginning_of_day)
+      end_time = klass.parse_boundary(params[:end_date], :end_of_day)
       scope = scope.occurred_between(start_time, end_time)
     elsif params[:start_date].present?
-      start_time = params[:start_date].is_a?(String) ? Date.parse(params[:start_date]).beginning_of_day : params[:start_date].beginning_of_day
+      start_time = klass.parse_boundary(params[:start_date], :beginning_of_day)
       scope = scope.where(event_timestamp: start_time..)
     elsif params[:end_date].present?
-      end_time = params[:end_date].is_a?(String) ? Date.parse(params[:end_date]).end_of_day : params[:end_date].end_of_day
+      end_time = klass.parse_boundary(params[:end_date], :end_of_day)
       scope = scope.where(event_timestamp: ..end_time)
     end
 
@@ -54,7 +54,7 @@ class Timestamp < ApplicationRecord
     end
 
     scope
-  end
+  }
 
   # Instance methods
   def owned_by?(user)
@@ -68,23 +68,10 @@ class Timestamp < ApplicationRecord
   def time_ago
     return nil unless event_timestamp
 
-    seconds = Time.current - event_timestamp
+    seconds = (Time.current - event_timestamp).to_i
     return "just now" if seconds < 60
 
-    minutes = (seconds / 60).to_i
-    return "#{minutes} minute#{'s' if minutes != 1} ago" if minutes < 60
-
-    hours = (minutes / 60).to_i
-    return "#{hours} hour#{'s' if hours != 1} ago" if hours < 24
-
-    days = (hours / 24).to_i
-    return "#{days} day#{'s' if days != 1} ago" if days < 30
-
-    months = (days / 30).to_i
-    return "#{months} month#{'s' if months != 1} ago" if months < 12
-
-    years = (days / 365).to_i
-    "#{years} year#{'s' if years != 1} ago"
+    format_elapsed_time(seconds)
   end
 
   def stream_count
@@ -101,5 +88,33 @@ class Timestamp < ApplicationRecord
 
   def remove_stream!(stream)
     timestamp_streams.find_by(stream: stream)&.destroy
+  end
+
+  def self.parse_boundary(value, boundary)
+    date = value.is_a?(String) ? Date.parse(value) : value
+    date.public_send(boundary)
+  end
+
+  private
+
+  def format_elapsed_time(seconds)
+    minutes = seconds / 60
+    return pluralize_elapsed(minutes, "minute") if minutes < 60
+
+    hours = minutes / 60
+    return pluralize_elapsed(hours, "hour") if hours < 24
+
+    days = hours / 24
+    return pluralize_elapsed(days, "day") if days < 30
+
+    months = days / 30
+    return pluralize_elapsed(months, "month") if months < 12
+
+    years = days / 365
+    pluralize_elapsed(years, "year")
+  end
+
+  def pluralize_elapsed(value, unit)
+    "#{value} #{unit}#{'s' unless value == 1} ago"
   end
 end

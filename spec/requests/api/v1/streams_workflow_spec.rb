@@ -7,54 +7,63 @@ RSpec.describe "Streams Workflow", type: :request do
   let(:headers) { auth_headers(editor) }
 
   describe "complete stream lifecycle" do
-    it "allows CRUD operations on streams" do
-      # Create a stream
-      post "/api/v1/streams",
-           params: { source: "Test Stream", link: "https://example.com/test" },
-           headers: headers
+    let(:stream_params) { { source: "Test Stream", link: "https://example.com/test" } }
+
+    it "creates a stream" do
+      post "/api/v1/streams", params: stream_params, headers: headers
 
       expect(response).to have_http_status(:created)
-      stream = response.parsed_body["stream"]
-      stream_id = stream["id"]
-      expect(stream["source"]).to eq("Test Stream")
-      expect(stream["status"]).to eq("unknown")
-      expect(stream["is_pinned"]).to be false
+      expect(response.parsed_body["stream"]).to include(
+        "source" => "Test Stream",
+        "status" => "unknown",
+        "is_pinned" => false,
+      )
+    end
 
-      # Read the stream
-      get "/api/v1/streams/#{stream_id}", headers: headers
+    it "reads a stream" do
+      stream = create(:stream, user: editor)
+      get "/api/v1/streams/#{stream.id}", headers: headers
 
       expect(response).to have_http_status(:success)
-      expect(response.parsed_body["stream"]["id"]).to eq(stream_id)
+      expect(response.parsed_body["stream"]["id"]).to eq(stream.id)
+    end
 
-      # Update the stream
-      patch "/api/v1/streams/#{stream_id}",
+    it "updates a stream" do
+      stream = create(:stream, user: editor)
+      patch "/api/v1/streams/#{stream.id}",
             params: { source: "Updated Stream", status: "offline" },
             headers: headers
 
       expect(response).to have_http_status(:success)
-      updated = response.parsed_body["stream"]
-      expect(updated["source"]).to eq("Updated Stream")
-      expect(updated["status"]).to eq("offline")
+      expect(response.parsed_body["stream"]).to include(
+        "source" => "Updated Stream",
+        "status" => "offline",
+      )
+    end
 
-      # Pin the stream
-      put "/api/v1/streams/#{stream_id}/pin", headers: headers
+    it "pins a stream" do
+      stream = create(:stream, user: editor)
+      put "/api/v1/streams/#{stream.id}/pin", headers: headers
 
       expect(response).to have_http_status(:success)
       expect(response.parsed_body["stream"]["is_pinned"]).to be true
+    end
 
-      # Unpin the stream
-      delete "/api/v1/streams/#{stream_id}/pin", headers: headers
+    it "unpinns a stream" do
+      stream = create(:stream, user: editor, is_pinned: true)
+      delete "/api/v1/streams/#{stream.id}/pin", headers: headers
 
       expect(response).to have_http_status(:success)
       expect(response.parsed_body["stream"]["is_pinned"]).to be false
+    end
 
-      # Delete the stream
-      delete "/api/v1/streams/#{stream_id}", headers: headers
+    it "deletes a stream" do
+      stream = create(:stream, user: editor)
+      delete "/api/v1/streams/#{stream.id}", headers: headers
 
       expect(response).to have_http_status(:no_content)
 
-      # Verify deletion
-      get "/api/v1/streams/#{stream_id}", headers: headers
+      get "/api/v1/streams/#{stream.id}", headers: headers
       expect(response).to have_http_status(:not_found)
     end
   end
@@ -138,17 +147,17 @@ RSpec.describe "Streams Workflow", type: :request do
       expect(json["streams"].length).to eq(1)
     end
 
-    it "paginates results" do
+    it "paginates first page" do
       get "/api/v1/streams",
           params: { per_page: 5, page: 1 },
           headers: headers
 
       json = response.parsed_body
       expect(json["streams"].length).to eq(5)
-      expect(json["meta"]["current_page"]).to eq(1)
-      expect(json["meta"]["total_count"]).to eq(9)
+      expect(json["meta"]).to include("current_page" => 1, "total_count" => 9)
+    end
 
-      # Get second page
+    it "paginates second page" do
       get "/api/v1/streams",
           params: { per_page: 5, page: 2 },
           headers: headers

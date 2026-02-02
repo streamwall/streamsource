@@ -156,7 +156,8 @@ RSpec.shared_examples "admin crud actions" do |resource_name, options = {}|
     it "displays all resources" do
       get :index
       resources.each do |resource|
-        expect_admin_page_to_include(options[:display_attribute] ? resource.send(options[:display_attribute]) : resource.id)
+        display_value = options[:display_attribute] ? resource.public_send(options[:display_attribute]) : resource.id
+        expect_admin_page_to_include(display_value)
       end
     end
   end

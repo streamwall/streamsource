@@ -1,3 +1,4 @@
+# Base ActionCable channel behavior.
 class ApplicationChannel < ApplicationCable::Channel
   def subscribed
     # stream_from "some_channel"

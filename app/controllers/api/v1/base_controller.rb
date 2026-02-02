@@ -1,5 +1,6 @@
 module Api
   module V1
+    # Shared API v1 behavior.
     class BaseController < Api::BaseController
       include Pundit::Authorization
 

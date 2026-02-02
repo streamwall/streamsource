@@ -1,4 +1,5 @@
 module Admin
+  # CRUD for timestamps in the admin UI.
   class TimestampsController < BaseController
     before_action :set_timestamp, only: %i[show edit update destroy]
 
@@ -47,13 +48,14 @@ module Admin
 
       respond_to do |format|
         if @timestamp.save
-          format.html { redirect_to admin_timestamps_path, notice: "Timestamp was successfully created." }
+          notice = t("admin.timestamps.created")
+          format.html { redirect_to admin_timestamps_path, notice: notice }
           format.turbo_stream do
             render turbo_stream: [
               turbo_stream.prepend("timestamps", partial: "admin/timestamps/timestamp",
                                                  locals: { timestamp: @timestamp }),
               turbo_stream.replace("flash", partial: "admin/shared/flash",
-                                            locals: { notice: "Timestamp was successfully created." }),
+                                            locals: { notice: notice }),
               turbo_stream.replace("new_timestamp_modal", ""),
             ]
           end
@@ -73,13 +75,14 @@ module Admin
     def update
       respond_to do |format|
         if @timestamp.update(timestamp_params)
-          format.html { redirect_to admin_timestamp_path(@timestamp), notice: "Timestamp was successfully updated." }
+          notice = t("admin.timestamps.updated")
+          format.html { redirect_to admin_timestamp_path(@timestamp), notice: notice }
           format.turbo_stream do
             render turbo_stream: [
               turbo_stream.replace(@timestamp, partial: "admin/timestamps/timestamp",
                                                locals: { timestamp: @timestamp }),
               turbo_stream.replace("flash", partial: "admin/shared/flash",
-                                            locals: { notice: "Timestamp was successfully updated." }),
+                                            locals: { notice: notice }),
               turbo_stream.replace("edit_timestamp_#{@timestamp.id}_modal", ""),
             ]
           end
@@ -100,12 +103,13 @@ module Admin
       @timestamp.destroy!
 
       respond_to do |format|
-        format.html { redirect_to admin_timestamps_path, notice: "Timestamp was successfully deleted." }
+        notice = t("admin.timestamps.deleted")
+        format.html { redirect_to admin_timestamps_path, notice: notice }
         format.turbo_stream do
           render turbo_stream: [
             turbo_stream.remove(@timestamp),
             turbo_stream.replace("flash", partial: "admin/shared/flash",
-                                          locals: { notice: "Timestamp was successfully deleted." }),
+                                          locals: { notice: notice }),
           ]
         end
       end
@@ -123,14 +127,15 @@ module Admin
       )
 
       respond_to do |format|
-        format.html { redirect_to admin_timestamp_path(@timestamp), notice: "Stream added to timestamp." }
+        notice = t("admin.timestamps.stream_added")
+        format.html { redirect_to admin_timestamp_path(@timestamp), notice: notice }
         format.turbo_stream do
           render turbo_stream: [
             turbo_stream.prepend("timestamp_streams",
                                  partial: "admin/timestamps/timestamp_stream",
                                  locals: { timestamp_stream: @timestamp.timestamp_streams.find_by(stream: @stream) }),
             turbo_stream.replace("flash", partial: "admin/shared/flash",
-                                          locals: { notice: "Stream added to timestamp." }),
+                                          locals: { notice: notice }),
           ]
         end
       end

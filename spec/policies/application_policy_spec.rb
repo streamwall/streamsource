@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe ApplicationPolicy do
   let(:user) { create(:user) }
-  let(:record) { double("record") }
+  let(:record) { build(:stream) }
   let(:policy) { described_class.new(user, record) }
 
   describe "#index?" do
@@ -25,8 +25,10 @@ RSpec.describe ApplicationPolicy do
 
   describe "#new?" do
     it "delegates to create?" do
-      expect(policy).to receive(:create?).and_return(true)
+      allow(policy).to receive(:create?).and_return(true)
+
       expect(policy.new?).to be true
+      expect(policy).to have_received(:create?)
     end
   end
 
@@ -38,8 +40,10 @@ RSpec.describe ApplicationPolicy do
 
   describe "#edit?" do
     it "delegates to update?" do
-      expect(policy).to receive(:update?).and_return(true)
+      allow(policy).to receive(:update?).and_return(true)
+
       expect(policy.edit?).to be true
+      expect(policy).to have_received(:update?)
     end
   end
 
@@ -50,7 +54,7 @@ RSpec.describe ApplicationPolicy do
   end
 
   describe "Scope" do
-    let(:scope) { double("scope") }
+    let(:scope) { Stream }
     let(:policy_scope) { described_class::Scope.new(user, scope) }
 
     describe "#resolve" do

@@ -12,9 +12,9 @@
 #
 class Streamer < ApplicationRecord
   # Associations
-  belongs_to :user
-  has_many :streamer_accounts, dependent: :destroy
-  has_many :streams, dependent: :destroy
+  belongs_to :user, inverse_of: :streamers
+  has_many :streamer_accounts, dependent: :destroy, inverse_of: :streamer
+  has_many :streams, dependent: :destroy, inverse_of: :streamer
   has_many :timestamp_streams, through: :streams
   has_many :timestamps, through: :timestamp_streams
 
@@ -23,7 +23,7 @@ class Streamer < ApplicationRecord
 
   # Scopes
   scope :with_active_accounts, -> { joins(:streamer_accounts).where(streamer_accounts: { is_active: true }).distinct }
-  scope :by_platform, ->(platform) {
+  scope :by_platform, lambda { |platform|
     joins(:streamer_accounts).where(streamer_accounts: { platform: platform }).distinct
   }
   scope :with_live_streams, -> { joins(:streams).where(streams: { status: "Live", is_archived: false }).distinct }

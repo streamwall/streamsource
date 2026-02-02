@@ -1,3 +1,4 @@
+# JWT-based authentication for API controllers.
 module JwtAuthenticatable
   extend ActiveSupport::Concern
 
@@ -38,8 +39,8 @@ module JwtAuthenticatable
 
     # Try with Devise JWT secret first
     begin
-      JWT.decode(token,
-                 Rails.application.credentials.devise&.dig(:jwt_secret_key) || Rails.application.secret_key_base, true, algorithm: "HS256")[0]
+      secret = Rails.application.credentials.devise&.dig(:jwt_secret_key) || Rails.application.secret_key_base
+      JWT.decode(token, secret, true, algorithm: "HS256")[0]
     rescue JWT::DecodeError
       # Fall back to standard secret
       JWT.decode(token, Rails.application.secret_key_base, true, algorithm: "HS256")[0]

@@ -1,6 +1,7 @@
+# Location record with optional validation for known cities.
 class Location < ApplicationRecord
   # Associations
-  has_many :streams, dependent: :nullify
+  has_many :streams, dependent: :nullify, inverse_of: :location
 
   # Validations
   validates :city, presence: true
@@ -15,7 +16,7 @@ class Location < ApplicationRecord
   scope :by_country, ->(country) { where(country: country) if country.present? }
   scope :by_state, ->(state) { where(state_province: state) if state.present? }
   scope :known_cities, -> { where(is_known_city: true) }
-  scope :search, ->(query) {
+  scope :search, lambda { |query|
     return all if query.blank?
 
     where("city ILIKE ? OR state_province ILIKE ? OR region ILIKE ? OR country ILIKE ?",
@@ -29,34 +30,10 @@ class Location < ApplicationRecord
 
     normalized = normalize_location_name(params[:city], params[:state_province], params[:country])
 
-    # If location validation is enabled, check if it's a known city
-    if defined?(Flipper) && Flipper.enabled?(ApplicationConstants::Features::LOCATION_VALIDATION)
-      existing = find_by(normalized_name: normalized)
+    return find_known_city(normalized, params) if location_validation_enabled?
 
-      # If location exists and is known, return it
-      return existing if existing&.is_known_city?
-
-      # If location exists but not known, or doesn't exist, check against known cities
-      known_city = known_cities.where(
-        "normalized_name = ? OR (city ILIKE ? AND (state_province ILIKE ? OR state_province IS NULL))",
-        normalized, params[:city], params[:state_province]
-      ).first
-
-      # If no matching known city found, return nil to signal validation failure
-      return nil if known_city.nil?
-
-      # Use the known city if found
-      return known_city
-    end
-
-    # Default behavior when validation is disabled
     find_or_create_by(normalized_name: normalized) do |location|
-      location.city = params[:city]
-      location.state_province = params[:state_province]
-      location.region = params[:region]
-      location.country = params[:country]
-      location.latitude = params[:latitude]
-      location.longitude = params[:longitude]
+      assign_location_attributes(location, params)
       location.is_known_city = false
     end
   end
@@ -66,6 +43,29 @@ class Location < ApplicationRecord
     parts << state_province&.strip&.downcase if state_province.present?
     parts << country&.strip&.downcase if country.present?
     parts.compact.join(", ")
+  end
+
+  def self.location_validation_enabled?
+    defined?(Flipper) && Flipper.enabled?(ApplicationConstants::Features::LOCATION_VALIDATION)
+  end
+
+  def self.find_known_city(normalized, params)
+    existing = find_by(normalized_name: normalized)
+    return existing if existing&.is_known_city?
+
+    known_cities.where(
+      "normalized_name = ? OR (city ILIKE ? AND (state_province ILIKE ? OR state_province IS NULL))",
+      normalized, params[:city], params[:state_province]
+    ).first
+  end
+
+  def self.assign_location_attributes(location, params)
+    location.city = params[:city]
+    location.state_province = params[:state_province]
+    location.region = params[:region]
+    location.country = params[:country]
+    location.latitude = params[:latitude]
+    location.longitude = params[:longitude]
   end
 
   # Instance methods

@@ -78,9 +78,11 @@ RSpec.describe Streamer, type: :model do
         end.to change { streamer.streams.count }.by(1)
 
         stream = streamer.streams.last
-        expect(stream.status).to eq("live")
-        expect(stream.last_checked_at).to be_present
-        expect(stream.last_live_at).to be_present
+        expect(stream).to have_attributes(
+          status: "live",
+          last_checked_at: be_present,
+          last_live_at: be_present,
+        )
       end
 
       it "continues existing stream if checked recently" do
@@ -105,7 +107,7 @@ RSpec.describe Streamer, type: :model do
                           is_archived: false,
                           status: "offline")
 
-        existing.update_column(:last_checked_at, 2.hours.ago)
+        existing.update!(last_checked_at: 2.hours.ago)
         existing.reload
 
         expect(existing.last_checked_at).to be < 30.minutes.ago

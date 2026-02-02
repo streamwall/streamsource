@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe User, type: :model do
   describe "password validation" do
-    context "on create" do
+    context "when creating" do
       it "validates password complexity" do
         user = build(:user, password: "simple")
         expect(user).not_to be_valid
@@ -15,7 +15,7 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context "on update" do
+    context "when updating" do
       let(:user) { create(:user) }
 
       it "validates password complexity when password is changed" do

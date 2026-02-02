@@ -1,5 +1,6 @@
 module Api
   module V1
+    # API endpoints for ignore list management.
     class IgnoreListsController < BaseController
       before_action :authenticate_user!
       before_action :require_admin!

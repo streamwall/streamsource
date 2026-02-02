@@ -57,10 +57,12 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
       expect(response).to have_http_status(:success)
       json = response.parsed_body
 
-      expect(json["twitch_users"]).to contain_exactly("baduser1", "baduser2")
-      expect(json["discord_users"]).to contain_exactly("spammer#1234")
-      expect(json["urls"]).to contain_exactly("https://spam.com/bad")
-      expect(json["domains"]).to contain_exactly("malware.com")
+      expect(json).to include(
+        "twitch_users" => contain_exactly("baduser1", "baduser2"),
+        "discord_users" => contain_exactly("spammer#1234"),
+        "urls" => contain_exactly("https://spam.com/bad"),
+        "domains" => contain_exactly("malware.com"),
+      )
     end
   end
 
@@ -78,7 +80,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
   end
 
   describe "POST #create" do
-    context "as admin" do
+    context "when admin" do
       before { request.headers.merge!(auth_headers(admin)) }
 
       it "creates a new ignore list" do
@@ -110,7 +112,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
       end
     end
 
-    context "as regular user" do
+    context "when regular user" do
       before { request.headers.merge!(auth_headers(user)) }
 
       it "returns forbidden" do
@@ -126,23 +128,26 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
   end
 
   describe "POST #bulk_create" do
+    let(:bulk_entries) do
+      [
+        { list_type: "twitch_user", value: "user1", notes: "Spam" },
+        { list_type: "twitch_user", value: "user2", notes: "Harassment" },
+        { list_type: "url", value: "https://bad-site.com" },
+      ]
+    end
+    let(:bulk_params) { { entries: bulk_entries } }
+
     before { request.headers.merge!(auth_headers(admin)) }
 
     it "creates multiple ignore lists" do
-      expect do
-        post :bulk_create, params: {
-          entries: [
-            { list_type: "twitch_user", value: "user1", notes: "Spam" },
-            { list_type: "twitch_user", value: "user2", notes: "Harassment" },
-            { list_type: "url", value: "https://bad-site.com" },
-          ],
-        }
-      end.to change(IgnoreList, :count).by(3)
-
+      expect { post :bulk_create, params: bulk_params }.to change(IgnoreList, :count).by(3)
       expect(response).to have_http_status(:created)
-      json = response.parsed_body
-      expect(json["created"].count).to eq(3)
-      expect(json["errors"]).to be_empty
+      expect(response.parsed_body["created"].count).to eq(3)
+    end
+
+    it "returns no errors for valid entries" do
+      post :bulk_create, params: bulk_params
+      expect(response.parsed_body["errors"]).to be_empty
     end
 
     it "handles partial failures" do
@@ -165,7 +170,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
   describe "PATCH #update" do
     let(:ignore_list) { create(:ignore_list) }
 
-    context "as admin" do
+    context "when admin" do
       before { request.headers.merge!(auth_headers(admin)) }
 
       it "updates the ignore list" do
@@ -180,7 +185,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
       end
     end
 
-    context "as regular user" do
+    context "when regular user" do
       before { request.headers.merge!(auth_headers(user)) }
 
       it "returns forbidden" do
@@ -196,7 +201,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
   describe "DELETE #destroy" do
     let!(:ignore_list) { create(:ignore_list) }
 
-    context "as admin" do
+    context "when admin" do
       before { request.headers.merge!(auth_headers(admin)) }
 
       it "deletes the ignore list" do
@@ -207,7 +212,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
       end
     end
 
-    context "as regular user" do
+    context "when regular user" do
       before { request.headers.merge!(auth_headers(user)) }
 
       it "returns forbidden" do
@@ -220,7 +225,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
   describe "DELETE #bulk_delete" do
     let!(:lists) { create_list(:ignore_list, 5) }
 
-    context "as admin" do
+    context "when admin" do
       before { request.headers.merge!(auth_headers(admin)) }
 
       it "deletes multiple ignore lists" do

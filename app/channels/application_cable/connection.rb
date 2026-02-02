@@ -1,4 +1,5 @@
 module ApplicationCable
+  # Handles ActionCable connection authentication.
   class Connection < ActionCable::Connection::Base
     identified_by :current_user
 
@@ -14,13 +15,13 @@ module ApplicationCable
 
       if token.present?
         decoded = JsonWebToken.decode(token)
-        if verified_user = User.find_by(id: decoded["user_id"])
+        if (verified_user = User.find_by(id: decoded["user_id"]))
           return verified_user
         end
       end
 
       # Fall back to session-based auth
-      if verified_user = User.find_by(id: cookies.encrypted[:user_id])
+      if (verified_user = User.find_by(id: cookies.encrypted[:user_id]))
         return verified_user
       end
 

@@ -30,28 +30,28 @@ RSpec.describe StreamPolicy do
   end
 
   describe "#update?" do
-    context "for stream owner" do
+    context "when stream owner" do
       it "allows owner to update their stream" do
         policy = described_class.new(editor, stream)
         expect(policy.update?).to be true
       end
     end
 
-    context "for non-owner editor" do
+    context "when non-owner editor" do
       it "denies non-owner editor" do
         policy = described_class.new(other_editor, stream)
         expect(policy.update?).to be false
       end
     end
 
-    context "for admin" do
+    context "when admin" do
       it "allows admin to update any stream" do
         policy = described_class.new(admin, stream)
         expect(policy.update?).to be true
       end
     end
 
-    context "for default user" do
+    context "when default user" do
       it "denies default user even if owner" do
         user_stream = create(:stream, user: user)
         policy = described_class.new(user, user_stream)
@@ -75,15 +75,21 @@ RSpec.describe StreamPolicy do
   end
 
   describe "Scope" do
-    let!(:user_stream) { create(:stream, user: user) }
-    let!(:editor_stream) { create(:stream, user: editor) }
-    let!(:admin_stream) { create(:stream, user: admin) }
-    let!(:other_stream) { create(:stream, user: other_editor) }
+    let(:scoped_streams) do
+      [
+        create(:stream, user: user),
+        create(:stream, user: editor),
+        create(:stream, user: admin),
+        create(:stream, user: other_editor),
+      ]
+    end
+
+    before { scoped_streams }
 
     describe "#resolve" do
       it "returns all streams for any authenticated user" do
         scope = described_class::Scope.new(user, Stream.all)
-        expect(scope.resolve).to contain_exactly(user_stream, editor_stream, admin_stream, other_stream)
+        expect(scope.resolve).to match_array(scoped_streams)
       end
 
       it "returns all streams for editor" do

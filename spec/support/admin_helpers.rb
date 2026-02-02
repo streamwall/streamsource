@@ -2,19 +2,15 @@ module AdminHelpers
   # Setup admin authentication for request specs
   def setup_admin_auth(user = nil)
     admin_user = user || create(:user, :admin)
-    allow_any_instance_of(Admin::BaseController).to receive(:current_admin_user).and_return(admin_user)
-    allow_any_instance_of(Admin::BaseController).to receive(:authenticate_admin!).and_return(true)
-    admin_user
+    sign_in_admin(admin_user)
   end
 
   # Sign in an admin user for request specs
-  def sign_in_admin(user = nil)
-    admin_user = user || create(:user, :admin)
+  def sign_in_admin(user = nil, password: "Password123!")
+    admin_user = user || create(:user, :admin, password: password)
     post admin_login_path, params: {
-      session: {
-        email: admin_user.email,
-        password: admin_user.password,
-      },
+      email: admin_user.email,
+      password: password,
     }
     admin_user
   end

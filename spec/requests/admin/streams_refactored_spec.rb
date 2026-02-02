@@ -23,6 +23,8 @@ RSpec.describe "Admin::Streams", type: :request do
   it_behaves_like "admin crud authorization"
 
   describe "GET /admin/streams" do
+    before { streams }
+
     it "returns successful response" do
       get admin_streams_path
       expect_admin_page_success

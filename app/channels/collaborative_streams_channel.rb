@@ -1,13 +1,18 @@
+# ActionCable channel for collaborative stream editing.
 class CollaborativeStreamsChannel < ApplicationCable::Channel
-  def subscribed
-    stream_from "collaborative_streams"
+  include CollaborativeStreamsPresence
+  include CollaborativeStreamsLocking
 
-    # Track user presence
+  ALLOWED_FIELDS = %w[title source link city state platform status orientation kind started_at ended_at notes].freeze
+  TEXT_FIELDS = %w[title source link city state platform orientation notes].freeze
+  DATETIME_FIELDS = %w[started_at ended_at].freeze
+
+  def subscribed
+    stream_from channel_name
     track_user_presence
   end
 
   def unsubscribed
-    # Remove user presence and unlock any cells
     remove_user_presence
     unlock_all_user_cells
   end
@@ -15,17 +20,91 @@ class CollaborativeStreamsChannel < ApplicationCable::Channel
   def lock_cell(data)
     cell_id = data["cell_id"]
 
-    # Check if cell is already locked by another user
     if cell_locked_by_other?(cell_id)
       reject
       return
     end
 
-    # Lock the cell for this user
     lock_cell_for_user(cell_id)
+    broadcast_cell_locked(cell_id)
+  end
 
-    # Broadcast lock status to all users
-    ActionCable.server.broadcast("collaborative_streams", {
+  def unlock_cell(data)
+    cell_id = data["cell_id"]
+    return unless cell_locked_by_user?(cell_id)
+
+    unlock_cell_for_user(cell_id)
+    broadcast_cell_unlocked(cell_id)
+  end
+
+  def update_cell(data)
+    cell_id, stream_id, field, value = extract_update_payload(data)
+    log_update_request(data)
+
+    return unless valid_update_request?(cell_id, field)
+
+    stream = Stream.find(stream_id)
+    return unless authorized_to_edit?
+    return unless apply_stream_update?(stream, field, value)
+
+    broadcast_cell_updated(cell_id, stream_id, field, value)
+    unlock_cell(data)
+  rescue StandardError => e
+    Rails.logger.error("Collaborative update failed: #{e.message}")
+    transmit_error("Update failed: #{e.message}")
+  end
+
+  private
+
+  def channel_name
+    "collaborative_streams"
+  end
+
+  def log_update_request(data)
+    Rails.logger.info("CollaborativeStreamsChannel#update_cell: #{data.inspect}")
+  end
+
+  def apply_stream_update?(stream, field, value)
+    attributes = build_update_attributes(stream, field, value)
+
+    unless attributes
+      transmit_error("Invalid field for update")
+      return false
+    end
+
+    return true if stream.update(attributes)
+
+    transmit_error(stream.errors.full_messages.to_sentence)
+    false
+  end
+
+  def build_update_attributes(stream, field, value)
+    case field
+    when *TEXT_FIELDS
+      { field => value }
+    when "status"
+      { "status" => normalize_status(stream, value) }
+    when "kind"
+      { "kind" => normalize_kind(stream, value) }
+    when *DATETIME_FIELDS
+      { field => parse_time(value) }
+    end
+  end
+
+  def normalize_status(stream, value)
+    stream.class.statuses.key(value) || value.to_s.downcase
+  end
+
+  def normalize_kind(stream, value)
+    stream.class.kinds.key?(value) ? value : "video"
+  end
+
+  def parse_time(value)
+    value.present? ? Time.zone.parse(value) : nil
+  end
+
+  def broadcast_cell_locked(cell_id)
+    ActionCable.server.broadcast(channel_name, {
                                    action: "cell_locked",
                                    cell_id: cell_id,
                                    user_id: current_user.id,
@@ -34,231 +113,56 @@ class CollaborativeStreamsChannel < ApplicationCable::Channel
                                  })
   end
 
-  def unlock_cell(data)
-    cell_id = data["cell_id"]
-
-    # Only unlock if this user has the lock
-    return unless cell_locked_by_user?(cell_id)
-
-    unlock_cell_for_user(cell_id)
-
-    # Broadcast unlock status to all users
-    ActionCable.server.broadcast("collaborative_streams", {
+  def broadcast_cell_unlocked(cell_id)
+    ActionCable.server.broadcast(channel_name, {
                                    action: "cell_unlocked",
                                    cell_id: cell_id,
                                    user_id: current_user.id,
                                  })
   end
 
-  def update_cell(data)
-    cell_id = data["cell_id"]
-    stream_id = data["stream_id"]
-    field = data["field"]
-    value = data["value"]
-
-    Rails.logger.info "CollaborativeStreamsChannel#update_cell called with: #{data.inspect}"
-
-    # Verify user has lock on this cell
-    unless cell_locked_by_user?(cell_id)
-      Rails.logger.warn "Cell not locked by user: #{cell_id}"
-      reject
-      return
-    end
-
-    # Find stream and check authorization
-    stream = Stream.find(stream_id)
-
-    # Check if user can modify streams
-    unless current_user.can_modify_streams?
-      transmit({ error: "You are not authorized to edit streams" })
-      return
-    end
-
-    # Sanitize field to prevent mass assignment
-    allowed_fields = %w[title source link city state platform status orientation kind started_at ended_at]
-    unless allowed_fields.include?(field)
-      transmit({ error: "Invalid field" })
-      return
-    end
-
-    # Update the stream without triggering broadcasts or callbacks
-    # We handle our own real-time updates via ActionCable
-    begin
-      # Use update_columns to completely skip all callbacks including after_commit
-      success = false
-
-      if %w[title source link city state platform orientation notes].include?(field)
-        stream.update_columns(field => value, updated_at: Time.current)
-        success = true
-      elsif field == "status"
-        # Status needs special handling as it's an enum
-        # Convert the display value to the enum key
-        status_value = stream.class.statuses.key(value) || value.downcase
-        stream.update_columns(status: status_value, updated_at: Time.current)
-        success = true
-      elsif field == "kind"
-        # Kind is an enum but uses the same values as keys
-        Rails.logger.info "Updating kind field with value: #{value.inspect}"
-        Rails.logger.info "Available kinds: #{stream.class.kinds.inspect}"
-        kind_value = stream.class.kinds.key?(value) ? value : "video"
-        Rails.logger.info "Setting kind to: #{kind_value}"
-        result = stream.update_columns(kind: kind_value, updated_at: Time.current)
-        Rails.logger.info "Update result: #{result}"
-        Rails.logger.info "Stream kind after update: #{stream.reload.kind}"
-        success = true
-      elsif %w[started_at ended_at].include?(field)
-        # Handle datetime fields
-        parsed_time = value.present? ? Time.zone.parse(value) : nil
-        stream.update_columns(field => parsed_time, updated_at: Time.current)
-        success = true
-      else
-        transmit({ error: "Invalid field for update" })
-        return
-      end
-
-      if success
-        # Broadcast update to all users via our channel
-        ActionCable.server.broadcast("collaborative_streams", {
-                                       action: "cell_updated",
-                                       cell_id: cell_id,
-                                       stream_id: stream_id,
-                                       field: field,
-                                       value: value,
-                                       user_id: current_user.id,
-                                     })
-
-        # Auto-unlock after successful update
-        unlock_cell(data)
-      end
-    rescue StandardError => e
-      Rails.logger.error "Collaborative update failed: #{e.message}"
-      transmit({ error: "Update failed: #{e.message}" })
-    end
-  end
-
-  private
-
-  def track_user_presence
-    # Store user presence in Redis with user info as a single JSON string
-    user_data = {
-      id: current_user.id,
-      name: current_user.display_name,
-      color: user_color,
-    }.to_json
-
-    # Store with expiration
-    redis.setex("collaborative_streams:user:#{current_user.id}", 300, user_data)
-
-    # Add to active users set
-    redis.sadd("collaborative_streams:users", current_user.id)
-
-    # Get all active users
-    active_users = []
-    active_user_ids = redis.smembers("collaborative_streams:users").to_a
-
-    active_user_ids.each do |user_id|
-      user_json = redis.get("collaborative_streams:user:#{user_id}")
-      if user_json.nil?
-        # Remove stale user from set
-        redis.srem("collaborative_streams:users", user_id)
-      else
-        begin
-          user_data = JSON.parse(user_json)
-          active_users << {
-            user_id: user_data["id"],
-            user_name: user_data["name"],
-            user_color: user_data["color"],
-          }
-        rescue JSON::ParserError => e
-          Rails.logger.error "Failed to parse user data: #{e.message}"
-          redis.srem("collaborative_streams:users", user_id)
-        end
-      end
-    end
-
-    # Sort users by ID for consistent ordering
-    active_users.sort_by! { |user| user[:user_id] }
-
-    # Log for debugging
-    Rails.logger.info "Active users for #{current_user.email}: #{active_users.pluck(:user_name).join(', ')}"
-
-    # Send the current user the list of all active users
-    transmit({
-               action: "active_users_list",
-               users: active_users,
-             })
-
-    # Broadcast to others that this user joined
-    ActionCable.server.broadcast("collaborative_streams", {
-                                   action: "user_joined",
-                                   user_id: current_user.id,
-                                   user_name: current_user.display_name,
-                                   user_color: user_color,
-                                 })
-  end
-
-  def remove_user_presence
-    redis.srem("collaborative_streams:users", current_user.id)
-    redis.del("collaborative_streams:user:#{current_user.id}")
-
-    # Broadcast user left
-    ActionCable.server.broadcast("collaborative_streams", {
-                                   action: "user_left",
+  def broadcast_cell_updated(cell_id, stream_id, field, value)
+    ActionCable.server.broadcast(channel_name, {
+                                   action: "cell_updated",
+                                   cell_id: cell_id,
+                                   stream_id: stream_id,
+                                   field: field,
+                                   value: value,
                                    user_id: current_user.id,
                                  })
   end
 
-  def lock_cell_for_user(cell_id)
-    # Set lock with 30 second expiry
-    redis.setex("collaborative_streams:cell:#{cell_id}:lock", 30, current_user.id)
-  end
-
-  def unlock_cell_for_user(cell_id)
-    # Only unlock if this user has the lock
-    return unless redis.get("collaborative_streams:cell:#{cell_id}:lock") == current_user.id.to_s
-
-    redis.del("collaborative_streams:cell:#{cell_id}:lock")
-  end
-
-  def unlock_all_user_cells
-    # Find all cells locked by this user and unlock them
-    redis.keys("collaborative_streams:cell:*:lock").each do |key|
-      next unless redis.get(key) == current_user.id.to_s
-
-      cell_id = key.split(":")[2]
-      redis.del(key)
-
-      # Broadcast unlock
-      ActionCable.server.broadcast("collaborative_streams", {
-                                     action: "cell_unlocked",
-                                     cell_id: cell_id,
-                                     user_id: current_user.id,
-                                   })
-    end
-  end
-
-  def cell_locked_by_other?(cell_id)
-    lock_user_id = redis.get("collaborative_streams:cell:#{cell_id}:lock")
-    lock_user_id && lock_user_id != current_user.id.to_s
-  end
-
-  def cell_locked_by_user?(cell_id)
-    lock_user_id = redis.get("collaborative_streams:cell:#{cell_id}:lock")
-    Rails.logger.info "Checking if cell locked by user: lock_user_id=#{lock_user_id}, current_user.id=#{current_user.id}, match=#{lock_user_id == current_user.id.to_s}"
-    lock_user_id == current_user.id.to_s
-  end
-
-  def user_color
-    user_color_for(current_user)
-  end
-
-  def user_color_for(user)
-    # Generate consistent color for user based on ID
-    colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E2"]
-    colors[user.id % colors.length]
+  def transmit_error(message)
+    transmit(error: message)
   end
 
   def redis
     @redis ||= Redis.new(url: ENV.fetch("REDIS_URL") { "redis://redis:6379/1" })
+  end
+
+  def extract_update_payload(data)
+    [data["cell_id"], data["stream_id"], data["field"], data["value"]]
+  end
+
+  def valid_update_request?(cell_id, field)
+    unless cell_locked_by_user?(cell_id)
+      Rails.logger.warn("Cell not locked by user: #{cell_id}")
+      reject
+      return false
+    end
+
+    unless ALLOWED_FIELDS.include?(field)
+      transmit_error("Invalid field")
+      return false
+    end
+
+    true
+  end
+
+  def authorized_to_edit?
+    return true if current_user.can_modify_streams?
+
+    transmit_error("You are not authorized to edit streams")
+    false
   end
 end

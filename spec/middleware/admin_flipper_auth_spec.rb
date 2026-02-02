@@ -1,7 +1,13 @@
 require "rails_helper"
 
 RSpec.describe AdminFlipperAuth do
-  let(:app) { double("app") }
+  let(:app) do
+    Class.new do
+      def call(_env)
+        [200, {}, ["OK"]]
+      end
+    end.new
+  end
   let(:middleware) { described_class.new(app) }
   let(:env) { Rack::MockRequest.env_for("/admin/flipper") }
 
@@ -10,13 +16,13 @@ RSpec.describe AdminFlipperAuth do
       let(:admin_user) { create(:user, :admin) }
 
       before do
-        allow_any_instance_of(described_class).to receive(:current_user).and_return(admin_user)
+        allow(middleware).to receive(:current_user).and_return(admin_user)
         allow(app).to receive(:call).and_return([200, {}, ["OK"]])
       end
 
       it "allows access" do
-        expect(app).to receive(:call).with(env)
         middleware.call(env)
+        expect(app).to have_received(:call).with(env)
       end
 
       it "passes through to the app" do
@@ -31,7 +37,8 @@ RSpec.describe AdminFlipperAuth do
       let(:regular_user) { create(:user) }
 
       before do
-        allow_any_instance_of(described_class).to receive(:current_user).and_return(regular_user)
+        allow(middleware).to receive(:current_user).and_return(regular_user)
+        allow(app).to receive(:call)
       end
 
       it "returns 403 forbidden" do
@@ -42,8 +49,8 @@ RSpec.describe AdminFlipperAuth do
       end
 
       it "does not call the app" do
-        expect(app).not_to receive(:call)
         middleware.call(env)
+        expect(app).not_to have_received(:call)
       end
 
       it "sets content type header" do
@@ -55,7 +62,7 @@ RSpec.describe AdminFlipperAuth do
 
     context "when user is nil" do
       before do
-        allow_any_instance_of(described_class).to receive(:current_user).and_return(nil)
+        allow(middleware).to receive(:current_user).and_return(nil)
       end
 
       it "returns 403 forbidden" do
@@ -68,7 +75,7 @@ RSpec.describe AdminFlipperAuth do
 
     context "when current_user raises an error" do
       before do
-        allow_any_instance_of(described_class).to receive(:current_user).and_raise(StandardError)
+        allow(middleware).to receive(:current_user).and_raise(StandardError)
       end
 
       it "returns 403 forbidden" do
@@ -98,9 +105,11 @@ RSpec.describe AdminFlipperAuth do
       end
 
       it "memoizes the user lookup" do
-        expect(User).to receive(:find_by).once.and_return(user)
+        allow(User).to receive(:find_by).and_return(user)
 
         2.times { middleware.send(:current_user, env) }
+
+        expect(User).to have_received(:find_by).once
       end
     end
 

@@ -1,4 +1,5 @@
 module Admin
+  # CRUD for streamers in the admin UI.
   class StreamersController < BaseController
     before_action :set_streamer, only: %i[show edit update destroy]
 
@@ -28,12 +29,13 @@ module Admin
 
       respond_to do |format|
         if @streamer.save
-          format.html { redirect_to admin_streamer_path(@streamer), notice: "Streamer was successfully created." }
+          notice = t("admin.streamers.created")
+          format.html { redirect_to admin_streamer_path(@streamer), notice: notice }
           format.turbo_stream do
             render turbo_stream: [
               turbo_stream.prepend("streamers", partial: "admin/streamers/streamer", locals: { streamer: @streamer }),
               turbo_stream.replace("flash", partial: "admin/shared/flash",
-                                            locals: { notice: "Streamer was successfully created." }),
+                                            locals: { notice: notice }),
               turbo_stream.replace("modal", ""),
             ]
           end
@@ -48,12 +50,13 @@ module Admin
     def update
       respond_to do |format|
         if @streamer.update(streamer_params)
-          format.html { redirect_to admin_streamer_path(@streamer), notice: "Streamer was successfully updated." }
+          notice = t("admin.streamers.updated")
+          format.html { redirect_to admin_streamer_path(@streamer), notice: notice }
           format.turbo_stream do
             render turbo_stream: [
               turbo_stream.replace(@streamer, partial: "admin/streamers/streamer", locals: { streamer: @streamer }),
               turbo_stream.replace("flash", partial: "admin/shared/flash",
-                                            locals: { notice: "Streamer was successfully updated." }),
+                                            locals: { notice: notice }),
               turbo_stream.replace("edit_streamer_modal", ""),
             ]
           end
@@ -69,12 +72,13 @@ module Admin
       @streamer.destroy!
 
       respond_to do |format|
-        format.html { redirect_to admin_streamers_path, notice: "Streamer was successfully deleted." }
+        notice = t("admin.streamers.deleted")
+        format.html { redirect_to admin_streamers_path, notice: notice }
         format.turbo_stream do
           render turbo_stream: [
             turbo_stream.remove(@streamer),
             turbo_stream.replace("flash", partial: "admin/shared/flash",
-                                          locals: { notice: "Streamer was successfully deleted." }),
+                                          locals: { notice: notice }),
           ]
         end
       end

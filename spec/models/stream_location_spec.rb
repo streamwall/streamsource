@@ -14,41 +14,26 @@ RSpec.describe "Stream Location Integration", type: :model do
     context "when location validation is disabled" do
       before { Flipper.disable(:location_validation) }
 
-      it "creates location from city and state" do
-        stream = Stream.create!(
-          valid_attributes.merge(
-            city: "Austin",
-            state: "TX",
-          ),
-        )
+      let(:austin_attributes) { valid_attributes.merge(city: "Austin", state: "TX") }
 
-        expect(stream.location).to be_present
-        expect(stream.location.city).to eq("Austin")
-        expect(stream.location.state_province).to eq("TX")
-        expect(stream.location.is_known_city).to be(false)
+      it "creates location from city and state" do
+        stream = Stream.create!(austin_attributes)
+
+        expect(stream.location).to have_attributes(
+          city: "Austin",
+          state_province: "TX",
+          is_known_city: false,
+        )
       end
 
       it "reuses existing location" do
-        # Create first stream with location
-        stream1 = Stream.create!(
-          valid_attributes.merge(
-            city: "Austin",
-            state: "TX",
-          ),
-        )
+        stream1 = Stream.create!(austin_attributes)
+        stream2_attributes = austin_attributes.merge(link: "https://twitch.tv/test2", source: "Test Stream 2")
 
-        # Create second stream with same location
-        stream2 = Stream.create!(
-          valid_attributes.merge(
-            link: "https://twitch.tv/test2",
-            source: "Test Stream 2",
-            city: "Austin",
-            state: "TX",
-          ),
-        )
+        stream2 = nil
 
+        expect { stream2 = Stream.create!(stream2_attributes) }.not_to change(Location, :count)
         expect(stream1.location).to eq(stream2.location)
-        expect(Location.where(city: "Austin", state_province: "TX").count).to eq(1)
       end
 
       it "handles nil city gracefully" do
@@ -86,16 +71,9 @@ RSpec.describe "Stream Location Integration", type: :model do
         end
 
         it "accepts known city" do
-          stream = Stream.create!(
-            valid_attributes.merge(
-              city: "Austin",
-              state: "TX",
-            ),
-          )
+          stream = Stream.create!(valid_attributes.merge(city: "Austin", state: "TX"))
 
-          expect(stream.location).to be_present
-          expect(stream.location.city).to eq("Austin")
-          expect(stream.location.is_known_city).to be(true)
+          expect(stream.location).to have_attributes(city: "Austin", is_known_city: true)
         end
 
         it "rejects unknown city" do
@@ -141,9 +119,7 @@ RSpec.describe "Stream Location Integration", type: :model do
     it "can update location" do
       stream.update!(city: "Dallas", state: "TX")
 
-      expect(stream.location).to be_present
-      expect(stream.location.city).to eq("Dallas")
-      expect(stream.location.state_province).to eq("TX")
+      expect(stream.location).to have_attributes(city: "Dallas", state_province: "TX")
     end
 
     it "preserves location when updating other attributes" do
@@ -182,15 +158,9 @@ RSpec.describe "Stream Location Integration", type: :model do
 
   describe "city and state preservation" do
     it "preserves city and state separately from location" do
-      stream = Stream.create!(
-        valid_attributes.merge(
-          city: "Austin",
-          state: "TX",
-        ),
-      )
+      stream = Stream.create!(valid_attributes.merge(city: "Austin", state: "TX"))
 
-      expect(stream.city).to eq("Austin")
-      expect(stream.state).to eq("TX")
+      expect(stream).to have_attributes(city: "Austin", state: "TX")
       expect(stream.location).to be_present
     end
   end

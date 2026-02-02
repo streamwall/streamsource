@@ -42,10 +42,12 @@ RSpec.describe Stream, type: :model do
 
       it "updates status and timestamps" do
         offline_stream.mark_as_live!
-        expect(offline_stream.status).to eq("live")
-        expect(offline_stream.last_checked_at).to be_present
-        expect(offline_stream.last_live_at).to be_present
-        expect(offline_stream.started_at).to be_present
+        expect(offline_stream).to have_attributes(
+          status: "live",
+          last_checked_at: be_present,
+          last_live_at: be_present,
+          started_at: be_present,
+        )
       end
 
       it "preserves existing started_at" do
@@ -102,7 +104,7 @@ RSpec.describe Stream, type: :model do
 
       it "returns true if offline for more than 30 minutes" do
         stream.update!(status: "Offline")
-        stream.update_column(:last_checked_at, 31.minutes.ago)
+        stream.update!(last_checked_at: 31.minutes.ago)
         expect(stream.should_archive?).to be true
       end
     end

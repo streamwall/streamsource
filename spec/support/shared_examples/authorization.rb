@@ -46,16 +46,9 @@ RSpec.shared_examples "allows admin access" do |method, action, params = {}|
 end
 
 RSpec.shared_examples "admin crud authorization" do
-  let(:admin_user) { create(:user, :admin) }
-
-  before { setup_admin_auth(admin_user) }
+  before { delete admin_logout_path }
 
   context "when not authenticated" do
-    before do
-      allow_any_instance_of(Admin::BaseController).to receive(:authenticate_admin!).and_call_original
-      allow_any_instance_of(Admin::BaseController).to receive(:current_admin_user).and_return(nil)
-    end
-
     it "redirects to login for index" do
       get index_path
       expect(response).to redirect_to(admin_login_path)
@@ -124,7 +117,7 @@ RSpec.shared_examples "api crud authorization" do |resource_name|
   describe "update" do
     it_behaves_like "requires authentication", :patch, :update, { id: 1 }
 
-    context "as resource owner" do
+    context "when resource owner" do
       it "allows update" do
         request.headers.merge!(auth_headers(editor))
         patch :update, params: { id: resource.id, source: "Updated" }
@@ -132,7 +125,7 @@ RSpec.shared_examples "api crud authorization" do |resource_name|
       end
     end
 
-    context "as non-owner" do
+    context "when non-owner" do
       let(:other_editor) { create(:user, :editor) }
 
       it "denies update" do
@@ -142,7 +135,7 @@ RSpec.shared_examples "api crud authorization" do |resource_name|
       end
     end
 
-    context "as admin" do
+    context "when admin" do
       it "allows update" do
         request.headers.merge!(auth_headers(admin))
         patch :update, params: { id: resource.id, source: "Updated" }
@@ -154,7 +147,7 @@ RSpec.shared_examples "api crud authorization" do |resource_name|
   describe "destroy" do
     it_behaves_like "requires authentication", :delete, :destroy, { id: 1 }
 
-    context "as resource owner" do
+    context "when resource owner" do
       it "allows destroy" do
         request.headers.merge!(auth_headers(editor))
         delete :destroy, params: { id: resource.id }
@@ -162,7 +155,7 @@ RSpec.shared_examples "api crud authorization" do |resource_name|
       end
     end
 
-    context "as non-owner" do
+    context "when non-owner" do
       it "denies destroy" do
         request.headers.merge!(auth_headers(default_user))
         delete :destroy, params: { id: resource.id }
@@ -170,7 +163,7 @@ RSpec.shared_examples "api crud authorization" do |resource_name|
       end
     end
 
-    context "as admin" do
+    context "when admin" do
       it "allows destroy" do
         request.headers.merge!(auth_headers(admin))
         delete :destroy, params: { id: resource.id }

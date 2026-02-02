@@ -1,3 +1,4 @@
+# Authorization rules for streams.
 class StreamPolicy < ApplicationPolicy
   def create?
     user&.can_modify_streams? || false
@@ -11,6 +12,7 @@ class StreamPolicy < ApplicationPolicy
     update?
   end
 
+  # Scope for stream visibility.
   class Scope < Scope
     def resolve
       return scope.none unless user

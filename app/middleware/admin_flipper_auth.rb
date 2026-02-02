@@ -1,3 +1,4 @@
+# Rack middleware to guard Flipper UI access.
 class AdminFlipperAuth
   def initialize(app)
     @app = app

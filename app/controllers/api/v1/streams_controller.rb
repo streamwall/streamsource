@@ -1,32 +1,14 @@
 module Api
   module V1
+    # API endpoints for stream resources.
     class StreamsController < BaseController
+      include StreamFeatureActions
+
       before_action :set_stream, only: %i[show update destroy pin unpin]
 
       def index
         streams = policy_scope(Stream)
-
-        # Apply filters
-        streams = streams.where(status: params[:status]) if params[:status].present?
-        streams = streams.where.not(status: params[:notStatus]) if params[:notStatus].present?
-        streams = streams.by_user(User.find(params[:user_id])) if params[:user_id].present?
-        streams = streams.where(is_pinned: params[:is_pinned]) if params[:is_pinned].present?
-
-        # Apply sorting
-        streams = case params[:sort]
-                  when "name"
-                    streams.order(source: :asc)
-                  when "-name"
-                    streams.order(source: :desc)
-                  when "created"
-                    streams.order(created_at: :asc)
-                  when "-created"
-                    streams.order(created_at: :desc)
-                  else
-                    streams.order(is_pinned: :desc).recent
-                  end
-
-        # Pagination
+        streams = sorted_streams(filtered_streams(streams))
         streams = paginate(streams)
 
         render json: {
@@ -48,19 +30,7 @@ module Api
         stream = current_user.streams.build(stream_params.except(:location))
         authorize stream
 
-        # Handle location creation/lookup
-        if location_params.present?
-          location_result = Location.find_or_create_from_params(location_params)
-
-          # Check if location validation failed
-          if location_result.respond_to?(:errors) && !location_result.valid?
-            render_error("Location validation failed: #{location_result.errors.full_messages.join(', ')}",
-                         :unprocessable_entity)
-            return
-          end
-
-          stream.location = location_result
-        end
+        return unless assign_location?(stream)
 
         if stream.save
           render json: stream, serializer: StreamSerializer, scope: serialization_scope, status: :created
@@ -72,21 +42,7 @@ module Api
       def update
         authorize @stream
 
-        # Handle location update
-        if location_params.present?
-          location_result = Location.find_or_create_from_params(location_params)
-
-          # Check if location validation failed
-          if location_result.respond_to?(:errors) && !location_result.valid?
-            render_error("Location validation failed: #{location_result.errors.full_messages.join(', ')}",
-                         :unprocessable_entity)
-            return
-          end
-
-          @stream.location = location_result
-        elsif params.key?(:location) && params[:location].nil?
-          @stream.location = nil
-        end
+        return unless apply_location_update?(@stream)
 
         if @stream.update(stream_params.except(:location))
           render json: @stream, serializer: StreamSerializer, scope: serialization_scope
@@ -113,101 +69,6 @@ module Api
         render json: @stream, serializer: StreamSerializer, scope: serialization_scope
       end
 
-      # Analytics endpoint (feature flagged)
-      def analytics
-        unless Flipper.enabled?(ApplicationConstants::Features::STREAM_ANALYTICS, current_user)
-          render_error("This feature is not currently available", :forbidden)
-          return
-        end
-
-        set_stream
-        authorize @stream, :show?
-
-        # Placeholder analytics data
-        analytics_data = {
-          stream_id: @stream.id,
-          views_count: rand(1000..10_000),
-          unique_viewers: rand(100..1000),
-          average_watch_time: rand(60..3600),
-          peak_concurrent_viewers: rand(50..500),
-          last_updated: Time.current,
-        }
-
-        render json: analytics_data
-      end
-
-      # Bulk import endpoint (feature flagged)
-      def bulk_import
-        unless Flipper.enabled?(ApplicationConstants::Features::STREAM_BULK_IMPORT, current_user)
-          render_error("Bulk import is not currently available", :forbidden)
-          return
-        end
-
-        authorize Stream, :create?
-
-        streams_data = params[:streams] || []
-        imported_count = 0
-        errors = []
-
-        streams_data.each_with_index do |stream_params, index|
-          stream = current_user.streams.build(stream_params.permit(:source, :link, :status, :platform,
-                                                                   :orientation, :kind, :city, :state,
-                                                                   :notes, :title, :posted_by))
-          if stream.save
-            imported_count += 1
-          else
-            errors << { index: index, errors: stream.errors.full_messages }
-          end
-        end
-
-        render json: {
-          imported: imported_count,
-          total: streams_data.length,
-          errors: errors,
-        }
-      end
-
-      # Export endpoint (feature flagged)
-      def export
-        unless Flipper.enabled?(ApplicationConstants::Features::STREAM_EXPORT, current_user)
-          render_error("Export feature is not currently available", :forbidden)
-          return
-        end
-
-        streams = policy_scope(Stream)
-
-        # Apply same filters as index
-        streams = streams.where(status: params[:status]) if params[:status].present?
-        streams = streams.where.not(status: params[:notStatus]) if params[:notStatus].present?
-
-        export_data = streams.map do |stream|
-          {
-            source: stream.source,
-            link: stream.link,
-            status: stream.status,
-            platform: stream.platform,
-            orientation: stream.orientation,
-            kind: stream.kind,
-            city: stream.city,
-            state: stream.state,
-            notes: stream.notes,
-            title: stream.title,
-            posted_by: stream.posted_by,
-            is_pinned: stream.is_pinned,
-            created_at: stream.created_at.iso8601,
-            last_checked_at: stream.last_checked_at&.iso8601,
-            last_live_at: stream.last_live_at&.iso8601,
-            owner_email: stream.user.email,
-          }
-        end
-
-        render json: {
-          exported_at: Time.current.iso8601,
-          count: export_data.length,
-          streams: export_data,
-        }
-      end
-
       private
 
       def set_stream
@@ -217,6 +78,66 @@ module Api
       def stream_params
         params.permit(:source, :link, :status, :platform, :orientation, :kind,
                       :city, :state, :notes, :title, :posted_by, :location_id)
+      end
+
+      def filtered_streams(scope)
+        filters = {
+          status: ->(relation, value) { relation.where(status: value) },
+          user_id: ->(relation, value) { relation.by_user(User.find(value)) },
+          is_pinned: ->(relation, value) { relation.where(is_pinned: value) },
+        }
+
+        scoped = filters.reduce(scope) do |relation, (param_key, handler)|
+          value = params[param_key]
+          value.present? ? handler.call(relation, value) : relation
+        end
+
+        value = params[:notStatus]
+        value.present? ? scoped.where.not(status: value) : scoped
+      end
+
+      def sorted_streams(scope)
+        case params[:sort]
+        when "name"
+          scope.order(source: :asc)
+        when "-name"
+          scope.order(source: :desc)
+        when "created"
+          scope.order(created_at: :asc)
+        when "-created"
+          scope.order(created_at: :desc)
+        else
+          scope.order(is_pinned: :desc).recent
+        end
+      end
+
+      def assign_location?(stream)
+        return true if location_params.blank?
+
+        location_result = Location.find_or_create_from_params(location_params)
+        if location_result.nil?
+          render_error("Location validation failed", :unprocessable_entity)
+          return false
+        end
+
+        if location_result.respond_to?(:errors) && location_result.errors.any?
+          render_error(location_error_message(location_result), :unprocessable_entity)
+          return false
+        end
+
+        stream.location = location_result
+        true
+      end
+
+      def apply_location_update?(stream)
+        return assign_location?(stream) if location_params.present?
+
+        stream.location = nil if params.key?(:location) && params[:location].nil?
+        true
+      end
+
+      def location_error_message(location_result)
+        "Location validation failed: #{location_result.errors.full_messages.join(', ')}"
       end
 
       def location_params

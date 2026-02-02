@@ -1,3 +1,4 @@
+# JWT encode/decode helper.
 class JsonWebToken
   class << self
     def encode(payload, expiration = ApplicationConstants::JWT::EXPIRATION_TIME.from_now)
@@ -9,8 +10,6 @@ class JsonWebToken
     def decode(token)
       body = JWT.decode(token, Rails.application.secret_key_base, true, algorithm: ApplicationConstants::JWT::ALGORITHM)[0]
       ActiveSupport::HashWithIndifferentAccess.new(body)
-    rescue JWT::DecodeError => e
-      raise e
     end
   end
 end

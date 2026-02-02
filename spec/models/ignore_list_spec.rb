@@ -7,7 +7,7 @@ RSpec.describe IgnoreList, type: :model do
 
     it "validates inclusion of list_type" do
       expect(IgnoreList::LIST_TYPES).to eq(%w[twitch_user discord_user url domain])
-      expect(subject).to validate_inclusion_of(:list_type).in_array(IgnoreList::LIST_TYPES)
+      expect(build(:ignore_list)).to validate_inclusion_of(:list_type).in_array(IgnoreList::LIST_TYPES)
     end
 
     it "validates uniqueness of value scoped to list_type" do
@@ -54,21 +54,21 @@ RSpec.describe IgnoreList, type: :model do
   end
 
   describe "value normalization" do
-    context "for twitch users" do
+    context "when list_type is twitch_user" do
       it "downcases and strips whitespace" do
         ignore_list = create(:ignore_list, list_type: "twitch_user", value: "  TestUser  ")
         expect(ignore_list.value).to eq("testuser")
       end
     end
 
-    context "for discord users" do
+    context "when list_type is discord_user" do
       it "downcases and strips whitespace" do
         ignore_list = create(:ignore_list, list_type: "discord_user", value: "  DiscordUser#1234  ")
         expect(ignore_list.value).to eq("discorduser#1234")
       end
     end
 
-    context "for urls" do
+    context "when list_type is url" do
       it "adds https protocol if missing" do
         ignore_list = create(:ignore_list, list_type: "url", value: "example.com/path")
         expect(ignore_list.value).to eq("https://example.com/path")
@@ -90,7 +90,7 @@ RSpec.describe IgnoreList, type: :model do
       end
     end
 
-    context "for domains" do
+    context "when list_type is domain" do
       it "downcases and removes www prefix" do
         ignore_list = create(:ignore_list, list_type: "domain", value: "  WWW.Example.COM  ")
         expect(ignore_list.value).to eq("example.com")

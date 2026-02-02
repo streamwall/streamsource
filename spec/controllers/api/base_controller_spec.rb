@@ -29,7 +29,7 @@ RSpec.describe Api::BaseController, type: :controller do
       json = response.parsed_body
       # The locale extraction depends on I18n.available_locales configuration
       # If Spanish is not available, it will fall back to default
-      expect(%w[en es]).to include(json["locale"])
+      expect(json["locale"]).to be_in(%w[en es])
     end
 
     it "handles malformed Accept-Language header gracefully" do

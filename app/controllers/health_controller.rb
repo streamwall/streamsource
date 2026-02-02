@@ -1,3 +1,4 @@
+# Health check endpoints.
 class HealthController < Api::BaseController
   # Health endpoints don't need authentication
   skip_before_action :authenticate_user!

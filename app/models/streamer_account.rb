@@ -13,7 +13,7 @@
 #
 class StreamerAccount < ApplicationRecord
   # Associations
-  belongs_to :streamer
+  belongs_to :streamer, inverse_of: :streamer_accounts
 
   # Enums
   enum :platform, {
@@ -29,7 +29,7 @@ class StreamerAccount < ApplicationRecord
   validates :platform, presence: true, inclusion: { in: platforms.keys }
   validates :username, presence: true
   validates :username, uniqueness: { scope: %i[streamer_id platform],
-                                     message: "already exists for this platform" }
+                                     message: :taken_on_platform }
   validate :profile_url_format
 
   # Scopes
@@ -68,11 +68,8 @@ class StreamerAccount < ApplicationRecord
                          "https://www.tiktok.com/@#{username}"
                        when "twitch"
                          "https://www.twitch.tv/#{username}"
-                       when "youtube"
-                         # YouTube URLs are more complex, leave blank for manual entry
-                         nil
-                       when "facebook"
-                         # Facebook URLs are complex, leave blank for manual entry
+                       when "youtube", "facebook"
+                         # YouTube/Facebook URLs are complex, leave blank for manual entry
                          nil
                        when "instagram"
                          "https://www.instagram.com/#{username}/"
@@ -84,6 +81,6 @@ class StreamerAccount < ApplicationRecord
 
     return if profile_url.match?(%r{\Ahttps?://}i)
 
-    errors.add(:profile_url, "must be a valid URL starting with http:// or https://")
+    errors.add(:profile_url, :invalid_url)
   end
 end

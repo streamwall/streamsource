@@ -4,8 +4,7 @@ RSpec.describe "Admin::Users", type: :request do
   let(:admin_user) { create(:user, :admin) }
 
   before do
-    allow_any_instance_of(Admin::BaseController).to receive(:current_admin_user).and_return(admin_user)
-    allow_any_instance_of(Admin::BaseController).to receive(:authenticate_admin!).and_return(true)
+    sign_in_admin(admin_user)
   end
 
   describe "GET /admin/users" do

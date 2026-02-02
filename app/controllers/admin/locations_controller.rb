@@ -1,4 +1,5 @@
 module Admin
+  # CRUD for locations in the admin UI.
   class LocationsController < Admin::BaseController
     before_action :set_location, only: %i[show edit update destroy]
 
@@ -26,7 +27,7 @@ module Admin
 
       respond_to do |format|
         if @location.save
-          format.html { redirect_to admin_location_path(@location), notice: "Location was successfully created." }
+          format.html { redirect_to admin_location_path(@location), notice: t("admin.locations.created") }
           format.turbo_stream
         else
           format.html { render :new, status: :unprocessable_content }
@@ -38,7 +39,7 @@ module Admin
     def update
       respond_to do |format|
         if @location.update(location_params)
-          format.html { redirect_to admin_location_path(@location), notice: "Location was successfully updated." }
+          format.html { redirect_to admin_location_path(@location), notice: t("admin.locations.updated") }
           format.turbo_stream
         else
           format.html { render :edit, status: :unprocessable_content }
@@ -51,7 +52,7 @@ module Admin
       @location.destroy!
 
       respond_to do |format|
-        format.html { redirect_to admin_locations_path, notice: "Location was successfully deleted." }
+        format.html { redirect_to admin_locations_path, notice: t("admin.locations.deleted") }
         format.turbo_stream
       end
     end

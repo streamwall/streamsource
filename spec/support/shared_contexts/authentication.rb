@@ -32,10 +32,21 @@ RSpec.shared_context "with different user roles" do
   let(:default_user) { create(:user, :default) }
   let(:another_editor) { create(:user, :editor) }
 
-  let(:admin_headers) { auth_headers(admin_user) }
-  let(:editor_headers) { auth_headers(editor_user) }
-  let(:default_headers) { auth_headers(default_user) }
-  let(:another_editor_headers) { auth_headers(another_editor) }
+  def admin_headers
+    auth_headers(admin_user)
+  end
+
+  def editor_headers
+    auth_headers(editor_user)
+  end
+
+  def default_headers
+    auth_headers(default_user)
+  end
+
+  def another_editor_headers
+    auth_headers(another_editor)
+  end
 end
 
 RSpec.shared_context "with JWT variations" do
@@ -52,11 +63,43 @@ RSpec.shared_context "with sample resources" do
   let(:another_user) { create(:user, :editor) }
   let(:admin) { create(:user, :admin) }
 
-  let!(:user_stream) { create(:stream, :live, user: user) }
-  let!(:another_user_stream) { create(:stream, user: another_user) }
-  let!(:pinned_stream) { create(:stream, user: user, is_pinned: true) }
-  let!(:offline_stream) { create(:stream, user: user, status: "Offline") }
+  let(:streams) do
+    {
+      user_stream: create(:stream, :live, user: user),
+      another_user_stream: create(:stream, user: another_user),
+      pinned_stream: create(:stream, user: user, is_pinned: true),
+      offline_stream: create(:stream, user: user, status: "Offline"),
+    }
+  end
 
-  let!(:user_streamer) { create(:streamer, user: user) }
-  let!(:another_user_streamer) { create(:streamer, user: another_user) }
+  let(:streamers) do
+    {
+      user_streamer: create(:streamer, user: user),
+      another_user_streamer: create(:streamer, user: another_user),
+    }
+  end
+
+  def user_stream
+    streams[:user_stream]
+  end
+
+  def another_user_stream
+    streams[:another_user_stream]
+  end
+
+  def pinned_stream
+    streams[:pinned_stream]
+  end
+
+  def offline_stream
+    streams[:offline_stream]
+  end
+
+  def user_streamer
+    streamers[:user_streamer]
+  end
+
+  def another_user_streamer
+    streamers[:another_user_streamer]
+  end
 end

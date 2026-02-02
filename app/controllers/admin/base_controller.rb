@@ -1,4 +1,5 @@
 module Admin
+  # Shared controller behavior for admin HTML endpoints.
   class BaseController < ApplicationController
     include Pagy::Method
 
@@ -25,13 +26,13 @@ module Admin
 
     def authenticate_admin!
       unless user_signed_in?
-        redirect_to admin_login_path, alert: "You must be logged in to access this area."
+        redirect_to admin_login_path, alert: t("admin.auth.login_required")
         return
       end
 
       return if current_user&.admin? || current_user&.editor?
 
-      redirect_to admin_login_path, alert: "You must be logged in as an admin or editor to access this area."
+      redirect_to admin_login_path, alert: t("admin.auth.admin_or_editor_required")
     end
 
     def current_admin_user
@@ -62,13 +63,13 @@ module Admin
     def record_not_found(_exception)
       respond_to do |format|
         format.html do
-          flash[:alert] = "The requested resource could not be found."
+          flash[:alert] = t("admin.errors.not_found")
           redirect_to admin_streams_path
         end
         format.turbo_stream do
           render turbo_stream: turbo_stream.replace("flash",
                                                     partial: "admin/shared/flash",
-                                                    locals: { alert: "The requested resource could not be found." })
+                                                    locals: { alert: t("admin.errors.not_found") })
         end
         format.json { render json: { error: "Resource not found" }, status: :not_found }
       end
@@ -77,13 +78,13 @@ module Admin
     def record_invalid(exception)
       respond_to do |format|
         format.html do
-          flash[:alert] = "There was an error processing your request: #{exception.message}"
+          flash[:alert] = t("admin.errors.request_failed", message: exception.message)
           redirect_back_or_to(admin_streams_path)
         end
         format.turbo_stream do
           render turbo_stream: turbo_stream.replace("flash",
                                                     partial: "admin/shared/flash",
-                                                    locals: { alert: "There was an error processing your request." })
+                                                    locals: { alert: t("admin.errors.request_failed_generic") })
         end
         format.json { render json: { error: exception.message }, status: :unprocessable_content }
       end
@@ -92,13 +93,13 @@ module Admin
     def parameter_missing(exception)
       respond_to do |format|
         format.html do
-          flash[:alert] = "Required parameter missing: #{exception.param}"
+          flash[:alert] = t("admin.errors.parameter_missing", param: exception.param)
           redirect_back_or_to(admin_streams_path)
         end
         format.turbo_stream do
           render turbo_stream: turbo_stream.replace("flash",
                                                     partial: "admin/shared/flash",
-                                                    locals: { alert: "Required information is missing." })
+                                                    locals: { alert: t("admin.errors.parameter_missing_generic") })
         end
         format.json { render json: { error: "Parameter missing: #{exception.param}" }, status: :bad_request }
       end

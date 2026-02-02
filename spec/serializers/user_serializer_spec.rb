@@ -62,13 +62,9 @@ RSpec.describe UserSerializer do
     end
 
     it "includes all attributes for each user" do
-      serialization.each do |user_json|
-        expect(user_json).to have_key(:id)
-        expect(user_json).to have_key(:email)
-        expect(user_json).to have_key(:role)
-        expect(user_json).to have_key(:created_at)
-        expect(user_json).to have_key(:updated_at)
-      end
+      expect(serialization).to all(
+        include(:id, :email, :role, :created_at, :updated_at),
+      )
     end
   end
 end
