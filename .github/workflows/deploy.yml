@@ -47,7 +47,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0  # Full history for better caching
     
@@ -78,7 +78,7 @@ jobs:
           ${{ runner.os }}-node-
 
     - name: Setup Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'yarn'
@@ -145,7 +145,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set image name
       id: image
@@ -183,7 +183,7 @@ jobs:
     
     - name: Deploy to DigitalOcean
       id: deploy
-      uses: appleboy/ssh-action@v1.0.0
+      uses: appleboy/ssh-action@v1.2.2
       with:
         host: ${{ secrets.DROPLET_HOST }}
         username: deploy
@@ -231,7 +231,7 @@ jobs:
     
     - name: Rollback on failure
       if: failure() && steps.deploy.conclusion == 'failure'
-      uses: appleboy/ssh-action@v1.0.0
+      uses: appleboy/ssh-action@v1.2.2
       with:
         host: ${{ secrets.DROPLET_HOST }}
         username: deploy
