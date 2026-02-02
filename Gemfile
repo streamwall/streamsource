@@ -89,9 +89,6 @@ group :development, :test do
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", require: false
 
-  # Performance profiling for CI performance checks
-  gem "memory_profiler", require: false
-
   # Ruby style guide enforcement
   gem "rubocop", require: false
   gem "rubocop-performance", require: false
@@ -117,6 +114,7 @@ end
 
 group :test do
   gem "rswag-specs"
+  gem "rspec_junit_formatter"
   gem "simplecov", require: false
   gem "vcr"
   gem "webmock"

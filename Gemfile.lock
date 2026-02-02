@@ -204,7 +204,6 @@ GEM
       net-pop
       net-smtp
     marcel (1.1.0)
-    memory_profiler (1.1.0)
     mini_magick (5.3.1)
       logger
     mini_mime (1.1.5)
@@ -343,6 +342,8 @@ GEM
       rspec-mocks (~> 3.13)
       rspec-support (~> 3.13)
     rspec-support (3.13.7)
+    rspec_junit_formatter (0.6.0)
+      rspec-core (>= 2, < 4, != 2.12.0)
     rswag-api (2.17.0)
       activesupport (>= 5.2, < 8.2)
       railties (>= 5.2, < 8.2)
@@ -460,7 +461,6 @@ DEPENDENCIES
   jsbundling-rails
   jwt
   lograge
-  memory_profiler
   ostruct
   pagy
   pg
@@ -473,6 +473,7 @@ DEPENDENCIES
   rails-controller-testing
   redis (>= 4.0.1)
   rspec-rails
+  rspec_junit_formatter
   rswag-api
   rswag-specs
   rswag-ui
