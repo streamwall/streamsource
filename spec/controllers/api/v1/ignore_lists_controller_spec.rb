@@ -6,7 +6,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
 
   describe 'GET #index' do
     before do
-      sign_in user
+      request.headers.merge!(auth_headers(admin))
       create_list(:ignore_list, 3, :twitch_user)
       create_list(:ignore_list, 2, :discord_user)
       create_list(:ignore_list, 2, :url)
@@ -44,7 +44,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
 
   describe 'GET #by_type' do
     before do
-      sign_in user
+      request.headers.merge!(auth_headers(admin))
       create(:ignore_list, list_type: 'twitch_user', value: 'baduser1')
       create(:ignore_list, list_type: 'twitch_user', value: 'baduser2')
       create(:ignore_list, list_type: 'discord_user', value: 'spammer#1234')
@@ -67,7 +67,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
   describe 'GET #show' do
     let(:ignore_list) { create(:ignore_list) }
 
-    before { sign_in user }
+    before { request.headers.merge!(auth_headers(admin)) }
 
     it 'returns the ignore list' do
       get :show, params: { id: ignore_list.id }
@@ -79,7 +79,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
 
   describe 'POST #create' do
     context 'as admin' do
-      before { sign_in admin }
+      before { request.headers.merge!(auth_headers(admin)) }
 
       it 'creates a new ignore list' do
         expect {
@@ -104,14 +104,14 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
             value: 'test'
           }
         }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json['errors']).to include('List type is not included in the list')
       end
     end
 
     context 'as regular user' do
-      before { sign_in user }
+      before { request.headers.merge!(auth_headers(user)) }
 
       it 'returns forbidden' do
         post :create, params: {
@@ -126,7 +126,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
   end
 
   describe 'POST #bulk_create' do
-    before { sign_in admin }
+    before { request.headers.merge!(auth_headers(admin)) }
 
     it 'creates multiple ignore lists' do
       expect {
@@ -166,7 +166,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
     let(:ignore_list) { create(:ignore_list) }
 
     context 'as admin' do
-      before { sign_in admin }
+      before { request.headers.merge!(auth_headers(admin)) }
 
       it 'updates the ignore list' do
         patch :update, params: {
@@ -181,7 +181,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
     end
 
     context 'as regular user' do
-      before { sign_in user }
+      before { request.headers.merge!(auth_headers(user)) }
 
       it 'returns forbidden' do
         patch :update, params: {
@@ -197,7 +197,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
     let!(:ignore_list) { create(:ignore_list) }
 
     context 'as admin' do
-      before { sign_in admin }
+      before { request.headers.merge!(auth_headers(admin)) }
 
       it 'deletes the ignore list' do
         expect {
@@ -208,7 +208,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
     end
 
     context 'as regular user' do
-      before { sign_in user }
+      before { request.headers.merge!(auth_headers(user)) }
 
       it 'returns forbidden' do
         delete :destroy, params: { id: ignore_list.id }
@@ -221,7 +221,7 @@ RSpec.describe Api::V1::IgnoreListsController, type: :controller do
     let!(:lists) { create_list(:ignore_list, 5) }
 
     context 'as admin' do
-      before { sign_in admin }
+      before { request.headers.merge!(auth_headers(admin)) }
 
       it 'deletes multiple ignore lists' do
         ids_to_delete = lists.first(3).map(&:id)

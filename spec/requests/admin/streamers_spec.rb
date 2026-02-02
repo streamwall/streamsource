@@ -147,7 +147,7 @@ RSpec.describe "Admin::Streamers", type: :request do
 
       it "returns unprocessable entity status" do
         post admin_streamers_path, params: invalid_params
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end
@@ -219,7 +219,7 @@ RSpec.describe "Admin::Streamers", type: :request do
 
       it "returns unprocessable entity status" do
         patch admin_streamer_path(streamer), params: invalid_params
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end

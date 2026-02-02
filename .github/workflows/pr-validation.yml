@@ -89,6 +89,17 @@ jobs:
     - name: Install dependencies
       run: |
         yarn install --frozen-lockfile --prefer-offline
+
+    - name: Run Ruby lint
+      run: bundle exec rubocop
+
+    - name: Run JavaScript lint
+      run: yarn lint:js
+
+    - name: Build assets
+      run: |
+        yarn build
+        yarn build:css
     
     - name: Setup test database
       env:

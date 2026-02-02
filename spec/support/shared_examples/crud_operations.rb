@@ -71,7 +71,7 @@ RSpec.shared_examples "successful create action" do |options = {}|
 
     it "returns unprocessable entity" do
       post :create, params: { resource_name => invalid_params }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 end
@@ -107,7 +107,7 @@ RSpec.shared_examples "successful update action" do |options = {}|
 
     it "returns unprocessable entity" do
       patch :update, params: { id: resource.id, resource_name => invalid_params }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 end
@@ -208,7 +208,7 @@ RSpec.shared_examples "admin crud actions" do |resource_name, options = {}|
 
       it "returns unprocessable entity" do
         post :create, params: { resource_name => invalid_params }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end

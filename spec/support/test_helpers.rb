@@ -56,7 +56,7 @@ module TestHelpers
   # Helper to test validation errors
   def test_validation_errors(action, invalid_params, expected_errors)
     send(action, params: invalid_params)
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
 
     errors = json_response["error"] || json_response["errors"]
     expected_errors.each do |error|

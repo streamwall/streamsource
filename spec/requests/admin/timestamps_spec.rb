@@ -138,7 +138,7 @@ RSpec.describe "Admin::Timestamps", type: :request do
 
       it "returns unprocessable entity" do
         post admin_timestamps_path, params: invalid_params
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end

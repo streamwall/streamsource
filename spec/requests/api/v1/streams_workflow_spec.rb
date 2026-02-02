@@ -172,7 +172,7 @@ RSpec.describe "Streams Workflow", type: :request do
            params: { source: "", link: "not-a-url" },
            headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       error = response.parsed_body["error"]
       expect(error).to include("Source can't be blank")
       expect(error).to include("Link must be a valid HTTP or HTTPS URL")
