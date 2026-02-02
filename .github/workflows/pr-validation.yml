@@ -6,10 +6,10 @@ on:
     branches: [ main, develop ]
 
 env:
-  RUBY_VERSION: '3.3.6'
-  NODE_VERSION: '20'
-  POSTGRES_VERSION: '17'
-  REDIS_VERSION: '7'
+  RUBY_VERSION: '4.0.1'
+  NODE_VERSION: '24'
+  POSTGRES_VERSION: '18'
+  REDIS_VERSION: '8'
 
 jobs:
   # Parallel job for different test types
@@ -25,7 +25,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:17
+        image: postgres:${{ env.POSTGRES_VERSION }}
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: streamsource_test
@@ -38,7 +38,7 @@ jobs:
           - 5432:5432
       
       redis:
-        image: redis:7
+        image: redis:${{ env.REDIS_VERSION }}
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s

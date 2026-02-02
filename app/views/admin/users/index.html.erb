@@ -120,7 +120,7 @@
       <div class="bg-gray-50 border-b border-gray-200 px-6 py-3">
         <div class="flex items-center justify-between">
           <p class="text-sm text-gray-700">
-            Showing <%= @pagy.offset + 1 %> to <%= [@pagy.offset + @pagy.items, @pagy.count].min %> of <%= @pagy.count %> users
+            Showing <%= @pagy.offset + 1 %> to <%= [@pagy.offset + @pagy.limit, @pagy.count].min %> of <%= @pagy.count %> users
             <% if params.values.any?(&:present?) %>
               <span class="text-gray-500">(filtered)</span>
             <% end %>
@@ -165,8 +165,8 @@
   <% if @pagy.pages > 1 %>
     <div class="mt-6 flex items-center justify-between">
       <div class="flex-1 flex justify-between sm:hidden">
-        <% if @pagy.prev %>
-          <%= link_to "Previous", admin_users_path(page: @pagy.prev, **params.except(:page).permit!),
+        <% if @pagy.previous %>
+          <%= link_to "Previous", admin_users_path(page: @pagy.previous, **params.except(:page).permit!),
               class: "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
         <% end %>
         <% if @pagy.next %>
@@ -177,11 +177,11 @@
       <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
           <p class="text-sm text-gray-700">
-            Showing <span class="font-medium"><%= @pagy.offset + 1 %></span> to <span class="font-medium"><%= [@pagy.offset + @pagy.items, @pagy.count].min %></span> of <span class="font-medium"><%= @pagy.count %></span> results
+            Showing <span class="font-medium"><%= @pagy.offset + 1 %></span> to <span class="font-medium"><%= [@pagy.offset + @pagy.limit, @pagy.count].min %></span> of <span class="font-medium"><%= @pagy.count %></span> results
           </p>
         </div>
         <div>
-          <%== pagy_bootstrap_nav(@pagy) %>
+          <%== @pagy.series_nav(:bootstrap) %>
         </div>
       </div>
     </div>

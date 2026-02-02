@@ -218,7 +218,7 @@ docker compose exec web bin/rails db:version
 - **API**: http://localhost:3000
 - **Admin Interface**: http://localhost:3000/admin
 - **API Documentation**: http://localhost:3000/api-docs
-- **Feature Flags**: http://localhost:3000/admin/feature_flags
+- **Feature Flags**: http://localhost:3000/admin/flipper
 - **Health Check**: http://localhost:3000/health
 - **WebSocket**: ws://localhost:3000/cable
 

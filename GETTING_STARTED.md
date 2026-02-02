@@ -50,7 +50,7 @@ Once running, you can access:
 | 👨‍💼 **Admin Interface** | http://localhost:3000/admin | Management dashboard |
 | 📚 **API Documentation** | http://localhost:3000/api-docs | Interactive API docs (Swagger) |
 | 🏥 **Health Check** | http://localhost:3000/health | System status endpoint |
-| 🎛️ **Feature Flags** | http://localhost:3000/admin/feature_flags | Feature toggle management |
+| 🎛️ **Feature Flags** | http://localhost:3000/admin/flipper | Feature toggle management |
 
 ## 🔐 Default Admin Access
 
@@ -276,8 +276,8 @@ make quality
 
 ### Architecture Overview
 - **Rails 8** - Modern Ruby on Rails framework
-- **PostgreSQL 17** - Primary database
-- **Redis 7** - Caching and session storage
+- **PostgreSQL 18** - Primary database
+- **Redis 8** - Caching and session storage
 - **Hotwire/Stimulus** - Real-time frontend updates
 - **ActionCable** - WebSocket support for real-time features
 - **Docker** - Containerized development environment

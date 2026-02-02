@@ -1,0 +1,15 @@
+services:
+  web:
+    image: ${STREAMSOURCE_IMAGE:-streamsource:latest}
+    build: .
+    command: ./bin/rails server -b 0.0.0.0
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_ENV: production
+    env_file:
+      - ${STREAMSOURCE_ENV_FILE:-.env.production}
+    volumes: []
+    stdin_open: false
+    tty: false
+    restart: unless-stopped

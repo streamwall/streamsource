@@ -1,13 +1,14 @@
-# StreamSource DigitalOcean Deployment Guide
+# StreamSource DigitalOcean Deployment Guide (Docker-First)
 
-This guide provides step-by-step instructions for deploying StreamSource to a DigitalOcean Droplet with cost optimization for 8-hour daily usage.
+This guide provides step-by-step instructions for deploying StreamSource to a DigitalOcean Droplet using Docker.
+It is optimized for low-cost, single-droplet production setups and avoids installing Ruby/Node on the host.
 
 ## Table of Contents
 1. [Overview](#overview)
 2. [Prerequisites](#prerequisites)
 3. [Initial Droplet Setup](#initial-droplet-setup)
-4. [Application Deployment](#application-deployment)
-5. [SSL Certificate Setup](#ssl-certificate-setup)
+4. [Docker-First Application Deployment](#docker-first-application-deployment)
+5. [SSL/TLS Setup](#ssltls-setup)
 6. [GitHub Actions Setup](#github-actions-setup)
 7. [Cost Optimization](#cost-optimization)
 8. [Maintenance](#maintenance)
@@ -16,21 +17,22 @@ This guide provides step-by-step instructions for deploying StreamSource to a Di
 ## Overview
 
 ### Architecture
-- **Single Droplet**: Hosts Rails app, PostgreSQL, Redis, and Nginx
-- **Estimated Cost**: ~$6/month (with 16-hour daily shutdown)
-- **Recommended Droplet**: Basic ($6/mo) - 1 vCPU, 1GB RAM, 25GB SSD
+- **Docker-first**: Rails app runs in a container built from the repo Dockerfile
+- **Database**: PostgreSQL 18 (managed or containerized)
+- **Cache/Sessions**: Redis 8 (managed or containerized)
+- **Reverse Proxy**: Nginx/Caddy or a cloud load balancer
 
-### Why Droplet over App Platform?
-- **Cost Savings**: ~$21/month saved with scheduled shutdowns
-- **Flexibility**: Full control over configuration
-- **Single Instance**: Perfect for low-traffic internal tools
+### Estimated Cost
+- **Droplet**: ~$6/month (Basic, 1 vCPU, 1GB RAM, 25GB SSD)
+- **Optional**: Managed DB/Redis adds cost but simplifies ops
 
 ## Prerequisites
 
 1. DigitalOcean account
-2. Domain name (for SSL)
+2. Domain name (recommended for SSL)
 3. GitHub repository with your StreamSource code
 4. SSH key pair for secure access
+5. Docker Engine + Docker Compose plugin (installed on the droplet)
 
 ## Initial Droplet Setup
 
@@ -38,463 +40,201 @@ This guide provides step-by-step instructions for deploying StreamSource to a Di
 
 ```bash
 # Via DigitalOcean UI:
-# - Choose Ubuntu 22.04 LTS
+# - Choose Ubuntu 24.04 LTS
 # - Select Basic plan ($6/month)
 # - Choose datacenter closest to users
 # - Add your SSH key
-# - Enable backups (optional, +$1.20/month)
+# - Enable backups (optional)
 ```
 
-### 2. Initial Server Configuration
-
-SSH into your droplet as root:
+### 2. SSH into the Droplet
 
 ```bash
 ssh root@your-droplet-ip
 ```
 
-Run the setup script:
+### 3. Install Docker Engine + Compose
+
+Install Docker using the official Docker docs for your OS. Confirm installation:
 
 ```bash
-# Download and run setup script
-wget https://raw.githubusercontent.com/YOUR_USERNAME/streamsource/main/deploy/setup-droplet.sh
-chmod +x setup-droplet.sh
-./setup-droplet.sh
+docker --version
+docker compose version
 ```
 
-### 3. Configure Deploy User
+### 4. Create a Deploy User (Optional but Recommended)
 
 ```bash
-# Set password for deploy user
-passwd deploy
+adduser deploy
+usermod -aG sudo deploy
+usermod -aG docker deploy
+```
 
-# Add your SSH key to deploy user
+Log in as the deploy user:
+
+```bash
 su - deploy
-mkdir ~/.ssh
-chmod 700 ~/.ssh
-# Paste your public key into:
-nano ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-exit
 ```
 
-### 4. Update PostgreSQL Password
+## Docker-First Application Deployment
+
+### 1. Clone the Repository
 
 ```bash
-# Connect to PostgreSQL
-sudo -u postgres psql
-
-# Update password (replace with strong password)
-ALTER USER streamsource WITH PASSWORD 'your-strong-password-here';
-\q
+mkdir -p /var/www
+cd /var/www
+git clone https://github.com/YOUR_USERNAME/streamsource.git
+cd streamsource
 ```
 
-## Application Deployment
+### 2. Configure Environment
 
-### 1. Prepare Shared Files
-
-SSH as deploy user:
+Create a production env file from the template:
 
 ```bash
-ssh deploy@your-droplet-ip
-```
-
-Create environment file:
-
-```bash
-cd /var/www/streamsource/shared
-cp /path/to/deploy/.env.production.template .env.production
+cp deploy/.env.production.template .env.production
 nano .env.production
-# Update all values, especially:
-# - SECRET_KEY_BASE (generate with: openssl rand -hex 64)
-# - DATABASE_URL with your PostgreSQL password
-# - APPLICATION_HOST with your domain
 ```
 
-Create Rails master key:
+Update at least:
+- `SECRET_KEY_BASE`
+- `DATABASE_URL`
+- `REDIS_URL`
+- `APPLICATION_HOST`
+
+If your env file lives elsewhere, set `STREAMSOURCE_ENV_FILE=/path/to/.env.production` when running Compose.
+To deploy a registry image, set `STREAMSOURCE_IMAGE=ghcr.io/your-org/streamsource:tag`.
+
+### 3. Start Services with Docker Compose
+
+Start the app against external PostgreSQL/Redis (recommended for production):
 
 ```bash
-# Copy from your local development environment
-nano /var/www/streamsource/shared/config/master.key
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web
 ```
 
-### 2. Configure Nginx
+If you want local containers instead, you can start them explicitly:
 
 ```bash
-# Copy nginx configuration
-sudo cp /path/to/deploy/nginx.conf /etc/nginx/sites-available/streamsource
-sudo ln -s /etc/nginx/sites-available/streamsource /etc/nginx/sites-enabled/
-sudo rm /etc/nginx/sites-enabled/default
-
-# Update server_name in the config
-sudo nano /etc/nginx/sites-available/streamsource
-# Replace your-domain.com with your actual domain
-
-# Test configuration
-sudo nginx -t
-sudo systemctl reload nginx
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web db redis
 ```
 
-### 3. Setup Systemd Service
+### 4. Verify the App
 
 ```bash
-# Copy puma service file
-sudo cp /path/to/deploy/puma.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable puma
+curl -f http://localhost:3000/health
 ```
 
-### 4. Deploy Application
+## SSL/TLS Setup
 
-Make the deploy script executable and run it:
+Terminate TLS at a reverse proxy or a cloud load balancer. Common options:
+- **DigitalOcean Load Balancer** (simplest)
+- **Nginx** on the droplet
+- **Caddy** (automatic HTTPS)
 
-```bash
-chmod +x /path/to/deploy/deploy.sh
-# Edit the script to set your GitHub repository URL
-nano /path/to/deploy/deploy.sh
-
-# Run deployment
-./deploy.sh
-```
-
-## SSL Certificate Setup
-
-### Using Let's Encrypt (Free)
-
-```bash
-# Run certbot
-sudo certbot --nginx -d your-domain.com -d www.your-domain.com
-
-# Follow prompts to:
-# - Enter email
-# - Agree to terms
-# - Choose redirect option (recommended)
-
-# Test auto-renewal
-sudo certbot renew --dry-run
-```
+If using Nginx, point it to `http://127.0.0.1:3000` and enable HTTPS with Let's Encrypt.
 
 ## GitHub Actions Setup
 
-### Overview
+The `deploy.yml` workflow builds and pushes a Docker image (GHCR) and then SSHes into the droplet to pull and restart
+the container with Docker Compose. If the repository is private, run `docker login ghcr.io` on the droplet using a
+PAT that has read access to packages.
 
-GitHub Actions provides free CI/CD for public repositories (2,000 minutes/month). This setup includes:
-- Automated testing on every push
-- Deployment to production on main branch
-- Scheduled power management to save costs
-
-### 1. Configure Repository Secrets
-
-Go to your GitHub repository → Settings → Secrets and variables → Actions
-
-Add these secrets:
-
-```yaml
-# Required for deployment
-DROPLET_HOST: your-droplet-ip-or-domain
-DEPLOY_SSH_KEY: (contents of your deployment SSH private key)
-
-# Required for power management
-DO_API_TOKEN: your-digitalocean-api-token
-DROPLET_ID: your-droplet-id
-
-# Optional
-SLACK_WEBHOOK: your-slack-webhook-url
-```
-
-### 2. Generate Deployment SSH Key
-
-On your local machine:
+A minimal deploy step on the droplet looks like this:
 
 ```bash
-# Generate a new SSH key pair for GitHub Actions
-ssh-keygen -t ed25519 -f ~/.ssh/github_actions_deploy -C "github-actions"
-
-# Copy the public key to your droplet
-ssh-copy-id -i ~/.ssh/github_actions_deploy.pub deploy@your-droplet-ip
-
-# Copy the private key content for GitHub secret
-cat ~/.ssh/github_actions_deploy
-# Copy this entire output to DEPLOY_SSH_KEY secret
-```
-
-### 3. Get DigitalOcean API Token
-
-1. Go to DigitalOcean → API → Tokens
-2. Generate new token with read/write access
-3. Copy token to DO_API_TOKEN secret
-
-### 4. Find Your Droplet ID
-
-```bash
-# Use this command with your API token
-curl -X GET \
-  -H "Authorization: Bearer YOUR_DO_API_TOKEN" \
-  "https://api.digitalocean.com/v2/droplets" \
-  | jq '.droplets[] | {id, name}'
-```
-
-### 5. Update Repository Settings
-
-In your repository:
-
-1. Update `deploy/github-deploy.sh` permissions:
-   ```bash
-   chmod +x deploy/github-deploy.sh
-   git add deploy/github-deploy.sh
-   git commit -m "Make deploy script executable"
-   ```
-
-2. Ensure the deploy user can restart services:
-   ```bash
-   # On your droplet, add to sudoers
-   sudo visudo
-   # Add this line:
-   deploy ALL=(ALL) NOPASSWD: /bin/systemctl restart puma, /bin/systemctl reload nginx
-   ```
-
-### 6. Deployment Workflow
-
-The deployment workflow (`.github/workflows/deploy.yml`) runs on:
-- Every push to main branch
-- Manual trigger via GitHub UI
-
-Workflow steps:
-1. Run full test suite
-2. Security checks (Brakeman, bundler-audit)
-3. Deploy to production if tests pass
-4. Health check verification
-5. Optional Slack notification
-
-### 7. Power Management Workflow
-
-The power management workflow (`.github/workflows/scheduled-power.yml`) runs:
-- **Power ON**: 9 AM EST Monday-Friday
-- **Power OFF**: 6 PM EST Monday-Friday
-- Manual trigger with action choice
-
-To adjust schedule:
-1. Edit the cron expressions in the workflow
-2. Times are in UTC (EST+5)
-
-### 8. Manual Deployment
-
-To trigger deployment manually:
-1. Go to Actions tab in GitHub
-2. Select "Deploy to DigitalOcean"
-3. Click "Run workflow"
-4. Select branch and run
-
-### 9. Monitoring Deployments
-
-- **GitHub Actions**: Check Actions tab for logs
-- **Server logs**: `ssh deploy@your-droplet "tail -f /var/www/streamsource/shared/log/production.log"`
-- **Deployment history**: `ssh deploy@your-droplet "ls -la /var/www/streamsource/releases/"`
-
-### Using Let's Encrypt (Free)
-
-```bash
-# Run certbot
-sudo certbot --nginx -d your-domain.com -d www.your-domain.com
-
-# Follow prompts to:
-# - Enter email
-# - Agree to terms
-# - Choose redirect option (recommended)
-
-# Test auto-renewal
-sudo certbot renew --dry-run
+cd /var/www/streamsource
+docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web
 ```
 
 ## Cost Optimization
 
 ### Automated Shutdown/Startup
 
-1. **Setup Shutdown Schedule**:
+You can still use the scheduled power workflows, but update any shutdown scripts to stop containers first:
 
 ```bash
-sudo chmod +x /path/to/deploy/schedule-power.sh
-sudo /path/to/deploy/schedule-power.sh
-
-# Adjust shutdown time (default 6 PM)
-crontab -e
-# Change: 0 18 * * * to your preferred time
+cd /var/www/streamsource
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+sudo shutdown -h now
 ```
 
-2. **Setup Automated Startup** (choose one):
-
-   **Option A: DigitalOcean API** (Recommended)
-   ```bash
-   # From your local machine or another server
-   # Edit do-power-on.sh with your API token and droplet ID
-   chmod +x do-power-on.sh
-   
-   # Add to cron (10 AM startup)
-   crontab -e
-   0 10 * * 1-5 /path/to/do-power-on.sh
-   ```
-
-   **Option B: Manual Startup**
-   - Log into DigitalOcean console each morning
-   - Click "Power On" for your droplet
-
-### Backup Strategy
-
-1. **Setup Automated Backups**:
+For automated startup, use DigitalOcean's API to power on the droplet, then start containers:
 
 ```bash
-# Copy backup script
-sudo cp /path/to/deploy/backup.sh /usr/local/bin/
-sudo chmod +x /usr/local/bin/backup.sh
-
-# Configure database password
-sudo nano /usr/local/bin/backup.sh
-# Add: DB_PASSWORD="your-postgres-password"
-
-# Add to cron (daily at 5 AM)
-sudo crontab -e
-0 5 * * * /usr/local/bin/backup.sh
+cd /var/www/streamsource
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web db redis
 ```
-
-2. **Optional: DigitalOcean Spaces** for offsite backup:
-   - Create a Space in DigitalOcean
-   - Install s3cmd: `sudo apt-get install s3cmd`
-   - Configure s3cmd with your Space credentials
-   - Uncomment the upload section in backup.sh
 
 ## Maintenance
 
 ### Regular Updates
 
 ```bash
-# System updates (monthly)
+# Update system packages (monthly)
 sudo apt-get update && sudo apt-get upgrade
 
-# Application updates
-cd /path/to/deploy
-./deploy.sh
+# Pull new image (if using a registry)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web
+
+# Recreate containers
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web
 ```
 
-### Monitoring
+### Logs
 
-1. **Check Application Health**:
 ```bash
-curl https://your-domain.com/health
-```
-
-2. **View Logs**:
-```bash
-# Application logs
-tail -f /var/www/streamsource/shared/log/production.log
-
-# Puma logs
-sudo journalctl -u puma -f
-
-# Nginx logs
-tail -f /var/www/streamsource/shared/log/nginx.access.log
-```
-
-3. **System Resources**:
-```bash
-htop  # Real-time resource usage
-df -h  # Disk usage
+# App logs
+cd /var/www/streamsource
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f web
 ```
 
 ### Database Maintenance
 
-```bash
-# Connect to production database
-cd /var/www/streamsource/current
-RAILS_ENV=production bundle exec rails console
+If you use containerized PostgreSQL:
 
-# Run PostgreSQL vacuum (monthly)
-sudo -u postgres psql streamsource_production -c "VACUUM ANALYZE;"
+```bash
+# Example: run psql inside the container
+cd /var/www/streamsource
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec db psql -U streamsource -d streamsource_production
 ```
 
 ## Troubleshooting
 
-### Common Issues
-
-1. **502 Bad Gateway**
-   - Check if Puma is running: `sudo systemctl status puma`
-   - Check Puma logs: `sudo journalctl -u puma -n 50`
-   - Restart: `sudo systemctl restart puma`
-
-2. **Asset Compilation Errors**
-   - Check Node/Yarn installation
-   - Manually compile: `cd /var/www/streamsource/current && RAILS_ENV=production bundle exec rails assets:precompile`
-
-3. **Database Connection Errors**
-   - Verify PostgreSQL is running: `sudo systemctl status postgresql`
-   - Check credentials in .env.production
-   - Test connection: `RAILS_ENV=production bundle exec rails db:version`
-
-4. **ActionCable/WebSocket Issues**
-   - Check Redis: `redis-cli ping`
-   - Verify Nginx WebSocket configuration
-   - Check browser console for connection errors
-
-### Rollback Deployment
+### 1. App Not Responding
 
 ```bash
-# List releases
-ls -la /var/www/streamsource/releases/
-
-# Rollback to previous release
-ln -nfs /var/www/streamsource/releases/[PREVIOUS_TIMESTAMP] /var/www/streamsource/current
-sudo systemctl restart puma
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f web
 ```
 
-### Emergency Access
+### 2. Database Connection Errors
 
-If locked out:
-1. Use DigitalOcean console access
-2. Boot into recovery mode
-3. Reset passwords/SSH keys as needed
+- Confirm `DATABASE_URL` is correct
+- Check Postgres container: `docker compose logs db`
+
+### 3. Asset Build Errors
+
+- Rebuild the image: `docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache web`
+
+### 4. Rollback
+
+If using a registry, pin to a previous image tag:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web
+```
 
 ## Security Checklist
 
-- [ ] Strong passwords for all accounts
 - [ ] SSH key authentication only (disable password auth)
-- [ ] Firewall configured (ufw)
-- [ ] Fail2ban active
+- [ ] Firewall configured (UFW)
 - [ ] SSL certificate installed
 - [ ] Regular security updates
-- [ ] Database backups configured
-- [ ] Application secrets properly managed
+- [ ] Backups configured
 
-## Performance Optimization
+---
 
-For better performance with limited resources:
-
-1. **Tune PostgreSQL** (1GB RAM config):
-```bash
-sudo nano /etc/postgresql/*/main/postgresql.conf
-# Set:
-# shared_buffers = 256MB
-# effective_cache_size = 768MB
-# work_mem = 4MB
-sudo systemctl restart postgresql
-```
-
-2. **Optimize Puma Workers**:
-   - With 1GB RAM, use 2 workers max
-   - Adjust in .env.production: `WEB_CONCURRENCY=2`
-
-3. **Enable Swap** (if needed):
-```bash
-sudo fallocate -l 1G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-```
-
-## Support
-
-For StreamSource-specific issues:
-- Check logs first
-- Review this guide
-- Consult Rails and DigitalOcean documentation
-
-Remember to update this guide as your deployment evolves!
+This guide assumes a Docker-first deployment. The legacy, host-based deploy scripts in `deploy/` can be used if you
+need them, but they are no longer the recommended path.

@@ -1,6 +1,6 @@
 class ApplicationController < ActionController::API
   include JwtAuthenticatable
-  include Pagy::Backend
+  include Pagy::Method
 
   before_action :check_maintenance_mode
 
@@ -19,7 +19,7 @@ class ApplicationController < ActionController::API
     {
       current_page: pagy.page,
       next_page: pagy.next,
-      prev_page: pagy.prev,
+      prev_page: pagy.previous,
       total_pages: pagy.pages,
       total_count: pagy.count,
     }

@@ -7,11 +7,11 @@
 ## Ruby Version Requirement
 
 This project uses:
-- Ruby 3.3.6
+- Ruby 4.0.1
 - Rails 8.0.x
-- PostgreSQL 17
-- Redis 7
-- Node.js 20
+- PostgreSQL 18
+- Redis 8
+- Node.js 24
 
 ## Setup Instructions
 
@@ -193,5 +193,5 @@ docker compose exec web yarn build:css
 1. Review the API documentation at http://localhost:3000/api-docs
 2. Explore the admin interface at http://localhost:3000/admin
 3. Run the test suite to ensure everything is working
-4. Check out the feature flags at http://localhost:3000/admin/feature_flags
+4. Check out the feature flags at http://localhost:3000/admin/flipper
 5. Review CONTRIBUTING.md for development guidelines

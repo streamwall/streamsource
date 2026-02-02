@@ -7,7 +7,7 @@ This document outlines the comprehensive linting and code quality setup for Stre
 StreamSource uses a multi-layered approach to code quality:
 
 - **Ruby**: RuboCop with Rails, Performance, and RSpec extensions
-- **JavaScript**: ESLint with Standard config
+- **JavaScript**: ESLint with recommended rules + project style config
 - **Security**: Brakeman static analysis
 - **Editor**: EditorConfig for consistent formatting
 - **Auto-fixing**: Automated code style correction
@@ -70,8 +70,8 @@ make lint-ruby       # Check Ruby issues only
 
 ### Configuration
 
-- **File**: `.eslintrc.json`
-- **Standard**: JavaScript Standard Style
+- **File**: `eslint.config.js`
+- **Baseline**: ESLint recommended + project style rules
 - **Environment**: Browser + ES2022
 
 ### Key Rules
@@ -208,7 +208,7 @@ Shows:
 ### Adding New Rules
 
 1. **Ruby**: Edit `.rubocop.yml`
-2. **JavaScript**: Edit `.eslintrc.json`
+2. **JavaScript**: Edit `eslint.config.js`
 3. **Security**: Configure via Brakeman options
 
 ### Project-Specific Overrides
@@ -266,7 +266,7 @@ Focus on:
 
 ```bash
 bundle update rubocop rubocop-rails rubocop-performance rubocop-rspec
-yarn upgrade eslint eslint-config-standard
+yarn upgrade eslint @eslint/js globals
 ```
 
 ### Configuration Updates

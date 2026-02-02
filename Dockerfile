@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version
-ARG RUBY_VERSION=3.3.6
+ARG RUBY_VERSION=4.0.1
 FROM ruby:$RUBY_VERSION-slim as base
 
 # Rails app lives here
@@ -19,8 +19,8 @@ FROM base as build
 # Install packages needed to build gems and Node.js for asset compilation
 # Also include packages needed for testing when building test image
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libpq-dev libvips pkg-config curl jq && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install --no-install-recommends -y build-essential git libpq-dev libvips libyaml-dev pkg-config curl jq && \
+    curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g yarn
 
@@ -33,7 +33,7 @@ RUN rm -rf .bundle ~/.bundle && \
     bundle config set --global path "${BUNDLE_PATH}" && \
     bundle config set --global without "" && \
     bundle config unset with && \
-    bundle lock --add-platform aarch64-linux --add-platform x86_64-linux && \
+    bundle lock --add-platform aarch64-linux-gnu --add-platform x86_64-linux && \
     bundle install --jobs 4 --retry 3 && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
@@ -43,7 +43,7 @@ COPY . .
 
 # Install JavaScript dependencies
 RUN if [ -f "package.json" ]; then \
-      yarn install; \
+      yarn install --production=false; \
     fi
 
 # Build assets (CSS and JavaScript)
@@ -53,7 +53,7 @@ RUN if [ -f "package.json" ]; then \
     fi
 
 # Precompile assets with Propshaft
-RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
+RUN SECRET_KEY_BASE_DUMMY=1 RAILS_ENV=production NODE_ENV=production YARN_PRODUCTION=false SKIP_FLIPPER_PRELOAD=1 ./bin/rails assets:precompile
 
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
@@ -61,12 +61,9 @@ RUN bundle exec bootsnap precompile app/ lib/
 # Final stage for app image
 FROM base
 
-# Install packages needed for deployment including Node.js for runtime JavaScript
+# Install packages needed for deployment
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libvips postgresql-client jq && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    npm install -g yarn && \
+    apt-get install --no-install-recommends -y curl libvips libyaml-0-2 postgresql-client jq && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Copy built artifacts: gems, application

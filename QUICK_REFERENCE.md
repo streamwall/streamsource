@@ -143,7 +143,7 @@ docker compose exec web bundle outdated
 - `/admin/annotations` - Manage annotations
 - `/admin/users` - Manage users
 - `/admin/notes` - View all notes
-- `/admin/feature_flags` - Feature flags (Flipper UI)
+- `/admin/flipper` - Feature flags (Flipper UI)
 
 ### Default Credentials (Development)
 - Email: `admin@example.com`

@@ -1,6 +1,6 @@
 module Admin
   class BaseController < ActionController::Base
-    include Pagy::Backend
+    include Pagy::Method
 
     # Include helpers for session and flash
     include ActionController::Cookies

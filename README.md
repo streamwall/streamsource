@@ -46,16 +46,16 @@ A modern Rails 8 application for managing streamers and streaming sources with b
 
 ### Backend
 - **Framework**: Rails 8.0.x (API + Admin)
-- **Language**: Ruby 3.3.6
-- **Database**: PostgreSQL 17
-- **Cache/Sessions**: Redis 7
+- **Language**: Ruby 4.0.1
+- **Database**: PostgreSQL 18
+- **Cache/Sessions**: Redis 8
 - **Web Server**: Puma with multi-worker support
 
 ### Frontend (Admin Interface)
 - **JavaScript**: Hotwire (Turbo + Stimulus) with esbuild
-- **CSS**: Tailwind CSS 3.x
+- **CSS**: Tailwind CSS 4.x
 - **Real-time**: ActionCable WebSockets
-- **Build Tools**: Node.js 20, Yarn
+- **Build Tools**: Node.js 24, Yarn
 
 ### Authentication & Security
 - **API Auth**: JWT with 24-hour expiration
@@ -120,7 +120,7 @@ The application will automatically:
 - API: `http://localhost:3000`
 - Admin Interface: `http://localhost:3000/admin`
 - API Documentation: `http://localhost:3000/api-docs`
-- Feature Flags: `http://localhost:3000/admin/feature_flags`
+- Feature Flags: `http://localhost:3000/admin/flipper`
 
 ### Default Credentials
 
@@ -174,7 +174,7 @@ The admin interface supports multiple users editing simultaneously:
 - `/admin/streamers` - Streamer and account management
 - `/admin/timestamps` - Event tracking across streams
 - `/admin/users` - User and role management
-- `/admin/feature_flags` - Toggle features via Flipper UI
+- `/admin/flipper` - Toggle features via Flipper UI
 
 ### Keyboard Shortcuts
 

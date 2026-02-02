@@ -12,14 +12,17 @@ Feature flags allow you to:
 
 ## Accessing Flipper UI
 
-The Flipper UI is available at `/admin/feature_flags` for admin users only.
+The Flipper UI is available at `/admin/flipper` for admin users only.
 
 To access:
 1. Login as an admin user at `/admin/login`
-2. Navigate to `http://localhost:3000/admin/feature_flags`
+2. Navigate to `http://localhost:3000/admin/flipper`
 3. Use the UI to manage feature flags
 
 Note: The Flipper UI is protected by basic auth middleware (AdminFlipperAuth) that requires admin role.
+
+Feature flags are seeded via `db/seeds/feature_flags.rb`. Running `bin/rails db:seed` will add all known feature
+keys and apply the default enable/disable state.
 
 ## Available Feature Flags
 
@@ -217,7 +220,7 @@ Flipper.disable(:maintenance_mode)
 
 ### Via Flipper UI
 
-1. Navigate to `/admin/feature_flags`
+1. Navigate to `/admin/flipper`
 2. Find the feature in the list
 3. Use the toggles to enable/disable for:
    - All users

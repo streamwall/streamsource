@@ -35,9 +35,9 @@ StreamSource is a Rails 8 application providing both a RESTful API and a real-ti
 
 ### Core Technologies
 - **Rails 8.0.x** - Main framework
-- **Ruby 3.3.6** - Programming language
-- **PostgreSQL 17** - Primary database
-- **Redis 7** - Caching, ActionCable, sessions
+- **Ruby 4.0.1** - Programming language
+- **PostgreSQL 18** - Primary database
+- **Redis 8** - Caching, ActionCable, sessions
 - **Puma** - Web server with multi-worker support
 - **Docker** - Containerization (mandatory)
 

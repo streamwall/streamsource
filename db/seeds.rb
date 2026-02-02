@@ -2,6 +2,9 @@
 # development, test). The code here should be idempotent so that it can be executed at any point in every environment.
 # The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
 
+# Load feature flags first so models can reference them during seed data creation.
+load Rails.root.join("db/seeds/feature_flags.rb")
+
 # Only create default users in development and test environments
 if Rails.env.local?
   # Create default admin user
@@ -226,6 +229,3 @@ if Stream.none? && Rails.env.local?
 
   Rails.logger.debug "Created 1 sample stream for default user"
 end
-
-# Load feature flags
-load Rails.root.join("db/seeds/feature_flags.rb")

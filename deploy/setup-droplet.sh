@@ -22,16 +22,14 @@ apt-get install -y \
   nginx \
   certbot \
   python3-certbot-nginx \
-  nodejs \
-  npm \
   imagemagick \
   libvips-tools \
   htop \
   fail2ban \
   ufw
 
-# Install Node.js 20.x
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+# Install Node.js 24.x (required only when building assets on the host)
+curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
 apt-get install -y nodejs
 
 # Install Yarn
@@ -51,8 +49,8 @@ export RBENV_ROOT="/opt/rbenv"
 export PATH="$RBENV_ROOT/bin:$PATH"
 eval "$(rbenv init -)"
 
-rbenv install 3.3.6
-rbenv global 3.3.6
+rbenv install 4.0.1
+rbenv global 4.0.1
 
 # Create deploy user
 echo "Creating deploy user..."

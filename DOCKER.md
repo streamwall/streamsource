@@ -8,9 +8,9 @@ StreamSource is fully containerized using Docker and Docker Compose, providing a
 
 ### `Dockerfile`
 Production-ready multi-stage build that:
-- Uses Ruby 3.3.6 slim base image
+- Uses Ruby 4.0.1 slim base image
 - Multi-stage build with separate test stage
-- Installs all dependencies including Node.js 20 and Yarn
+- Installs Node.js 24 and Yarn in the build stage for asset compilation (runtime image excludes Node)
 - Builds JavaScript and CSS assets
 - Runs as non-root user for security
 - Includes health check configuration
@@ -18,8 +18,8 @@ Production-ready multi-stage build that:
 
 ### `docker compose.yml`
 Development environment configuration with:
-- PostgreSQL 17.5 database
-- Redis 7 for caching and sessions (with separate test database)
+- PostgreSQL 18 database
+- Redis 8 for caching and sessions (with separate test database)
 - Rails web application with automatic database preparation
 - JavaScript and CSS build watchers (using profiles)
 - Test service for isolated test runs
@@ -62,10 +62,19 @@ docker compose down -v  # Also removes volumes
 docker compose up -d --build  # Rebuild and start
 ```
 
+### Production (Docker Compose)
+
+```bash
+STREAMSOURCE_ENV=prod make up
+```
+
+Set `STREAMSOURCE_ENV_FILE` and `STREAMSOURCE_IMAGE` in your infrastructure environment if you need to override the
+defaults (`.env.production` and `streamsource:latest`).
+
 ## Service Details
 
 ### PostgreSQL Database
-- **Image**: postgres:17-alpine
+- **Image**: postgres:18-alpine
 - **Port**: 5432
 - **Credentials**:
   - Username: `streamsource`
@@ -75,14 +84,14 @@ docker compose up -d --build  # Rebuild and start
 - **Data Persistence**: `postgres_data` volume
 
 ### Redis
-- **Image**: redis:7-alpine
+- **Image**: redis:8-alpine
 - **Port**: 6379
 - **Health Check**: Uses `redis-cli ping`
 - **No authentication** (development only)
 
 ### Rails Application
 - **Build**: From Dockerfile in project root
-- **Port**: 3000
+- **Port**: 3001 (host) → 3000 (container)
 - **Environment**:
   - `RAILS_ENV=development`
   - `DATABASE_URL` configured for PostgreSQL
@@ -96,8 +105,8 @@ docker compose up -d --build  # Rebuild and start
 ### JavaScript/CSS Watchers (Optional)
 - **js service**: Watches and rebuilds JavaScript
 - **css service**: Watches and rebuilds CSS
-- **Profile**: `donotstart` (manual start)
-- **Usage**: `docker compose --profile donotstart up js css`
+- **Profile**: `assets` (manual start)
+- **Usage**: `docker compose --profile assets up js css`
 
 ## Test Environment
 
@@ -167,8 +176,8 @@ docker compose exec web yarn build
 docker compose exec web yarn build:css
 
 # Watch mode (using separate services)
-docker compose --profile donotstart up js
-docker compose --profile donotstart up css
+docker compose --profile assets up js
+docker compose --profile assets up css
 
 # Install new JavaScript packages
 docker compose exec web yarn add <package-name>

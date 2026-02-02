@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -16,7 +16,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - "6380:6379"
     healthcheck:

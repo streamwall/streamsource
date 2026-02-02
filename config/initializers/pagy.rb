@@ -1,8 +1,3 @@
 # Pagy configuration
-require "pagy/extras/bootstrap"
-
-# Set default items per page
-Pagy::DEFAULT[:items] = 20
-
-# Enable overflow handling
-Pagy::DEFAULT[:overflow] = :last_page
+# Pagy 43 uses Pagy.options and limit instead of items.
+Pagy.options[:limit] = 20

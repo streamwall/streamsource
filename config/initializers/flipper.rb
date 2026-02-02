@@ -42,7 +42,7 @@ ActiveSupport.on_load(:active_record) do
 end
 
 # Preload all features in production for better performance
-if Rails.env.production?
+if Rails.env.production? && ENV["SKIP_FLIPPER_PRELOAD"].blank?
   Rails.application.config.after_initialize do
     Flipper.preload_all
   rescue StandardError => e

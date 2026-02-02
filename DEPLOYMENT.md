@@ -9,8 +9,8 @@ StreamSource uses a modern deployment stack with:
 - **Infrastructure**: DigitalOcean Droplet with Ubuntu 24.04 LTS
 - **Application Server**: Puma with Unix socket communication
 - **Web Server**: Nginx with SSL/TLS termination
-- **Database**: PostgreSQL 17
-- **Cache/Sessions**: Redis 7
+- **Database**: PostgreSQL 18
+- **Cache/Sessions**: Redis 8
 - **Real-time**: ActionCable WebSocket support
 - **Security**: fail2ban, UFW firewall, SSL/TLS, rate limiting
 - **Monitoring**: Health checks, structured logging, Prometheus metrics
@@ -37,8 +37,53 @@ SLACK_WEBHOOK=your_slack_webhook_url
 - DigitalOcean account with API access
 - Domain name (recommended) or IP address
 - SSH key pair for deployment access
+- Docker Engine + Docker Compose plugin (recommended for production)
 
-## 🏗️ Infrastructure Setup
+## 🐳 Docker-First Production (Recommended)
+
+StreamSource is container-first. In production, build a Docker image and run it without installing Ruby/Node on the host.
+
+### 1. Install Docker Engine + Compose
+
+Install Docker Engine and the Docker Compose plugin on your server (use Docker’s official install docs for your OS).
+
+### 2. Provision PostgreSQL + Redis
+
+Prefer managed PostgreSQL/Redis for production. If you want local containers, you can use Docker Compose:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d db redis
+```
+
+### 3. Configure Environment
+
+Copy `deploy/.env.production.template` to a server-local path (for example `/var/www/streamsource/.env.production`) and
+fill in production values. Set `DATABASE_URL`/`REDIS_URL` to point at your managed services or container hostnames:
+
+```bash
+DATABASE_URL=postgres://streamsource:your_secure_password@streamsource-db:5432/streamsource_production
+REDIS_URL=redis://streamsource-redis:6379/0
+```
+
+If you deploy from a container registry, set `STREAMSOURCE_IMAGE=ghcr.io/your-org/streamsource:tag` when running
+Docker Compose.
+
+### 4. Build and Run the App Container
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web
+```
+
+The container entrypoint will create/migrate and seed the database on first boot.
+
+### 5. Reverse Proxy / SSL
+
+Terminate TLS with your cloud load balancer or a reverse proxy (Nginx/Caddy/Traefik) and forward traffic to port 3000.
+
+## 🏗️ Legacy Host-Based Setup (Optional)
+
+The sections below assume a host-based install with systemd + Nginx. If you’re running Docker-first, you can skip
+this entire section.
 
 ### 1. Create DigitalOcean Droplet
 
@@ -62,10 +107,10 @@ curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/streamsource/main/dep
 
 The setup script will:
 - ✅ Update system packages
-- ✅ Install Ruby 3.3.6 via rbenv
-- ✅ Install Node.js 20.x and Yarn
-- ✅ Install and configure PostgreSQL 17
-- ✅ Install and configure Redis 7
+- ✅ Install Ruby 4.0.1 via rbenv
+- ✅ Install Node.js 24.x and Yarn (only required when building assets on the host)
+- ✅ Install and configure PostgreSQL 18
+- ✅ Install and configure Redis 8
 - ✅ Install and configure Nginx
 - ✅ Set up UFW firewall (ports 22, 80, 443)
 - ✅ Configure fail2ban for security
@@ -194,19 +239,25 @@ sudo systemctl restart nginx
 
 The deployment pipeline consists of two main workflows:
 
+The `deploy.yml` workflow builds/pushes a Docker image and restarts the container on the host using Docker Compose.
+The scripts in `deploy/` are for the legacy host-based flow.
+
+If the repository is private, make sure the droplet is logged in to `ghcr.io` with a PAT that has package read access.
+
 #### 1. Main Deployment (`deploy.yml`)
 Triggers on push to `main` branch:
 
 **Test Stage:**
-- ✅ Ruby 3.3.6 + Node.js 20 setup
-- ✅ PostgreSQL 17 + Redis 7 services
-- ✅ Dependency installation (Bundle + Yarn)
+- ✅ Ruby 4.0.1 + Node.js 24 (asset build/test only)
+- ✅ PostgreSQL 18 + Redis 8 services
+- ✅ Dependency installation (Bundle + Yarn for asset build)
 - ✅ Database setup and migrations
 - ✅ Full RSpec test suite
 - ✅ Security checks (Brakeman + Bundler Audit)
 
 **Deploy Stage:**
-- ✅ SSH deployment to DigitalOcean
+- ✅ Build & push Docker image to GHCR
+- ✅ SSH into droplet and restart via Docker Compose
 - ✅ Zero-downtime deployment with health checks
 - ✅ Automatic rollback on failure
 - ✅ Slack notifications
@@ -218,7 +269,19 @@ Automated cost savings:
 - ✅ Manual trigger via GitHub Actions UI
 - ✅ Graceful service shutdown before power off
 
-### Manual Deployment
+### Manual Deployment (Docker-First)
+
+For manual deployments, pull/build the image and restart the container:
+
+```bash
+# Pull from your registry (or build locally)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web
+
+# Recreate the app container
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web
+```
+
+### Manual Deployment (Legacy)
 
 For manual deployments or troubleshooting:
 
@@ -269,6 +332,9 @@ The application provides several health check endpoints:
 Monitor application logs:
 
 ```bash
+# Docker logs (recommended for container deployments)
+docker logs -f streamsource-web
+
 # Application logs
 tail -f /var/www/streamsource/shared/log/production.log
 
@@ -310,13 +376,12 @@ Keep the system updated:
 # Update system packages
 sudo apt update && sudo apt upgrade -y
 
-# Update Ruby gems
-cd /var/www/streamsource/current && bundle update
-
-# Update Node.js packages
-cd /var/www/streamsource/current && yarn upgrade
+# Update application dependencies (Docker-first)
+# - Update Gemfile/package.json in git, rebuild the image, and redeploy.
 
 # Restart services after updates
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web
+# Legacy host-based:
 sudo systemctl restart puma nginx
 ```
 

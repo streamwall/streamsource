@@ -1,6 +1,22 @@
 # Feature flags seed data
 Rails.logger.debug "Setting up feature flags..."
 
+# Ensure all known features exist before toggling
+all_features = [
+  ApplicationConstants::Features::STREAM_ANALYTICS,
+  ApplicationConstants::Features::STREAM_BULK_IMPORT,
+  ApplicationConstants::Features::STREAM_EXPORT,
+  ApplicationConstants::Features::STREAM_TAGS,
+  ApplicationConstants::Features::ADVANCED_SEARCH,
+  ApplicationConstants::Features::MAINTENANCE_MODE,
+  ApplicationConstants::Features::LOCATION_VALIDATION,
+]
+
+all_features.each do |feature|
+  Flipper.add(feature)
+  Rails.logger.debug { "Added feature: #{feature}" }
+end
+
 # Enable some features by default
 [
   ApplicationConstants::Features::STREAM_ANALYTICS,
