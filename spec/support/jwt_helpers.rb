@@ -4,14 +4,14 @@ module JwtHelpers
     # Use Devise JWT format
     payload = {
       sub: user.id.to_s,
-      scp: 'user',
+      scp: "user",
       aud: nil,
       iat: Time.current.to_i,
       exp: (options[:exp] || 1.day.from_now).to_i,
-      jti: SecureRandom.uuid
+      jti: SecureRandom.uuid,
     }
-    
-    JWT.encode(payload, jwt_secret, 'HS256')
+
+    JWT.encode(payload, jwt_secret, "HS256")
   end
 
   # Build JWT payload with default and custom attributes (legacy method)

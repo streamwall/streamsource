@@ -113,12 +113,10 @@ RSpec.describe LocationSerializer do
     it "includes all attributes for each location" do
       # Handle both array and wrapped responses
       locations_data = json.is_a?(Array) ? json : json.values.first
-      locations_data.each do |location_json|
-        expect(location_json).to include(
-          "id", "city", "state_province", "country",
-          "display_name", "normalized_name", "streams_count"
-        )
-      end
+      expect(locations_data).to all(include(
+                                      "id", "city", "state_province", "country",
+                                      "display_name", "normalized_name", "streams_count"
+                                    ))
     end
   end
 

@@ -58,7 +58,7 @@ module Admin
             ]
           end
         else
-          format.html { render :new, status: :unprocessable_entity }
+          format.html { render :new, status: :unprocessable_content }
           format.turbo_stream do
             render turbo_stream: turbo_stream.replace(
               "timestamp_form",
@@ -84,7 +84,7 @@ module Admin
             ]
           end
         else
-          format.html { render :edit, status: :unprocessable_entity }
+          format.html { render :edit, status: :unprocessable_content }
           format.turbo_stream do
             render turbo_stream: turbo_stream.replace(
               "timestamp_form",

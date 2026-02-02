@@ -46,29 +46,27 @@ module Admin
       @stream = Stream.new(stream_params)
 
       # Handle location validation if feature is enabled
-      if Flipper.enabled?(ApplicationConstants::Features::LOCATION_VALIDATION)
-        if params[:stream][:city].present?
-          location_result = Location.find_or_create_from_params(
-            city: params[:stream][:city],
-            state_province: params[:stream][:state]
-          )
-          
-          if location_result.respond_to?(:errors) && !location_result.valid?
-            @stream.errors.add(:city, location_result.errors[:city].first)
-            
-            respond_to do |format|
-              @users = User.order(:email)
-              format.html { render :new, status: :unprocessable_entity }
-              format.turbo_stream do
-                render turbo_stream: turbo_stream.replace(
-                  "stream_form",
-                  partial: "admin/streams/form",
-                  locals: { stream: @stream, users: @users },
-                )
-              end
+      if Flipper.enabled?(ApplicationConstants::Features::LOCATION_VALIDATION) && params[:stream][:city].present?
+        location_result = Location.find_or_create_from_params(
+          city: params[:stream][:city],
+          state_province: params[:stream][:state],
+        )
+
+        if location_result.respond_to?(:errors) && !location_result.valid?
+          @stream.errors.add(:city, location_result.errors[:city].first)
+
+          respond_to do |format|
+            @users = User.order(:email)
+            format.html { render :new, status: :unprocessable_content }
+            format.turbo_stream do
+              render turbo_stream: turbo_stream.replace(
+                "stream_form",
+                partial: "admin/streams/form",
+                locals: { stream: @stream, users: @users },
+              )
             end
-            return
           end
+          return
         end
       end
 
@@ -85,7 +83,7 @@ module Admin
           end
         else
           @users = User.order(:email)
-          format.html { render :new, status: :unprocessable_entity }
+          format.html { render :new, status: :unprocessable_content }
           format.turbo_stream do
             render turbo_stream: turbo_stream.replace(
               "stream_form",
@@ -99,29 +97,27 @@ module Admin
 
     def update
       # Handle location validation if feature is enabled
-      if Flipper.enabled?(ApplicationConstants::Features::LOCATION_VALIDATION)
-        if params[:stream][:city].present?
-          location_result = Location.find_or_create_from_params(
-            city: params[:stream][:city],
-            state_province: params[:stream][:state]
-          )
-          
-          if location_result.respond_to?(:errors) && !location_result.valid?
-            @stream.errors.add(:city, location_result.errors[:city].first)
-            
-            respond_to do |format|
-              @users = User.order(:email)
-              format.html { render :edit, status: :unprocessable_entity }
-              format.turbo_stream do
-                render turbo_stream: turbo_stream.replace(
-                  "stream_form",
-                  partial: "admin/streams/form",
-                  locals: { stream: @stream, users: @users },
-                )
-              end
+      if Flipper.enabled?(ApplicationConstants::Features::LOCATION_VALIDATION) && params[:stream][:city].present?
+        location_result = Location.find_or_create_from_params(
+          city: params[:stream][:city],
+          state_province: params[:stream][:state],
+        )
+
+        if location_result.respond_to?(:errors) && !location_result.valid?
+          @stream.errors.add(:city, location_result.errors[:city].first)
+
+          respond_to do |format|
+            @users = User.order(:email)
+            format.html { render :edit, status: :unprocessable_content }
+            format.turbo_stream do
+              render turbo_stream: turbo_stream.replace(
+                "stream_form",
+                partial: "admin/streams/form",
+                locals: { stream: @stream, users: @users },
+              )
             end
-            return
           end
+          return
         end
       end
 
@@ -138,7 +134,7 @@ module Admin
           end
         else
           @users = User.order(:email)
-          format.html { render :edit, status: :unprocessable_entity }
+          format.html { render :edit, status: :unprocessable_content }
           format.turbo_stream do
             render turbo_stream: turbo_stream.replace(
               "stream_form",

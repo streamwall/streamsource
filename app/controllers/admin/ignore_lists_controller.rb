@@ -1,19 +1,15 @@
 module Admin
   class IgnoreListsController < BaseController
-    before_action :set_ignore_list, only: [:edit, :update, :destroy]
+    before_action :set_ignore_list, only: %i[edit update destroy]
 
     def index
       @ignore_lists = IgnoreList.all
 
       # Filter by list type
-      if params[:list_type].present?
-        @ignore_lists = @ignore_lists.where(list_type: params[:list_type])
-      end
+      @ignore_lists = @ignore_lists.where(list_type: params[:list_type]) if params[:list_type].present?
 
       # Search functionality
-      if params[:search].present?
-        @ignore_lists = @ignore_lists.where('value ILIKE ?', "%#{params[:search]}%")
-      end
+      @ignore_lists = @ignore_lists.where("value ILIKE ?", "%#{params[:search]}%") if params[:search].present?
 
       # Sorting
       @ignore_lists = @ignore_lists.order(created_at: :desc)
@@ -31,43 +27,42 @@ module Admin
       @ignore_list = IgnoreList.new(list_type: params[:list_type])
     end
 
+    def edit; end
+
     def create
       @ignore_list = IgnoreList.new(ignore_list_params)
 
       if @ignore_list.save
-        redirect_to admin_ignore_lists_path, notice: 'Ignore list entry was successfully created.'
+        redirect_to admin_ignore_lists_path, notice: "Ignore list entry was successfully created."
       else
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
-    end
-
-    def edit
     end
 
     def update
       if @ignore_list.update(ignore_list_params)
-        redirect_to admin_ignore_lists_path, notice: 'Ignore list entry was successfully updated.'
+        redirect_to admin_ignore_lists_path, notice: "Ignore list entry was successfully updated."
       else
-        render :edit, status: :unprocessable_entity
+        render :edit, status: :unprocessable_content
       end
     end
 
     def destroy
       @ignore_list.destroy
-      redirect_to admin_ignore_lists_path, notice: 'Ignore list entry was successfully deleted.'
+      redirect_to admin_ignore_lists_path, notice: "Ignore list entry was successfully deleted."
     end
 
     # Bulk import action
     def bulk_import
-      if request.post?
-        results = process_bulk_import(params[:import_data], params[:list_type])
-        
-        if results[:errors].empty?
-          redirect_to admin_ignore_lists_path, notice: "Successfully imported #{results[:created].count} entries."
-        else
-          redirect_to admin_ignore_lists_path, 
-                      alert: "Imported #{results[:created].count} entries. #{results[:errors].count} errors occurred."
-        end
+      return unless request.post?
+
+      results = process_bulk_import(params[:import_data], params[:list_type])
+
+      if results[:errors].empty?
+        redirect_to admin_ignore_lists_path, notice: "Successfully imported #{results[:created].count} entries."
+      else
+        redirect_to admin_ignore_lists_path,
+                    alert: "Imported #{results[:created].count} entries. #{results[:errors].count} errors occurred."
       end
     end
 
@@ -78,12 +73,12 @@ module Admin
     end
 
     def ignore_list_params
-      params.require(:ignore_list).permit(:list_type, :value, :notes)
+      params.expect(ignore_list: %i[list_type value notes])
     end
 
     def process_bulk_import(import_data, list_type)
       results = { created: [], errors: [] }
-      
+
       return results if import_data.blank? || list_type.blank?
 
       # Split by newlines and process each line
@@ -92,7 +87,7 @@ module Admin
         next if value.blank?
 
         ignore_list = IgnoreList.new(list_type: list_type, value: value)
-        
+
         if ignore_list.save
           results[:created] << ignore_list
         else

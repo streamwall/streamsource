@@ -39,8 +39,8 @@ module Admin
           end
         else
           @users = User.order(:email)
-          format.html { render :new, status: :unprocessable_entity }
-          format.turbo_stream { render :new, status: :unprocessable_entity }
+          format.html { render :new, status: :unprocessable_content }
+          format.turbo_stream { render :new, status: :unprocessable_content }
         end
       end
     end
@@ -59,8 +59,8 @@ module Admin
           end
         else
           @users = User.order(:email)
-          format.html { render :edit, status: :unprocessable_entity }
-          format.turbo_stream { render :edit, status: :unprocessable_entity }
+          format.html { render :edit, status: :unprocessable_content }
+          format.turbo_stream { render :edit, status: :unprocessable_content }
         end
       end
     end

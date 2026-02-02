@@ -43,7 +43,7 @@ Rails.application.configure do
   config.hosts << "localhost"
   config.hosts << /.*\.example\.com/
   # Also allow IP addresses for tests
-  config.hosts << /[0-9\.]+/
+  config.hosts << /[0-9.]+/
   config.hosts << /\[.*\]/
 
   # Store uploaded files on the local file system in a temporary directory.

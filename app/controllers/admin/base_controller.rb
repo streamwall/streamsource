@@ -1,4 +1,5 @@
 module Admin
+  # rubocop:disable Rails/ApplicationController
   class BaseController < ActionController::Base
     include Pagy::Method
 
@@ -14,7 +15,7 @@ module Admin
     before_action :check_maintenance_mode
 
     layout "admin"
-    
+
     helper_method :current_user, :user_signed_in?, :current_admin_user
 
     rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
@@ -28,7 +29,7 @@ module Admin
         redirect_to admin_login_path, alert: "You must be logged in to access this area."
         return
       end
-      
+
       return if current_user&.admin? || current_user&.editor?
 
       redirect_to admin_login_path, alert: "You must be logged in as an admin or editor to access this area."
@@ -37,11 +38,11 @@ module Admin
     def current_admin_user
       @current_admin_user ||= current_user if current_user&.admin?
     end
-    
+
     def current_user
       @current_user ||= User.find_by(id: session[:admin_user_id]) if session[:admin_user_id]
     end
-    
+
     def user_signed_in?
       current_user.present?
     end
@@ -78,14 +79,14 @@ module Admin
       respond_to do |format|
         format.html do
           flash[:alert] = "There was an error processing your request: #{exception.message}"
-          redirect_back(fallback_location: admin_streams_path)
+          redirect_back_or_to(admin_streams_path)
         end
         format.turbo_stream do
           render turbo_stream: turbo_stream.replace("flash",
                                                     partial: "admin/shared/flash",
                                                     locals: { alert: "There was an error processing your request." })
         end
-        format.json { render json: { error: exception.message }, status: :unprocessable_entity }
+        format.json { render json: { error: exception.message }, status: :unprocessable_content }
       end
     end
 
@@ -93,7 +94,7 @@ module Admin
       respond_to do |format|
         format.html do
           flash[:alert] = "Required parameter missing: #{exception.param}"
-          redirect_back(fallback_location: admin_streams_path)
+          redirect_back_or_to(admin_streams_path)
         end
         format.turbo_stream do
           render turbo_stream: turbo_stream.replace("flash",
@@ -104,4 +105,5 @@ module Admin
       end
     end
   end
+  # rubocop:enable Rails/ApplicationController
 end

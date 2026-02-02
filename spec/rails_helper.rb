@@ -82,7 +82,6 @@ RSpec.configure do |config|
       retries += 1
       raise e unless retries < 10
 
-      puts "Waiting for database connection... (attempt #{retries}/10)"
       sleep 2
       retry
     end
@@ -94,11 +93,9 @@ RSpec.configure do |config|
 
   config.before do
     DatabaseCleaner.strategy = :transaction
-    
+
     # Stub Flipper to return false for all features by default
-    if defined?(Flipper)
-      allow(Flipper).to receive(:enabled?).and_return(false)
-    end
+    allow(Flipper).to receive(:enabled?).and_return(false) if defined?(Flipper)
   end
 
   config.before(:each, :js) do

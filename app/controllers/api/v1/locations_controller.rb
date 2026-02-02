@@ -77,7 +77,7 @@ module Api
         if @location.save
           render json: @location, serializer: LocationSerializer, status: :created
         else
-          render json: { error: "Validation failed", details: @location.errors }, status: :unprocessable_entity
+          render json: { error: "Validation failed", details: @location.errors }, status: :unprocessable_content
         end
       end
 
@@ -86,7 +86,7 @@ module Api
         if @location.update(location_params)
           render json: @location, serializer: LocationSerializer
         else
-          render json: { error: "Validation failed", details: @location.errors }, status: :unprocessable_entity
+          render json: { error: "Validation failed", details: @location.errors }, status: :unprocessable_content
         end
       end
 
@@ -96,7 +96,7 @@ module Api
           render json: {
             error: "Cannot delete location",
             details: { base: ["Location is being used by #{@location.streams.count} stream(s)"] },
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         else
           @location.destroy
           head :no_content

@@ -4,11 +4,11 @@
 Rails.application.config.assets.version = "1.0"
 
 # Configure propshaft to use the correct asset path
-Rails.application.config.assets.prefix = '/assets'
+Rails.application.config.assets.prefix = "/assets"
 
 # Since we're using jsbundling-rails and cssbundling-rails,
 # we need to ensure the asset helpers use the correct paths
-if Rails.env.development? || Rails.env.test?
+if Rails.env.local?
   # In development, assets are served directly from the builds directory
   Rails.application.config.assets.debug = true
 end

@@ -10,7 +10,7 @@ module JwtAuthenticatable
 
   # Override Devise's authenticate_user! to handle JWT tokens
   def authenticate_user!
-    if request.headers['Authorization'].present?
+    if request.headers["Authorization"].present?
       authenticate_with_jwt
     else
       render_unauthorized
@@ -18,32 +18,31 @@ module JwtAuthenticatable
   end
 
   def authenticate_with_jwt
-    begin
-      jwt_payload = decode_jwt_token
-      user_id = jwt_payload['sub'] || jwt_payload['user_id']
-      @current_user = User.find(user_id)
-      
-      # Check if token is revoked (if jti is present)
-      jti = jwt_payload['jti']
-      if jti && JwtDenylist.exists?(jti: jti)
-        render_unauthorized
-        return
-      end
-    rescue JWT::DecodeError, ActiveRecord::RecordNotFound
+    jwt_payload = decode_jwt_token
+    user_id = jwt_payload["sub"] || jwt_payload["user_id"]
+    @current_user = User.find(user_id)
+
+    # Check if token is revoked (if jti is present)
+    jti = jwt_payload["jti"]
+    if jti && JwtDenylist.exists?(jti: jti)
       render_unauthorized
+      nil
     end
+  rescue JWT::DecodeError, ActiveRecord::RecordNotFound
+    render_unauthorized
   end
 
   def decode_jwt_token
-    auth_header = request.headers['Authorization']
-    token = auth_header.split(' ').last
-    
+    auth_header = request.headers["Authorization"]
+    token = auth_header.split.last
+
     # Try with Devise JWT secret first
     begin
-      JWT.decode(token, Rails.application.credentials.devise&.dig(:jwt_secret_key) || Rails.application.secret_key_base, true, algorithm: 'HS256')[0]
+      JWT.decode(token,
+                 Rails.application.credentials.devise&.dig(:jwt_secret_key) || Rails.application.secret_key_base, true, algorithm: "HS256")[0]
     rescue JWT::DecodeError
       # Fall back to standard secret
-      JWT.decode(token, Rails.application.secret_key_base, true, algorithm: 'HS256')[0]
+      JWT.decode(token, Rails.application.secret_key_base, true, algorithm: "HS256")[0]
     end
   end
 

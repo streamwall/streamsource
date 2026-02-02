@@ -70,7 +70,6 @@ RSpec.configure do |config|
       retries += 1
       raise e unless retries < 10
 
-      puts "Waiting for database in Flipper setup... (attempt #{retries}/10)"
       sleep 1
       retry
     end
@@ -110,9 +109,7 @@ RSpec.configure do |config|
         # Feature already exists, which is fine
       end
     end
-  rescue StandardError => e
-    puts "Error in Flipper setup: #{e.message}"
-    puts e.backtrace.first(5)
+  rescue StandardError
     # Don't fail the entire test suite if Flipper setup fails
   end
 

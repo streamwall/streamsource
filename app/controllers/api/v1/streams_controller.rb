@@ -51,13 +51,14 @@ module Api
         # Handle location creation/lookup
         if location_params.present?
           location_result = Location.find_or_create_from_params(location_params)
-          
+
           # Check if location validation failed
           if location_result.respond_to?(:errors) && !location_result.valid?
-            render_error("Location validation failed: #{location_result.errors.full_messages.join(', ')}", :unprocessable_entity)
+            render_error("Location validation failed: #{location_result.errors.full_messages.join(', ')}",
+                         :unprocessable_entity)
             return
           end
-          
+
           stream.location = location_result
         end
 
@@ -74,13 +75,14 @@ module Api
         # Handle location update
         if location_params.present?
           location_result = Location.find_or_create_from_params(location_params)
-          
+
           # Check if location validation failed
           if location_result.respond_to?(:errors) && !location_result.valid?
-            render_error("Location validation failed: #{location_result.errors.full_messages.join(', ')}", :unprocessable_entity)
+            render_error("Location validation failed: #{location_result.errors.full_messages.join(', ')}",
+                         :unprocessable_entity)
             return
           end
-          
+
           @stream.location = location_result
         elsif params.key?(:location) && params[:location].nil?
           @stream.location = nil

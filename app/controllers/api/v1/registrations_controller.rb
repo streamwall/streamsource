@@ -9,18 +9,18 @@ module Api
       def respond_with(resource, _opts = {})
         if resource.persisted?
           render json: {
-            status: { code: 200, message: 'Signed up successfully.' },
-            data: UserSerializer.new(resource).serializable_hash[:data][:attributes]
+            status: { code: 200, message: "Signed up successfully." },
+            data: UserSerializer.new(resource).serializable_hash[:data][:attributes],
           }
         else
           render json: {
-            status: { message: "User couldn't be created successfully. #{resource.errors.full_messages.to_sentence}" }
-          }, status: :unprocessable_entity
+            status: { message: "User couldn't be created successfully. #{resource.errors.full_messages.to_sentence}" },
+          }, status: :unprocessable_content
         end
       end
 
       def sign_up_params
-        params.require(:user).permit(:email, :password, :password_confirmation)
+        params.expect(user: %i[email password password_confirmation])
       end
     end
   end

@@ -1,36 +1,36 @@
-import { Controller } from "@hotwired/stimulus"
+import { Controller } from '@hotwired/stimulus'
 
 // Connects to data-controller="modal"
 export default class extends Controller {
-  static targets = ["container"]
+  static targets = ['container']
 
-  connect() {
+  connect () {
     // Close modal on ESC key
     this.handleKeydown = this.handleKeydown.bind(this)
-    document.addEventListener("keydown", this.handleKeydown)
+    document.addEventListener('keydown', this.handleKeydown)
   }
 
-  disconnect() {
-    document.removeEventListener("keydown", this.handleKeydown)
+  disconnect () {
+    document.removeEventListener('keydown', this.handleKeydown)
   }
 
-  handleKeydown(event) {
-    if (event.key === "Escape") {
+  handleKeydown (event) {
+    if (event.key === 'Escape') {
       this.close()
     }
   }
 
-  close(event) {
+  close (event) {
     if (event) {
       event.preventDefault()
     }
-    
+
     // Remove the modal frame content
-    this.element.innerHTML = ""
+    this.element.innerHTML = ''
   }
 
   // Close modal when clicking outside
-  closeOnClickOutside(event) {
+  closeOnClickOutside (event) {
     if (event.target === this.containerTarget) {
       this.close()
     }

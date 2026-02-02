@@ -53,7 +53,6 @@ RSpec.describe Timestamp, type: :model do
       end
     end
 
-
     describe ".occurred_between" do
       it "returns timestamps with events between dates" do
         before = create(:timestamp, user: user, event_timestamp: 10.days.ago)
@@ -111,7 +110,6 @@ RSpec.describe Timestamp, type: :model do
       end
     end
 
-
     describe "#time_ago" do
       context "with minutes" do
         it "returns singular minute" do
@@ -154,7 +152,6 @@ RSpec.describe Timestamp, type: :model do
           timestamp = create(:timestamp, user: user, event_timestamp: 5.seconds.ago)
           expect(timestamp.time_ago).to eq("just now")
         end
-
       end
     end
 

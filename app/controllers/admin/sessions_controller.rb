@@ -1,7 +1,7 @@
 module Admin
   class SessionsController < Admin::BaseController
-    skip_before_action :authenticate_admin!, only: [:new, :create]
-    skip_before_action :check_maintenance_mode, only: [:new, :create]
+    skip_before_action :authenticate_admin!, only: %i[new create]
+    skip_before_action :check_maintenance_mode, only: %i[new create]
     layout "admin_login"
 
     def new
@@ -18,7 +18,7 @@ module Admin
         redirect_to admin_streams_path, notice: "Successfully logged in."
       else
         flash.now[:alert] = "Invalid email or password, or insufficient privileges."
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
 

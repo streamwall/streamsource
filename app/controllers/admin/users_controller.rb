@@ -23,7 +23,7 @@ module Admin
       if @user.save
         redirect_to admin_users_path, notice: "User was successfully created."
       else
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
 
@@ -31,7 +31,7 @@ module Admin
       if @user.update(update_user_params)
         redirect_to admin_user_path(@user), notice: "User was successfully updated."
       else
-        render :edit, status: :unprocessable_entity
+        render :edit, status: :unprocessable_content
       end
     end
 

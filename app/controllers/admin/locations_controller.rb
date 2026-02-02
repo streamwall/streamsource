@@ -7,7 +7,7 @@ module Admin
         Location.includes(:streams)
                 .order(created_at: :desc)
                 .search_by_name(params[:search]),
-        limit: 25
+        limit: 25,
       )
     end
 
@@ -19,8 +19,7 @@ module Admin
       @location = Location.new
     end
 
-    def edit
-    end
+    def edit; end
 
     def create
       @location = Location.new(location_params)
@@ -30,8 +29,8 @@ module Admin
           format.html { redirect_to admin_location_path(@location), notice: "Location was successfully created." }
           format.turbo_stream
         else
-          format.html { render :new, status: :unprocessable_entity }
-          format.turbo_stream { render :form_update, status: :unprocessable_entity }
+          format.html { render :new, status: :unprocessable_content }
+          format.turbo_stream { render :form_update, status: :unprocessable_content }
         end
       end
     end
@@ -42,8 +41,8 @@ module Admin
           format.html { redirect_to admin_location_path(@location), notice: "Location was successfully updated." }
           format.turbo_stream
         else
-          format.html { render :edit, status: :unprocessable_entity }
-          format.turbo_stream { render :form_update, status: :unprocessable_entity }
+          format.html { render :edit, status: :unprocessable_content }
+          format.turbo_stream { render :form_update, status: :unprocessable_content }
         end
       end
     end
@@ -64,7 +63,7 @@ module Admin
     end
 
     def location_params
-      params.require(:location).permit(:city, :state_province, :region, :country, :latitude, :longitude, :is_known_city)
+      params.expect(location: %i[city state_province region country latitude longitude is_known_city])
     end
   end
 end

@@ -258,7 +258,7 @@ class Stream < ApplicationRecord
   def process_pending_location
     # This ensures we don't lose pending values
     @pending_city ||= city
-    @pending_state ||= state
+    @process_pending_location ||= state
   end
 
   def create_or_validate_location
@@ -284,7 +284,6 @@ class Stream < ApplicationRecord
       throw(:abort)
     end
   end
-
 
   def normalize_link
     self.link = link&.strip

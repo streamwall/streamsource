@@ -3,17 +3,17 @@ require "rails_helper"
 RSpec.describe Location, type: :model do
   describe "normalized name validation" do
     it "validates uniqueness" do
-      existing = create(:location, city: "Austin", state_province: "TX", country: "USA")
+      create(:location, city: "Austin", state_province: "TX", country: "USA")
       duplicate = build(:location, city: "Austin", state_province: "TX", country: "USA")
-      
+
       expect(duplicate).not_to be_valid
       expect(duplicate.errors[:normalized_name]).to include("has already been taken")
     end
 
     it "is effectively case-insensitive due to normalization" do
-      existing = create(:location, city: "Austin", state_province: "TX", country: "USA")
+      create(:location, city: "Austin", state_province: "TX", country: "USA")
       duplicate = build(:location, city: "AUSTIN", state_province: "tx", country: "USA")
-      
+
       expect(duplicate).not_to be_valid
       expect(duplicate.errors[:normalized_name]).to include("has already been taken")
     end
@@ -38,7 +38,6 @@ RSpec.describe Location, type: :model do
       expect(location.normalized_name).to eq("paris")
     end
   end
-
 
   describe ".find_or_create_from_params" do
     context "when city is blank" do
@@ -87,7 +86,7 @@ RSpec.describe Location, type: :model do
           expect(location.state_province).to eq("CA")
           expect(location.latitude).to eq(37.7749)
           expect(location.longitude).to eq(-122.4194)
-          expect(location.is_known_city).to eq(false)
+          expect(location.is_known_city).to be(false)
         end
       end
     end
@@ -112,13 +111,13 @@ RSpec.describe Location, type: :model do
         it "handles unknown cities appropriately" do
           result = described_class.find_or_create_from_params(city: "Houston", state_province: "TX", country: "USA")
           # Should either return nil or create a new location depending on business logic
-          expect(result.nil? || result.is_a?(Location)).to be true
+          expect(result.nil? || result.is_a?(described_class)).to be true
         end
 
         it "handles existing but non-known cities" do
           # Create a location that exists but isn't marked as known
           existing = create(:location, city: "San Antonio", state_province: "TX", country: "USA", is_known_city: false)
-          
+
           result = described_class.find_or_create_from_params(city: "San Antonio", state_province: "TX", country: "USA")
           # Should handle existing locations appropriately
           expect(result.nil? || result == existing).to be true

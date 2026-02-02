@@ -8,15 +8,15 @@ Rails.application.routes.draw do
     namespace :v1 do
       # Authentication with Devise
       devise_for :users,
-                 path: '',
+                 path: "",
                  path_names: {
-                   sign_in: 'login',
-                   sign_out: 'logout',
-                   registration: 'signup'
+                   sign_in: "login",
+                   sign_out: "logout",
+                   registration: "signup",
                  },
                  controllers: {
-                   sessions: 'api/v1/sessions',
-                   registrations: 'api/v1/registrations'
+                   sessions: "api/v1/sessions",
+                   registrations: "api/v1/registrations",
                  }
 
       # Streams
@@ -109,7 +109,7 @@ Rails.application.routes.draw do
 
     root to: "streams#index"
   end
-  
+
   # Redirect /admin to admin dashboard
   get "/admin", to: redirect("/admin/streams")
 

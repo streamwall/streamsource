@@ -4,27 +4,27 @@ namespace :service_accounts do
     # Define service accounts with secure passwords
     service_accounts = [
       {
-        email: 'livestream-monitor@streamsource.local',
+        email: "livestream-monitor@streamsource.local",
         password: "Monitor#{SecureRandom.hex(16)}1",
-        description: 'livestream-link-monitor service'
+        description: "livestream-link-monitor service",
       },
       {
-        email: 'livesheet-updater@streamsource.local',
+        email: "livesheet-updater@streamsource.local",
         password: "Updater#{SecureRandom.hex(16)}2",
-        description: 'livesheet-updater service'
-      }
+        description: "livesheet-updater service",
+      },
     ]
-    
+
     puts "=== Creating Service Accounts ==="
-    
+
     service_accounts.each do |account_info|
       user = User.find_or_initialize_by(email: account_info[:email])
-      
+
       if user.new_record?
         user.password = account_info[:password]
-        user.role = 'editor'
+        user.role = "editor"
         user.is_service_account = true
-        
+
         if user.save
           puts "\n✅ Created service account for #{account_info[:description]}"
           puts "   Email: #{user.email}"
@@ -38,7 +38,7 @@ namespace :service_accounts do
         puts "\n✓ Service account already exists: #{user.email} (ID: #{user.id})"
       end
     end
-    
+
     puts "\n=== Service Account Configuration ==="
     puts "- 30-day JWT token expiration"
     puts "- Editor permissions (can create/update streams)"
@@ -55,13 +55,13 @@ namespace :service_accounts do
       puts "Service Account ID: #{account.id}"
       puts "Role: #{account.role}"
       puts "Token expires in: 30 days"
-      
+
       # Generate a sample JWT token (this would normally be done via login)
       token_payload = account.jwt_payload
       puts "Sample JWT payload:"
       puts JSON.pretty_generate(token_payload)
     end
-    
+
     puts "\nTo get actual tokens, make POST requests to /api/v1/login with service account credentials"
   end
 
@@ -69,7 +69,7 @@ namespace :service_accounts do
   task list: :environment do
     puts "Service Accounts:"
     puts "=================="
-    
+
     User.service_accounts.each do |account|
       puts "Email: #{account.email}"
       puts "Role: #{account.role}"

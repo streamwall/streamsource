@@ -7,17 +7,13 @@ module DatabaseHealthCheck
 
     loop do
       ActiveRecord::Base.connection.execute("SELECT 1")
-      puts "Database connection established!"
+
       return true
     rescue ActiveRecord::ConnectionNotEstablished, PG::ConnectionBad => e
       retries += 1
 
-      if retries >= max_retries
-        puts "Failed to connect to database after #{max_retries} attempts"
-        raise e
-      end
+      raise e if retries >= max_retries
 
-      puts "Waiting for database connection... (attempt #{retries}/#{max_retries})"
       sleep sleep_time
     end
   end
@@ -33,16 +29,10 @@ module DatabaseHealthCheck
     ActiveRecord::Base.connection.execute("SELECT 1")
 
     # Run migrations if needed
-    if ActiveRecord::Base.connection_pool.migration_context.needs_migration?
-      puts "Running pending migrations..."
-      ActiveRecord::Tasks::DatabaseTasks.migrate
-    end
+    ActiveRecord::Tasks::DatabaseTasks.migrate if ActiveRecord::Base.connection_pool.migration_context.needs_migration?
 
-    puts "Test database is ready!"
     true
   rescue StandardError => e
-    puts "Error setting up test database: #{e.message}"
-    puts e.backtrace.first(5)
     raise e
   end
 end

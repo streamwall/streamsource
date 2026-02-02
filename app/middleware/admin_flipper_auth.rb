@@ -33,7 +33,11 @@ class AdminFlipperAuth
     user_id = session[:user_id] || session[:admin_user_id]
     return nil unless user_id
 
-    @current_user ||= User.find_by(id: user_id)
+    if defined?(@current_user)
+      @current_user
+    else
+      @current_user = User.find_by(id: user_id)
+    end
   rescue StandardError
     nil
   end

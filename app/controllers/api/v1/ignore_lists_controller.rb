@@ -3,28 +3,24 @@ module Api
     class IgnoreListsController < BaseController
       before_action :authenticate_user!
       before_action :require_admin!
-      before_action :set_ignore_list, only: [:show, :update, :destroy]
+      before_action :set_ignore_list, only: %i[show update destroy]
 
       # GET /api/v1/ignore_lists
       def index
         @ignore_lists = IgnoreList.all
 
         # Filter by list_type if provided
-        if params[:list_type].present?
-          @ignore_lists = @ignore_lists.where(list_type: params[:list_type])
-        end
+        @ignore_lists = @ignore_lists.where(list_type: params[:list_type]) if params[:list_type].present?
 
         # Search functionality
-        if params[:search].present?
-          @ignore_lists = @ignore_lists.where('value ILIKE ?', "%#{params[:search]}%")
-        end
+        @ignore_lists = @ignore_lists.where("value ILIKE ?", "%#{params[:search]}%") if params[:search].present?
 
         # Pagination
         @ignore_lists = paginate(@ignore_lists)
 
         render json: {
           ignore_lists: @ignore_lists.as_json,
-          meta: pagination_meta(@ignore_lists)
+          meta: pagination_meta(@ignore_lists),
         }
       end
 
@@ -37,7 +33,7 @@ module Api
           twitch_users: ignore_lists.twitch_users.pluck(:value),
           discord_users: ignore_lists.discord_users.pluck(:value),
           urls: ignore_lists.urls.pluck(:value),
-          domains: ignore_lists.domains.pluck(:value)
+          domains: ignore_lists.domains.pluck(:value),
         }
 
         render json: grouped
@@ -55,7 +51,7 @@ module Api
         if @ignore_list.save
           render json: @ignore_list, status: :created
         else
-          render json: { errors: @ignore_list.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: @ignore_list.errors.full_messages }, status: :unprocessable_content
         end
       end
 
@@ -64,14 +60,14 @@ module Api
       def bulk_create
         results = {
           created: [],
-          errors: []
+          errors: [],
         }
 
         bulk_params[:entries].each do |entry|
           ignore_list = IgnoreList.new(
             list_type: entry[:list_type],
             value: entry[:value],
-            notes: entry[:notes]
+            notes: entry[:notes],
           )
 
           if ignore_list.save
@@ -79,7 +75,7 @@ module Api
           else
             results[:errors] << {
               value: entry[:value],
-              errors: ignore_list.errors.full_messages
+              errors: ignore_list.errors.full_messages,
             }
           end
         end
@@ -92,7 +88,7 @@ module Api
         if @ignore_list.update(ignore_list_params)
           render json: @ignore_list
         else
-          render json: { errors: @ignore_list.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: @ignore_list.errors.full_messages }, status: :unprocessable_content
         end
       end
 
@@ -118,11 +114,11 @@ module Api
       end
 
       def ignore_list_params
-        params.require(:ignore_list).permit(:list_type, :value, :notes)
+        params.expect(ignore_list: %i[list_type value notes])
       end
 
       def bulk_params
-        params.permit(entries: [:list_type, :value, :notes])
+        params.permit(entries: %i[list_type value notes])
       end
 
       def require_admin!

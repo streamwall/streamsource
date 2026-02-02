@@ -7,10 +7,10 @@ class IgnoreList < ApplicationRecord
   validates :value, presence: true, uniqueness: { scope: :list_type }
 
   # Scopes
-  scope :twitch_users, -> { where(list_type: 'twitch_user') }
-  scope :discord_users, -> { where(list_type: 'discord_user') }
-  scope :urls, -> { where(list_type: 'url') }
-  scope :domains, -> { where(list_type: 'domain') }
+  scope :twitch_users, -> { where(list_type: "twitch_user") }
+  scope :discord_users, -> { where(list_type: "discord_user") }
+  scope :urls, -> { where(list_type: "url") }
+  scope :domains, -> { where(list_type: "domain") }
 
   # Normalize values before saving
   before_validation :normalize_value
@@ -18,15 +18,15 @@ class IgnoreList < ApplicationRecord
   private
 
   def normalize_value
-    return unless value.present?
+    return if value.blank?
 
     self.value = case list_type
-                 when 'twitch_user', 'discord_user'
+                 when "twitch_user", "discord_user"
                    value.strip.downcase
-                 when 'url'
+                 when "url"
                    normalize_url(value.strip)
-                 when 'domain'
-                   value.strip.downcase.gsub(/^www\./, '')
+                 when "domain"
+                   value.strip.downcase.gsub(/^www\./, "")
                  else
                    value.strip
                  end
@@ -35,9 +35,9 @@ class IgnoreList < ApplicationRecord
   def normalize_url(url)
     # Add protocol if missing
     url = "https://#{url}" unless url.match?(%r{^https?://})
-    
+
     # Remove trailing slashes
-    url.gsub(/\/+$/, '')
+    url.gsub(%r{/+$}, "")
   rescue StandardError
     url
   end
