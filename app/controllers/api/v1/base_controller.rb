@@ -1,7 +1,6 @@
 module Api
   module V1
-    class BaseController < ApplicationController
-      include JwtAuthenticatable
+    class BaseController < Api::BaseController
       include Pundit::Authorization
 
       rescue_from Pundit::NotAuthorizedError, with: :forbidden

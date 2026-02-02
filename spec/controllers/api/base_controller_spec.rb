@@ -1,13 +1,13 @@
 require "rails_helper"
 
-RSpec.describe ApplicationController, type: :controller do
+RSpec.describe Api::BaseController, type: :controller do
   describe "included concerns" do
     it "includes JwtAuthenticatable" do
       expect(described_class.ancestors).to include(JwtAuthenticatable)
     end
   end
 
-  describe "#set_locale" do
+  describe "locale handling" do
     controller do
       skip_before_action :authenticate_user!
 

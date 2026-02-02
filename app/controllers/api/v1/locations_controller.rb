@@ -1,6 +1,6 @@
 module Api
   module V1
-    class LocationsController < ApplicationController
+    class LocationsController < BaseController
       before_action :authenticate_user!
       before_action :set_location, only: %i[show update destroy]
 

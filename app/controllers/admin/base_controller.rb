@@ -1,6 +1,5 @@
 module Admin
-  # rubocop:disable Rails/ApplicationController
-  class BaseController < ActionController::Base
+  class BaseController < ApplicationController
     include Pagy::Method
 
     # Include helpers for session and flash
@@ -105,5 +104,4 @@ module Admin
       end
     end
   end
-  # rubocop:enable Rails/ApplicationController
 end
