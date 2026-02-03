@@ -29,6 +29,7 @@ export default class extends Controller {
 
     // Connect to ActionCable
     this.actionCableManager.connect()
+    this.startPresenceHeartbeat()
 
     // Set up cell event listeners
     this.cellTargets.forEach(cell => {
@@ -42,5 +43,20 @@ export default class extends Controller {
   disconnect () {
     this.actionCableManager.disconnect()
     this.editTimeoutManager.clearAllTimeouts()
+    this.stopPresenceHeartbeat()
+  }
+
+  startPresenceHeartbeat () {
+    this.stopPresenceHeartbeat()
+    this.presenceHeartbeat = setInterval(() => {
+      this.actionCableManager.perform('presence_ping', {})
+    }, 60000)
+  }
+
+  stopPresenceHeartbeat () {
+    if (this.presenceHeartbeat) {
+      clearInterval(this.presenceHeartbeat)
+      this.presenceHeartbeat = null
+    }
   }
 }

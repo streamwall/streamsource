@@ -48,7 +48,7 @@ export class ActionCableManager {
   handleMessage(data) {
     switch(data.action) {
       case 'active_users_list':
-        this.controller.collaborationManager.setActiveUsers(data.users)
+        this.controller.collaborationManager.setActiveUsers(data.users || [])
         break
       case 'user_joined':
         this.controller.collaborationManager.addUser(data.user_id, data.user_name, data.user_color)

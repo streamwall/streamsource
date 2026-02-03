@@ -13,6 +13,7 @@ export class CollaborationManager {
       this.activeUsers.set(user.user_id.toString(), { 
         name: user.user_name, 
         color: user.user_color,
+        inactive: user.inactive === true,
         isCurrentUser: user.user_id.toString() === this.controller.currentUser
       })
     })
@@ -26,6 +27,7 @@ export class CollaborationManager {
     this.activeUsers.set(userId.toString(), { 
       name: userName, 
       color: userColor,
+      inactive: false,
       isCurrentUser: userId.toString() === this.controller.currentUser
     })
     
@@ -46,8 +48,10 @@ export class CollaborationManager {
     
     const presenceHtml = Array.from(this.activeUsers.entries()).map(([userId, user]) => `
       <div class="flex items-center gap-2">
-        <div class="w-3 h-3 rounded-full" style="background-color: ${user.color}"></div>
-        <span class="text-sm ${user.isCurrentUser ? 'font-semibold' : ''}">${user.name} ${user.isCurrentUser ? '(You)' : ''}</span>
+        <div class="w-3 h-3 rounded-full ${user.inactive ? 'opacity-40' : ''}" style="background-color: ${user.color}"></div>
+        <span class="text-sm ${user.isCurrentUser ? 'font-semibold' : ''} ${user.inactive ? 'text-gray-400' : ''}">
+          ${user.name} ${user.isCurrentUser ? '(You)' : ''} ${user.inactive ? '(Inactive)' : ''}
+        </span>
       </div>
     `).join('')
     

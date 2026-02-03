@@ -1,7 +1,7 @@
 # StreamSource
 # Usage: make [command]
 
-.PHONY: help up down stop restart shell test migrate seed setup reset logs lint rebuild browse
+.PHONY: help up down stop restart shell test migrate seed setup reset logs lint rebuild browse rake
 
 STREAMSOURCE_ENV ?= dev
 APP_URL ?= http://localhost:3001/admin
@@ -9,12 +9,15 @@ APP_URL ?= http://localhost:3001/admin
 ifeq ($(STREAMSOURCE_ENV),prod)
 COMPOSE_FILES := -f docker-compose.yml -f docker-compose.prod.yml
 UP_TARGETS := web
+UP_PROFILE :=
 else
 COMPOSE_FILES :=
 UP_TARGETS :=
+UP_PROFILE := --profile assets
 endif
 
 COMPOSE := docker compose $(COMPOSE_FILES)
+COMPOSE_UP := $(COMPOSE) $(UP_PROFILE)
 
 help:
 	@echo "Commands:"
@@ -24,6 +27,7 @@ help:
 	@echo "  restart  - Restart services without removing containers"
 	@echo "  browse   - Open the app in your browser (APP_URL=$(APP_URL))"
 	@echo "  shell    - Rails console"
+	@echo "  rake     - Run a rake task (make rake streams:import_streamwall)"
 	@echo "  test     - Run tests"
 	@echo "  lint     - Run lint checks (RuboCop, ESLint)"
 	@echo "  rebuild  - Clean and rebuild containers"
@@ -34,7 +38,7 @@ help:
 	@echo "  logs     - View logs"
 
 up:
-	$(COMPOSE) up -d $(UP_TARGETS)
+	$(COMPOSE_UP) up -d $(UP_TARGETS)
 
 down:
 	$(COMPOSE) down
@@ -63,6 +67,18 @@ browse:
 shell:
 	$(COMPOSE) exec web bin/rails console
 
+rake:
+	@task="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -z "$$task" ]; then \
+	  echo "Usage: make rake <task> [ARGS=...]"; \
+	  echo "Example: make rake streams:import_streamwall"; \
+	  exit 1; \
+	fi; \
+	$(COMPOSE) exec web bundle exec rake $$task
+
+%:
+	@:
+
 test:
 	$(COMPOSE) exec web bin/test
 
@@ -73,7 +89,7 @@ lint:
 rebuild:
 	$(COMPOSE) down --remove-orphans
 	$(COMPOSE) build --no-cache
-	$(COMPOSE) up -d $(UP_TARGETS)
+	$(COMPOSE_UP) up -d $(UP_TARGETS)
 
 migrate:
 	$(COMPOSE) exec web bin/rails db:migrate

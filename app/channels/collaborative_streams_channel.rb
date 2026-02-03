@@ -17,7 +17,12 @@ class CollaborativeStreamsChannel < ApplicationCable::Channel
     unlock_all_user_cells
   end
 
+  def presence_ping(_data)
+    touch_user_presence(action: false)
+  end
+
   def lock_cell(data)
+    touch_user_presence(action: true)
     cell_id = data["cell_id"]
 
     if cell_locked_by_other?(cell_id)
@@ -38,6 +43,7 @@ class CollaborativeStreamsChannel < ApplicationCable::Channel
   end
 
   def update_cell(data)
+    touch_user_presence(action: true)
     cell_id, stream_id, field, value = extract_update_payload(data)
     log_update_request(data)
 
