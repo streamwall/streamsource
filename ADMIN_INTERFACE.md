@@ -329,28 +329,6 @@ RSpec.describe Admin::StreamsController do
 end
 ```
 
-2. **System Tests**
-```ruby
-RSpec.describe "Admin Streams Management", type: :system do
-  let(:admin) { create(:user, :admin) }
-
-  before do
-    login_as(admin)
-    visit admin_streams_path
-  end
-
-  it "creates a new stream" do
-    click_link "New Stream"
-    fill_in "Name", with: "Test Stream"
-    fill_in "URL", with: "https://example.com"
-    click_button "Create Stream"
-
-    expect(page).to have_content("Stream was successfully created")
-    expect(page).to have_content("Test Stream")
-  end
-end
-```
-
 ## Troubleshooting
 
 ### Common Issues
