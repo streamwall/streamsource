@@ -102,7 +102,6 @@ make test
 # Specific test types
 make test-models      # Model tests only
 make test-requests    # API/request tests only
-make test-features    # Feature/system tests only
 make test-parallel    # Faster parallel execution
 ```
 

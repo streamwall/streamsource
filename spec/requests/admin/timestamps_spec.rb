@@ -1,4 +1,5 @@
 require "rails_helper"
+require "cgi"
 
 RSpec.describe "Admin::Timestamps", type: :request do
   let(:admin_user) { create(:user, :admin) }
@@ -30,7 +31,7 @@ RSpec.describe "Admin::Timestamps", type: :request do
     it "displays timestamps" do
       get admin_timestamps_path
       timestamps.each do |timestamp|
-        expect(response.body).to include(timestamp.title)
+        expect(response.body).to include(CGI.escapeHTML(timestamp.title))
       end
     end
 
@@ -63,7 +64,7 @@ RSpec.describe "Admin::Timestamps", type: :request do
 
     it "displays timestamp details" do
       get admin_timestamp_path(timestamp)
-      expect(response.body).to include(timestamp.title)
+      expect(response.body).to include(CGI.escapeHTML(timestamp.title))
     end
 
     it "displays linked streams" do
@@ -155,7 +156,7 @@ RSpec.describe "Admin::Timestamps", type: :request do
 
     it "displays form with timestamp data" do
       get edit_admin_timestamp_path(timestamp)
-      expect(response.body).to include(timestamp.title)
+      expect(response.body).to include(CGI.escapeHTML(timestamp.title))
     end
   end
 
