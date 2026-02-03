@@ -371,18 +371,32 @@ jobs:
             comment.body.includes('PR Validation Summary')
           );
           
+          const fs = require('fs');
+
+          const unitPassed = fs.existsSync('artifacts/test-results-unit/rspec-unit.xml');
+          const integrationPassed = fs.existsSync('artifacts/test-results-integration/rspec-integration.xml');
+          const systemPassed = fs.existsSync('artifacts/test-results-system/rspec-system.xml');
+
+          const lintPassed = fs.existsSync('artifacts/linting-reports/rubocop-report.json') &&
+            fs.existsSync('artifacts/linting-reports/eslint-report.json');
+          const securityPassed = fs.existsSync('artifacts/security-reports/brakeman-report.json') &&
+            fs.existsSync('artifacts/security-reports/bundler-audit-report.json');
+
+          const allPassed = unitPassed && integrationPassed && systemPassed && lintPassed && securityPassed;
+          const statusText = allPassed ? '✅ All checks passed' : '❌ Some checks failed';
+
           const summary = `## 🤖 PR Validation Summary
           
-          **Status**: ${{ needs.test.result == 'success' && needs.lint.result == 'success' && needs.security.result == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}
+          **Status**: ${statusText}
           
           ### Test Results
-          - **Unit Tests**: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}
-          - **Integration Tests**: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}
-          - **System Tests**: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Unit Tests**: ${unitPassed ? '✅ Passed' : '❌ Failed'}
+          - **Integration Tests**: ${integrationPassed ? '✅ Passed' : '❌ Failed'}
+          - **System Tests**: ${systemPassed ? '✅ Passed' : '❌ Failed'}
           
           ### Code Quality
-          - **Linting**: ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }}
-          - **Security**: ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Linting**: ${lintPassed ? '✅ Passed' : '❌ Failed'}
+          - **Security**: ${securityPassed ? '✅ Passed' : '❌ Failed'}
           
           [View detailed results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           `;
