@@ -65,6 +65,10 @@ tmtags
 # Ignore precompiled assets
 /public/assets
 
+# Ignore built frontend assets
+/app/assets/builds/*
+!/app/assets/builds/.keep
+
 # Ignore Redis dump
 dump.rdb
 
