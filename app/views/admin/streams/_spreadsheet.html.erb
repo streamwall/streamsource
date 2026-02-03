@@ -14,24 +14,37 @@
         <summary class="cursor-pointer select-none px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50">
           Columns
         </summary>
-        <div class="absolute left-0 mt-2 w-56 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg z-20 p-3">
+        <div class="absolute left-0 mt-2 w-64 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg z-20 p-3">
           <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Show columns</div>
-          <div class="space-y-1">
+          <div class="space-y-1" data-stream-table-preferences-target="columnList">
             <% stream_table_columns.each do |column| %>
-              <label class="flex items-center gap-2 text-sm text-gray-700">
-                <%= check_box_tag "stream_columns[]",
-                                  column[:key],
-                                  !@hidden_columns.include?(column[:key]),
-                                  class: "h-4 w-4 text-indigo-600 border-gray-300 rounded",
-                                  data: { action: "stream-table-preferences#toggleColumn",
-                                          stream_table_preferences_target: "columnToggle" } %>
-                <span><%= column[:label] %></span>
-              </label>
+              <div class="flex items-center gap-2 text-sm text-gray-700"
+                   data-column="<%= column[:key] %>"
+                   data-stream-table-preferences-target="columnItem">
+                <span class="text-gray-400 hover:text-gray-600 cursor-move"
+                      data-stream-table-preferences-target="columnDrag"
+                      title="Drag to reorder"
+                      aria-hidden="true">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M10 6h.01M14 6h.01M10 12h.01M14 12h.01M10 18h.01M14 18h.01" />
+                  </svg>
+                </span>
+                <label class="flex flex-1 items-center gap-2">
+                  <%= check_box_tag "stream_columns[]",
+                                    column[:key],
+                                    !@hidden_columns.include?(column[:key]),
+                                    class: "h-4 w-4 text-indigo-600 border-gray-300 rounded",
+                                    data: { action: "stream-table-preferences#toggleColumn",
+                                            stream_table_preferences_target: "columnToggle" } %>
+                  <span><%= column[:label] %></span>
+                </label>
+              </div>
             <% end %>
           </div>
         </div>
       </details>
-      <span class="text-xs text-gray-500">Sort by clicking headers. Drag headers to reorder.</span>
+      <span class="text-xs text-gray-500">Drag columns in the menu to reorder.</span>
     </div>
 
     <!-- Active Users Presence -->
@@ -58,7 +71,7 @@
               aria-sort="<%= stream_sort_aria("streamer", @sort_column, @sort_direction) %>"
               data-column="streamer"
               data-stream-table-preferences-target="column"
-              class="<%= stream_column_class("streamer", "sticky left-0 z-10 bg-gray-50 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+              class="<%= stream_column_class("streamer", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
             <%= stream_sort_link("Streamer", "streamer", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
           <th scope="col"

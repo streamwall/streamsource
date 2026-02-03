@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus'
 
 export default class extends Controller {
-  static targets = ['column', 'columnToggle', 'scrollContainer']
+  static targets = ['column', 'columnToggle', 'scrollContainer', 'columnList', 'columnItem', 'columnDrag']
   static values = {
     hiddenColumns: Array,
     columnOrder: Array,
@@ -21,16 +21,70 @@ export default class extends Controller {
     this.syncToggles()
     this.restoreScroll()
     this.initializeDragAndDrop()
+    this.isReady = true
+  }
+
+  columnTargetConnected () {
+    if (!this.isReady) return
+    this.scheduleApply()
   }
 
   disconnect () {
     clearTimeout(this.saveTimeout)
-    this.headerCells().forEach(cell => {
-      cell.removeEventListener('dragstart', this.boundHandleDragStart)
-      cell.removeEventListener('dragover', this.boundHandleDragOver)
-      cell.removeEventListener('drop', this.boundHandleDrop)
-      cell.removeEventListener('dragend', this.boundHandleDragEnd)
+    clearTimeout(this.applyTimeout)
+    this.columnItemTargets.forEach(item => {
+      item.removeEventListener('pointerdown', this.boundHandlePointerDown)
+      item.removeEventListener('dragover', this.boundHandleDragOver)
+      item.removeEventListener('drop', this.boundHandleDrop)
     })
+    this.columnDragTargets.forEach(handle => {
+      handle.classList.remove('cursor-move')
+    })
+    if (this.hasColumnListTarget) {
+      this.columnListTarget.removeEventListener('click', this.boundHandleClickSuppress, true)
+    }
+  }
+
+  scheduleApply () {
+    if (this.applyScheduled) return
+
+    this.applyScheduled = true
+    requestAnimationFrame(() => {
+      this.applyScheduled = false
+      this.applyWhenIdle()
+    })
+  }
+
+  applyWhenIdle () {
+    if (this.isEditing()) {
+      clearTimeout(this.applyTimeout)
+      this.applyTimeout = setTimeout(() => this.applyWhenIdle(), 200)
+      return
+    }
+
+    this.applyColumnOrder()
+    this.applyHiddenColumns()
+  }
+
+  isEditing () {
+    const active = document.activeElement
+    if (active && active.closest('[data-collaborative-spreadsheet-target="cell"]')) {
+      return true
+    }
+
+    if (this.element.querySelector('[data-collaborative-spreadsheet-target="cell"][contenteditable="true"]')) {
+      return true
+    }
+
+    const currentUserId = this.element.getAttribute('data-collaborative-spreadsheet-current-user-id-value')
+    if (currentUserId) {
+      const lockedByCurrentUser = this.element.querySelector(
+        `[data-collaborative-spreadsheet-target="cell"][data-locked="true"][data-locked-by="${currentUserId}"]`
+      )
+      if (lockedByCurrentUser) return true
+    }
+
+    return false
   }
 
   toggleColumn (event) {
@@ -43,7 +97,7 @@ export default class extends Controller {
       this.hiddenColumns = [...this.hiddenColumns, column]
     }
 
-    this.applyHiddenColumns()
+    this.applyWhenIdle()
     this.scheduleSave()
   }
 
@@ -66,7 +120,8 @@ export default class extends Controller {
     if (draggedIndex === targetIndex) return
 
     currentOrder.splice(draggedIndex, 1)
-    currentOrder.splice(targetIndex, 0, draggedColumn)
+    const insertIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex
+    currentOrder.splice(insertIndex, 0, draggedColumn)
     this.columnOrder = currentOrder
     this.applyColumnOrder()
     this.persistColumnOrder()
@@ -80,6 +135,10 @@ export default class extends Controller {
     this.bodyRows().forEach(row => {
       this.reorderRow(row, order)
     })
+
+    if (this.hasColumnListTarget) {
+      this.reorderRow(this.columnListTarget, order)
+    }
   }
 
   applyHiddenColumns () {
@@ -168,15 +227,19 @@ export default class extends Controller {
   }
 
   initializeDragAndDrop () {
-    this.headerCells().forEach(cell => {
-      cell.setAttribute('draggable', 'true')
-      cell.classList.add('cursor-move')
-      cell.title = 'Drag to reorder'
-      cell.addEventListener('dragstart', this.boundHandleDragStart)
-      cell.addEventListener('dragover', this.boundHandleDragOver)
-      cell.addEventListener('drop', this.boundHandleDrop)
-      cell.addEventListener('dragend', this.boundHandleDragEnd)
+    this.columnItemTargets.forEach(item => {
+      item.classList.add('cursor-move')
+      item.addEventListener('pointerdown', this.boundHandlePointerDown)
+      item.addEventListener('dragover', this.boundHandleDragOver)
+      item.addEventListener('drop', this.boundHandleDrop)
     })
+    this.columnDragTargets.forEach(handle => {
+      handle.classList.add('cursor-move')
+    })
+
+    if (this.hasColumnListTarget) {
+      this.columnListTarget.addEventListener('click', this.boundHandleClickSuppress, true)
+    }
   }
 
   bindDragHandlers () {
@@ -184,34 +247,115 @@ export default class extends Controller {
     this.boundHandleDragOver = this.handleDragOver.bind(this)
     this.boundHandleDrop = this.handleDrop.bind(this)
     this.boundHandleDragEnd = this.handleDragEnd.bind(this)
+    this.boundHandlePointerDown = this.handlePointerDown.bind(this)
+    this.boundHandlePointerMove = this.handlePointerMove.bind(this)
+    this.boundHandlePointerUp = this.handlePointerUp.bind(this)
+    this.boundHandleClickSuppress = this.handleClickSuppress.bind(this)
   }
 
-  handleDragStart (event) {
-    const column = event.currentTarget.dataset.column
+  handlePointerDown (event) {
+    if (event.button !== 0) return
+    if (event.target.closest('input[type="checkbox"]')) return
+
+    const item = event.currentTarget
+    const column = item.dataset.column
     if (!column) return
 
     this.draggedColumn = column
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', column)
-    event.currentTarget.classList.add('opacity-50')
+    this.dragSourceItem = item
+    this.dragTargetItem = null
+    this.dragStartX = event.clientX
+    this.dragStartY = event.clientY
+    this.isDragging = false
+    this.pointerId = event.pointerId
+
+    window.addEventListener('pointermove', this.boundHandlePointerMove)
+    window.addEventListener('pointerup', this.boundHandlePointerUp)
+  }
+
+  handlePointerMove (event) {
+    if (this.pointerId !== event.pointerId) return
+
+    const deltaX = Math.abs(event.clientX - this.dragStartX)
+    const deltaY = Math.abs(event.clientY - this.dragStartY)
+    if (!this.isDragging && deltaX + deltaY < 6) return
+
+    if (!this.isDragging) {
+      this.isDragging = true
+      this.dragSourceItem.classList.add('opacity-50')
+      document.body.classList.add('select-none')
+    }
+
+    const target = document.elementFromPoint(event.clientX, event.clientY)
+      ?.closest('[data-stream-table-preferences-target="columnItem"]')
+    if (!target || target === this.dragSourceItem) return
+
+    if (this.dragTargetItem && this.dragTargetItem !== target) {
+      this.clearDropIndicator(this.dragTargetItem)
+    }
+    this.dragTargetItem = target
+    this.applyDropIndicator(this.dragTargetItem)
+  }
+
+  handlePointerUp (event) {
+    if (this.pointerId !== event.pointerId) return
+
+    window.removeEventListener('pointermove', this.boundHandlePointerMove)
+    window.removeEventListener('pointerup', this.boundHandlePointerUp)
+
+    if (this.isDragging && this.dragTargetItem && this.dragTargetItem !== this.dragSourceItem) {
+      this.suppressClick = true
+      this.reorderColumns(this.draggedColumn, this.dragTargetItem.dataset.column)
+    }
+
+    if (this.dragSourceItem) {
+      this.dragSourceItem.classList.remove('opacity-50')
+    }
+    if (this.dragTargetItem) {
+      this.clearDropIndicator(this.dragTargetItem)
+    }
+
+    document.body.classList.remove('select-none')
+
+    this.draggedColumn = null
+    this.dragSourceItem = null
+    this.dragTargetItem = null
+    this.isDragging = false
+    this.pointerId = null
+  }
+
+  applyDropIndicator (item) {
+    if (!item) return
+    item.classList.add('relative')
+    item.style.boxShadow = 'inset 0 2px 0 0 rgb(99 102 241)'
+  }
+
+  clearDropIndicator (item) {
+    if (!item) return
+    item.style.boxShadow = ''
+  }
+
+  handleClickSuppress (event) {
+    if (!this.suppressClick) return
+    event.preventDefault()
+    event.stopPropagation()
+    this.suppressClick = false
+  }
+
+  handleDragStart (event) {
+    event.preventDefault()
   }
 
   handleDragOver (event) {
     event.preventDefault()
-    event.dataTransfer.dropEffect = 'move'
   }
 
   handleDrop (event) {
     event.preventDefault()
-    const targetColumn = event.currentTarget.dataset.column
-    if (!this.draggedColumn || !targetColumn) return
-
-    this.reorderColumns(this.draggedColumn, targetColumn)
   }
 
   handleDragEnd (event) {
-    event.currentTarget.classList.remove('opacity-50')
-    this.draggedColumn = null
+    event.preventDefault()
   }
 
   defaultColumnOrder () {
