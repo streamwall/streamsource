@@ -119,9 +119,16 @@ module Admin
       respond_to do |format|
         format.html { redirect_to admin_streams_path }
         format.turbo_stream do
+          row_partial = "admin/streams/stream"
+          if params[:context] == "spreadsheet"
+            preferences = stream_table_preferences
+            @hidden_columns = sanitize_hidden_columns(preferences["hidden_columns"])
+            row_partial = "admin/streams/spreadsheet_row"
+          end
+
           render turbo_stream: turbo_stream.replace(
             @stream,
-            partial: "admin/streams/stream",
+            partial: row_partial,
             locals: { stream: @stream },
           )
         end
