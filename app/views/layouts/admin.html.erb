@@ -17,6 +17,12 @@
       <div class="fixed inset-0 bg-black bg-opacity-50" data-action="click->mobile-menu#close"></div>
     </div>
 
+    <div data-controller="toast"
+         class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"
+         role="region"
+         aria-live="polite"
+         aria-label="Notifications"></div>
+
     <div class="flex h-screen overflow-hidden">
       <!-- Desktop Sidebar -->
       <nav class="bg-gray-900 text-white w-64 flex-shrink-0 hidden lg:block" id="desktop-sidebar">

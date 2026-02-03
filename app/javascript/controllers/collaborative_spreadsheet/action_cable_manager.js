@@ -78,6 +78,14 @@ export class ActionCableManager {
           this.controller.cellRenderer.updateTimeAgoField(data.stream_id, 'last_live_at', data.last_live_at)
         }
         break
+      case 'streamer_updated':
+        this.controller.cellRenderer.updateStreamerInfo(
+          data.stream_id,
+          data.streamer_name,
+          data.streamer_platform,
+          data.streamer_id
+        )
+        break
     }
   }
 }

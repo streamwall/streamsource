@@ -1,5 +1,6 @@
 module Admin
   # CRUD for streams in the admin UI.
+  # rubocop:disable Metrics/ClassLength
   class StreamsController < BaseController
     STREAM_TABLE_COLUMNS = [
       { key: "streamer", label: "Streamer", sortable: true },
@@ -132,12 +133,8 @@ module Admin
       return head :bad_request unless params.key?(:hidden_columns) || params.key?(:column_order)
 
       preferences = stream_table_preferences
-      if params.key?(:hidden_columns)
-        preferences["hidden_columns"] = sanitize_hidden_columns(params[:hidden_columns])
-      end
-      if params.key?(:column_order)
-        preferences["column_order"] = sanitize_column_order(params[:column_order])
-      end
+      preferences["hidden_columns"] = sanitize_hidden_columns(params[:hidden_columns]) if params.key?(:hidden_columns)
+      preferences["column_order"] = sanitize_column_order(params[:column_order]) if params.key?(:column_order)
       current_user.update!(stream_table_preferences: preferences)
 
       head :ok
@@ -165,8 +162,15 @@ module Admin
       notice = t("admin.streams.updated")
       format.html { redirect_to admin_streams_path, notice: notice }
       format.turbo_stream do
+        row_partial = "admin/streams/stream"
+        if params[:context] == "spreadsheet"
+          preferences = stream_table_preferences
+          @hidden_columns = sanitize_hidden_columns(preferences["hidden_columns"])
+          row_partial = "admin/streams/spreadsheet_row"
+        end
+
         render turbo_stream: [
-          turbo_stream.replace(@stream, partial: "admin/streams/stream", locals: { stream: @stream }),
+          turbo_stream.replace(@stream, partial: row_partial, locals: { stream: @stream }),
           turbo_stream.replace("flash", partial: "admin/shared/flash", locals: { notice: notice }),
           turbo_stream.replace("modal", ""),
         ]
@@ -225,7 +229,7 @@ module Admin
     end
 
     def stream_table_column_keys
-      @stream_table_column_keys ||= STREAM_TABLE_COLUMNS.map { |column| column[:key] }
+      @stream_table_column_keys ||= STREAM_TABLE_COLUMNS.pluck(:key)
     end
 
     def stream_table_preferences
@@ -271,4 +275,5 @@ module Admin
       current_user.update!(stream_table_preferences: preferences)
     end
   end
+  # rubocop:enable Metrics/ClassLength
 end

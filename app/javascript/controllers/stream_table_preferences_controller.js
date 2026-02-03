@@ -53,7 +53,7 @@ export default class extends Controller {
     try {
       sessionStorage.setItem('streamsTableScrollLeft', this.scrollContainerTarget.scrollLeft)
     } catch (error) {
-      console.error('Failed to store scroll position', error)
+      this.reportError('Failed to store scroll position', error)
     }
   }
 
@@ -136,7 +136,7 @@ export default class extends Controller {
       credentials: 'same-origin',
       body: JSON.stringify(payload)
     }).catch(error => {
-      console.error('Failed to save column preferences', error)
+      this.reportError('Failed to save column preferences', error)
     })
   }
 
@@ -147,7 +147,7 @@ export default class extends Controller {
     try {
       storedValue = sessionStorage.getItem('streamsTableScrollLeft')
     } catch (error) {
-      console.error('Failed to read scroll position', error)
+      this.reportError('Failed to read scroll position', error)
       return
     }
 
@@ -163,7 +163,7 @@ export default class extends Controller {
     try {
       sessionStorage.removeItem('streamsTableScrollLeft')
     } catch (error) {
-      console.error('Failed to clear scroll position', error)
+      this.reportError('Failed to clear scroll position', error)
     }
   }
 
@@ -245,5 +245,12 @@ export default class extends Controller {
   csrfToken () {
     const meta = document.querySelector('meta[name="csrf-token"]')
     return meta ? meta.content : ''
+  }
+
+  reportError (message, error) {
+    this.element.dispatchEvent(new CustomEvent('stream-table-preferences:error', {
+      detail: { message, error },
+      bubbles: true
+    }))
   }
 }

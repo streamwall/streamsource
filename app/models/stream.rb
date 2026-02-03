@@ -90,6 +90,7 @@ class Stream < ApplicationRecord
                                           locals: { stream: self }
     broadcast_time_updates if saved_change_to_last_checked_at? || saved_change_to_last_live_at?
   }
+  after_update_commit :broadcast_streamer_updates, if: :saved_change_to_streamer_id?
   after_destroy_commit -> { broadcast_remove_to "streams", target: "stream_#{id}" }
 
   # Validations
@@ -199,5 +200,16 @@ class Stream < ApplicationRecord
     return unless posted_by.blank? && user.present?
 
     self.posted_by = user.email
+  end
+
+  def broadcast_streamer_updates
+    platform_label = streamer&.platforms&.join(", ")
+    ActionCable.server.broadcast("collaborative_streams", {
+                                   action: "streamer_updated",
+                                   stream_id: id,
+                                   streamer_id: streamer_id,
+                                   streamer_name: streamer&.name,
+                                   streamer_platform: platform_label,
+                                 })
   end
 end

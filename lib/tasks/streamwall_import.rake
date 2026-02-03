@@ -1,8 +1,9 @@
 # Streamwall JSON import task.
 require "net/http"
 require "json"
-require "set"
 
+# Importer for Streamwall JSON data.
+# rubocop:disable Metrics/ClassLength, Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity, Metrics/BlockLength
 class StreamwallImporter
   DEFAULT_URL = "https://script.google.com/macros/s/AKfycbzGOqQ6gF2KASObXEPJ9eXIG63UCk6nMhuxuyFA8AhK" \
                 "On6IEZ2NqsY6GyyT1qNE82Cp/exec".freeze
@@ -114,7 +115,7 @@ class StreamwallImporter
       uri.port,
       use_ssl: uri.scheme == "https",
       open_timeout: 10,
-      read_timeout: 30
+      read_timeout: 30,
     ) do |http|
       request = Net::HTTP::Get.new(uri.request_uri)
       request["Accept"] = "application/json"
@@ -129,9 +130,7 @@ class StreamwallImporter
       return fetch_response(next_url, limit - 1)
     end
 
-    unless response.is_a?(Net::HTTPSuccess)
-      raise "Failed to fetch #{url}: #{response.code} #{response.message}"
-    end
+    raise "Failed to fetch #{url}: #{response.code} #{response.message}" unless response.is_a?(Net::HTTPSuccess)
 
     response
   end
@@ -203,13 +202,60 @@ class StreamwallImporter
   def attach_streamer(stream, streamer_name)
     return unless @create_streamers
 
-    return if streamer_name.blank?
+    platform = stream.platform
+    source = stream.source
+    candidate_name = streamer_name.presence || source
 
-    streamer = Streamer.find_or_create_by!(name: streamer_name) do |record|
-      record.user = @user
-      record.posted_by = @user.email
-    end
+    streamer = find_streamer_by_platform_source(platform, source)
+    streamer ||= find_streamer_by_name(candidate_name)
+    streamer ||= create_streamer_from_stream(stream, candidate_name)
+
+    return if streamer.nil?
+
+    ensure_streamer_account(streamer, platform, source)
     stream.streamer = streamer
+  end
+
+  def find_streamer_by_platform_source(platform, source)
+    return nil if platform.blank? || source.blank?
+
+    normalized = source.to_s.strip.downcase
+    account = StreamerAccount
+              .includes(:streamer)
+              .where(platform: platform)
+              .where("LOWER(username) = ?", normalized)
+              .first
+    account&.streamer
+  end
+
+  def find_streamer_by_name(name)
+    return nil if name.blank?
+
+    Streamer.where("LOWER(name) = ?", name.to_s.strip.downcase).first
+  end
+
+  def create_streamer_from_stream(stream, name)
+    return nil if name.blank?
+
+    Streamer.create!(
+      name: name,
+      user: @user,
+      posted_by: stream.posted_by.presence,
+      notes: stream.notes.presence,
+    )
+  end
+
+  def ensure_streamer_account(streamer, platform, source)
+    return if streamer.nil? || platform.blank? || source.blank?
+
+    normalized = source.to_s.strip.downcase
+    existing = streamer.streamer_accounts
+                       .where(platform: platform)
+                       .where("LOWER(username) = ?", normalized)
+                       .first
+    return if existing.present?
+
+    streamer.streamer_accounts.create!(platform: platform, username: source)
   end
 
   def build_updates(existing, attrs)
@@ -318,12 +364,12 @@ class StreamwallImporter
     return nil if link.blank?
 
     link = link.to_s.strip
-    link = "https://#{link}" unless link.match?(/\Ahttps?:\/\//i)
+    link = "https://#{link}" unless link.match?(%r{\Ahttps?://}i)
     link
   end
 
   def normalize_link_key(link)
-    return nil unless link.present?
+    return nil if link.blank?
     return nil unless ApplicationConstants::Stream::URL_REGEX.match?(link)
 
     normalized = link.strip
@@ -342,7 +388,7 @@ class StreamwallImporter
 
     http_variant = base.sub(/\Ahttps:/, "http:")
     https_variant = base.sub(/\Ahttp:/, "https:")
-    variants.concat([http_variant, "#{http_variant}/", https_variant, "#{https_variant}/"])
+    variants.push(http_variant, "#{http_variant}/", https_variant, "#{https_variant}/")
 
     candidates = variants.uniq
     Stream.where("LOWER(link) IN (?)", candidates).first
@@ -378,8 +424,6 @@ class StreamwallImporter
       "offline"
     when "unknown", "n/a", "na"
       "unknown"
-    else
-      nil
     end
   end
 
@@ -420,8 +464,6 @@ class StreamwallImporter
       "vertical"
     when "horizontal", "landscape", "wide"
       "horizontal"
-    else
-      nil
     end
   end
 
@@ -438,8 +480,6 @@ class StreamwallImporter
       "overlay"
     when "background", "bg"
       "background"
-    else
-      nil
     end
   end
 
@@ -452,8 +492,6 @@ class StreamwallImporter
       true
     when "false", "f", "no", "n", "0"
       false
-    else
-      nil
     end
   end
 
@@ -472,7 +510,9 @@ class StreamwallImporter
     nil
   end
 end
+# rubocop:enable Metrics/ClassLength, Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity, Metrics/BlockLength
 
+# rubocop:disable Metrics/BlockLength
 namespace :streams do
   desc "Import streams from a Streamwall JSON endpoint (URL=... USER_EMAIL=... MODE=upsert|skip DRY_RUN=true)"
   task import_streamwall: :environment do
@@ -480,7 +520,7 @@ namespace :streams do
     mode = (ENV["MODE"] || "upsert").to_s.downcase
     dry_run = ENV.fetch("DRY_RUN", "false").to_s.downcase == "true"
     limit = ENV["LIMIT"]&.to_i
-    offset = ENV["OFFSET"]&.to_i || 0
+    offset = ENV["OFFSET"].to_i
     create_streamers = ENV.fetch("CREATE_STREAMERS", "false").to_s.downcase == "true"
 
     user = if ENV["USER_ID"].present?
@@ -507,3 +547,4 @@ namespace :streams do
     ).run
   end
 end
+# rubocop:enable Metrics/BlockLength

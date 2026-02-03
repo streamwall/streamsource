@@ -1,4 +1,6 @@
 module Admin
+  # Helpers for admin streams views.
+  # rubocop:disable Metrics/ModuleLength
   module StreamsHelper
     def stream_sort_link(label, column, current_sort:, current_direction:)
       return label unless Stream::SORTABLE_COLUMNS.include?(column)
@@ -25,6 +27,15 @@ module Admin
       classes = [base_class]
       classes << "hidden" if hidden_columns.include?(column)
       classes.join(" ")
+    end
+
+    def streamer_options
+      @streamer_options ||= Streamer.includes(:streamer_accounts).order(:name).map do |streamer|
+        platforms = streamer.streamer_accounts.select(&:is_active).map(&:platform).uniq
+        label = streamer.name
+        label += " (#{platforms.join(', ')})" if platforms.any?
+        [label, streamer.id]
+      end
     end
 
     private
@@ -116,4 +127,5 @@ module Admin
       end
     end
   end
+  # rubocop:enable Metrics/ModuleLength
 end
