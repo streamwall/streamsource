@@ -373,7 +373,7 @@ jobs:
           
           const summary = `## 🤖 PR Validation Summary
           
-          **Status**: ${{ needs.test.result == 'success' && needs.lint.result == 'success' && needs.security.result == 'success' && needs.performance.result == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}
+          **Status**: ${{ needs.test.result == 'success' && needs.lint.result == 'success' && needs.security.result == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}
           
           ### Test Results
           - **Unit Tests**: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}
@@ -383,7 +383,6 @@ jobs:
           ### Code Quality
           - **Linting**: ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }}
           - **Security**: ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }}
-          - **Performance**: ${{ needs.performance.result == 'success' && '✅ Passed' || '❌ Failed' }}
           
           [View detailed results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           `;
