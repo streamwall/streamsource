@@ -155,6 +155,15 @@ The `make pre-commit` command runs:
 3. Security analysis  
 4. JavaScript linting
 
+Install the pre-commit.com hooks with:
+
+```bash
+pre-commit install
+pre-commit install --hook-type pre-push
+```
+
+Use `SKIP_HOOKS=1` to bypass locally when needed.
+
 ### Continuous Integration
 
 Recommended CI pipeline:

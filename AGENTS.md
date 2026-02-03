@@ -46,4 +46,5 @@ This repo is Docker-only; do not use system Ruby/Bundler.
 ## Commit & Pull Request Guidelines
 - Commit messages are short, imperative, and lowercase (e.g., “simplify makefile”).
 - Branch naming: `feature/...`, `fix/...`, `docs/...`.
+- Resolve any pre-commit hook failures before committing or pushing (run `make pre-commit` if needed).
 - PRs should include a brief summary, tests run, and doc updates. If API changes, update `docs/API.md` and `swagger/v1/swagger.yaml`.

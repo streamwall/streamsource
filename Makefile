@@ -1,7 +1,7 @@
 # StreamSource
 # Usage: make [command]
 
-.PHONY: help up down stop restart shell test migrate seed setup reset logs lint rebuild browse rake yarn
+.PHONY: help up down stop restart shell test migrate seed setup reset logs lint lint-fix lint-ruby lint-js security quality pre-commit pre-commit-install rebuild browse rake yarn
 
 STREAMSOURCE_ENV ?= dev
 APP_URL ?= http://localhost:3001/admin
@@ -12,12 +12,14 @@ UP_TARGETS := web
 UP_PROFILE :=
 else
 COMPOSE_FILES :=
-UP_TARGETS :=
+UP_TARGETS := web js css
 UP_PROFILE := --profile assets
 endif
 
 COMPOSE := docker compose $(COMPOSE_FILES)
 COMPOSE_UP := $(COMPOSE) $(UP_PROFILE)
+COMPOSE_EXEC_FLAGS ?=
+COMPOSE_EXEC := $(COMPOSE) exec $(COMPOSE_EXEC_FLAGS)
 
 ifeq ($(STREAMSOURCE_ENV),prod)
 RESTART_CMD = $(COMPOSE) restart
@@ -36,6 +38,13 @@ help:
 	@echo "  rake     - Run a rake task (make rake streams:import_streamwall)"
 	@echo "  test     - Run tests"
 	@echo "  lint     - Run lint checks (RuboCop, ESLint)"
+	@echo "  lint-fix - Auto-fix lint issues (RuboCop, ESLint)"
+	@echo "  lint-ruby - Run RuboCop only"
+	@echo "  lint-js  - Run ESLint only"
+	@echo "  security - Run security checks (Brakeman, bundler-audit)"
+	@echo "  quality  - Run lint + tests"
+	@echo "  pre-commit - Run CI checks before commit/push"
+	@echo "  pre-commit-install - Install pre-commit hooks (commit + pre-push)"
 	@echo "  yarn     - Build JS/CSS assets"
 	@echo "  rebuild  - Clean and rebuild containers"
 	@echo "  migrate  - Run migrations"
@@ -72,7 +81,7 @@ browse:
 	fi
 
 shell:
-	$(COMPOSE) exec web bin/rails console
+	$(COMPOSE_EXEC) web bin/rails console
 
 rake:
 	@task="$(filter-out $@,$(MAKECMDGOALS))"; \
@@ -81,21 +90,50 @@ rake:
 	  echo "Example: make rake streams:import_streamwall"; \
 	  exit 1; \
 	fi; \
-	$(COMPOSE) exec web bundle exec rake $$task
+	$(COMPOSE_EXEC) web bundle exec rake $$task
 
 %:
 	@:
 
 test:
-	$(COMPOSE) exec web bin/test
+	$(COMPOSE_EXEC) web bin/test
 
-lint:
-	$(COMPOSE) exec web bundle exec rubocop
-	$(COMPOSE) exec web yarn lint
+lint: lint-ruby lint-js
+
+lint-ruby:
+	$(COMPOSE_EXEC) web bundle exec rubocop
+
+lint-js:
+	$(COMPOSE_EXEC) web yarn lint
+
+lint-fix:
+	$(COMPOSE_EXEC) web bundle exec rubocop -A
+	$(COMPOSE_EXEC) web yarn lint:js:fix
+
+security:
+	$(COMPOSE_EXEC) web bundle exec brakeman -q -w2
+	$(COMPOSE_EXEC) web bundle exec bundler-audit check --update
+
+quality:
+	$(MAKE) lint
+	$(MAKE) test
+
+pre-commit:
+	$(MAKE) lint
+	$(MAKE) security
+	$(MAKE) test
+
+pre-commit-install:
+	@command -v pre-commit >/dev/null 2>&1 || { \
+	  echo "pre-commit is not installed. Install it first: https://pre-commit.com/#install"; \
+	  exit 1; \
+	}
+	pre-commit install
+	pre-commit install --hook-type pre-push
 
 yarn:
-	$(COMPOSE) exec web yarn build
-	$(COMPOSE) exec web yarn build:css
+	$(COMPOSE_EXEC) web yarn build
+	$(COMPOSE_EXEC) web yarn build:css
 
 rebuild:
 	$(COMPOSE) down --remove-orphans
@@ -103,16 +141,16 @@ rebuild:
 	$(COMPOSE_UP) up -d $(UP_TARGETS)
 
 migrate:
-	$(COMPOSE) exec web bin/rails db:migrate
+	$(COMPOSE_EXEC) web bin/rails db:migrate
 
 seed:
-	$(COMPOSE) exec web bin/rails db:seed
+	$(COMPOSE_EXEC) web bin/rails db:seed
 
 setup:
-	$(COMPOSE) exec web bin/rails db:setup
+	$(COMPOSE_EXEC) web bin/rails db:setup
 
 reset:
-	$(COMPOSE) exec web bin/rails db:reset
+	$(COMPOSE_EXEC) web bin/rails db:reset
 
 logs:
 	$(COMPOSE) logs -f

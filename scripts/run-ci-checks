@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${SKIP_HOOKS:-}" == "1" ]]; then
+  echo "Skipping pre-commit checks (SKIP_HOOKS=1)."
+  exit 0
+fi
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if ! docker compose ps --status running --services >/dev/null 2>&1; then
+  echo "Docker Compose isn't available or Docker isn't running."
+  echo "Start the dev container with: make up"
+  exit 1
+fi
+
+if ! docker compose ps --status running --services | grep -q '^web$'; then
+  echo "StreamSource containers are not running."
+  echo "Start them with: make up"
+  exit 1
+fi
+
+export COMPOSE_EXEC_FLAGS=-T
+make pre-commit

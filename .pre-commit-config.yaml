@@ -1,0 +1,10 @@
+default_stages: [pre-commit, pre-push]
+repos:
+  - repo: local
+    hooks:
+      - id: streamsource-ci
+        name: StreamSource CI checks (Docker)
+        entry: scripts/run-ci-checks
+        language: system
+        pass_filenames: false
+        always_run: true
