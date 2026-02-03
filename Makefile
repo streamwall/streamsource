@@ -1,7 +1,7 @@
 # StreamSource
 # Usage: make [command]
 
-.PHONY: help up down stop restart shell test migrate seed setup reset logs lint rebuild browse rake
+.PHONY: help up down stop restart shell test migrate seed setup reset logs lint rebuild browse rake yarn
 
 STREAMSOURCE_ENV ?= dev
 APP_URL ?= http://localhost:3001/admin
@@ -19,6 +19,12 @@ endif
 COMPOSE := docker compose $(COMPOSE_FILES)
 COMPOSE_UP := $(COMPOSE) $(UP_PROFILE)
 
+ifeq ($(STREAMSOURCE_ENV),prod)
+RESTART_CMD = $(COMPOSE) restart
+else
+RESTART_CMD = $(COMPOSE_UP) up -d --force-recreate $(UP_TARGETS)
+endif
+
 help:
 	@echo "Commands:"
 	@echo "  up       - Start services (STREAMSOURCE_ENV=prod for production)"
@@ -30,6 +36,7 @@ help:
 	@echo "  rake     - Run a rake task (make rake streams:import_streamwall)"
 	@echo "  test     - Run tests"
 	@echo "  lint     - Run lint checks (RuboCop, ESLint)"
+	@echo "  yarn     - Build JS/CSS assets"
 	@echo "  rebuild  - Clean and rebuild containers"
 	@echo "  migrate  - Run migrations"
 	@echo "  seed     - Seed the database"
@@ -47,7 +54,7 @@ stop:
 	$(COMPOSE) stop
 
 restart:
-	$(COMPOSE) restart
+	$(RESTART_CMD)
 
 browse:
 	@url="$(APP_URL)"; \
@@ -85,6 +92,10 @@ test:
 lint:
 	$(COMPOSE) exec web bundle exec rubocop
 	$(COMPOSE) exec web yarn lint
+
+yarn:
+	$(COMPOSE) exec web yarn build
+	$(COMPOSE) exec web yarn build:css
 
 rebuild:
 	$(COMPOSE) down --remove-orphans

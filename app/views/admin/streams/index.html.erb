@@ -84,61 +84,70 @@
 
 <!-- Filters -->
 <div class="bg-white rounded-lg shadow mb-4 md:mb-6 p-3 md:p-4">
-  <%= form_with url: admin_streams_path, method: :get, data: { controller: "search", search_target: "form", turbo_frame: "streams_list", turbo_action: "advance" }, class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4" do |form| %>
-    <div class="col-span-full xl:col-span-1">
+  <%= form_with url: admin_streams_path, method: :get, data: { controller: "search", search_target: "form", turbo_frame: "streams_list", turbo_action: "advance" }, class: "space-y-3" do |form| %>
+    <% if @sort_column.present? %>
+      <%= form.hidden_field :sort, value: @sort_column %>
+      <%= form.hidden_field :direction, value: @sort_direction %>
+    <% end %>
+
+    <div class="flex flex-wrap items-center gap-2">
       <%= form.text_field :search, 
           placeholder: "Search streams...",
           value: params[:search],
           data: { action: "input->search#submit" },
-          class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+          class: "flex-1 min-w-[220px] rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+      <%= form.submit "Search", class: "px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium" %>
+      <%= link_to "Clear", admin_streams_path, class: "px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm font-medium" %>
     </div>
-    
-    <div>
-      <%= form.select :status, 
-          options_for_select([["All Status", ""], ["Live", "Live"], ["Offline", "Offline"], ["Unknown", "Unknown"]], params[:status]),
-          {},
-          class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
-    </div>
-    
-    <div>
-      <%= form.select :platform, 
-          options_for_select([["All Platforms", ""], ["TikTok", "TikTok"], ["Facebook", "Facebook"], ["Twitch", "Twitch"], ["YouTube", "YouTube"], ["Instagram", "Instagram"], ["Other", "Other"]], params[:platform]),
-          {},
-          class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
-    </div>
-    
-    <div>
-      <%= form.select :kind, 
-          options_for_select([["All Kinds", ""], ["Video", "video"], ["Web", "web"], ["Overlay", "overlay"], ["Background", "background"]], params[:kind]),
-          {},
-          class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
-    </div>
-    
-    <div>
-      <%= form.select :orientation, 
-          options_for_select([["All Orientations", ""], ["Vertical", "vertical"], ["Horizontal", "horizontal"]], params[:orientation]),
-          {},
-          class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
-    </div>
-    
-    <div>
-      <%= form.select :is_pinned, 
-          options_for_select([["All Streams", ""], ["Pinned Only", "true"], ["Unpinned Only", "false"]], params[:is_pinned]),
-          {},
-          class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
-    </div>
-    
-    <div>
-      <%= form.select :is_archived, 
-          options_for_select([["Active Streams", "false"], ["Archived Streams", "true"], ["All Streams", ""]], params[:is_archived] || "false"),
-          {},
-          class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
-    </div>
-    
-    <div class="flex gap-2">
-      <%= form.submit "Apply Filters", class: "px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium" %>
-      <%= link_to "Clear Filters", admin_streams_path, class: "px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm font-medium" %>
-    </div>
+
+    <details>
+      <summary class="cursor-pointer select-none text-sm font-medium text-gray-700">
+        Advanced Filters
+      </summary>
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4">
+        <div>
+          <%= form.select :status, 
+              options_for_select([["All Status", ""], ["Live", "Live"], ["Offline", "Offline"], ["Unknown", "Unknown"]], params[:status]),
+              {},
+              class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        </div>
+        
+        <div>
+          <%= form.select :platform, 
+              options_for_select([["All Platforms", ""], ["TikTok", "TikTok"], ["Facebook", "Facebook"], ["Twitch", "Twitch"], ["YouTube", "YouTube"], ["Instagram", "Instagram"], ["Other", "Other"]], params[:platform]),
+              {},
+              class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        </div>
+        
+        <div>
+          <%= form.select :kind, 
+              options_for_select([["All Kinds", ""], ["Video", "video"], ["Web", "web"], ["Overlay", "overlay"], ["Background", "background"]], params[:kind]),
+              {},
+              class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        </div>
+        
+        <div>
+          <%= form.select :orientation, 
+              options_for_select([["All Orientations", ""], ["Vertical", "vertical"], ["Horizontal", "horizontal"]], params[:orientation]),
+              {},
+              class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        </div>
+        
+        <div>
+          <%= form.select :is_pinned, 
+              options_for_select([["All Streams", ""], ["Pinned Only", "true"], ["Unpinned Only", "false"]], params[:is_pinned]),
+              {},
+              class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        </div>
+        
+        <div>
+          <%= form.select :is_archived, 
+              options_for_select([["Active Streams", "false"], ["Archived Streams", "true"], ["All Streams", ""]], params[:is_archived] || "false"),
+              {},
+              class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" %>
+        </div>
+      </div>
+    </details>
   <% end %>
 </div>
 

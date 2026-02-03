@@ -21,6 +21,23 @@ RSpec.describe Stream, type: :model do
     end
   end
 
+  describe ".sorted" do
+    it "orders by title when provided" do
+      stream_a = create(:stream, title: "Alpha")
+      stream_b = create(:stream, title: "Beta")
+
+      expect(described_class.sorted("title", "asc").pluck(:id)).to eq([stream_a.id, stream_b.id])
+    end
+
+    it "falls back to default ordering for invalid columns" do
+      unpinned = create(:stream, started_at: 2.hours.ago, is_pinned: false)
+      pinned = create(:stream, :pinned, started_at: 1.hour.ago)
+
+      expect(described_class.sorted("bogus", "asc").first).to eq(pinned)
+      expect(described_class.sorted("bogus", "asc").second).to eq(unpinned)
+    end
+  end
+
   describe "instance methods" do
     let(:stream) { create(:stream, user: user) }
 

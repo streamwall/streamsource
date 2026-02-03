@@ -1,13 +1,40 @@
 module Admin
   # CRUD for streams in the admin UI.
   class StreamsController < BaseController
+    STREAM_TABLE_COLUMNS = [
+      { key: "streamer", label: "Streamer", sortable: true },
+      { key: "title", label: "Title", sortable: true },
+      { key: "source", label: "Source", sortable: true },
+      { key: "link", label: "Link", sortable: true },
+      { key: "platform", label: "Platform", sortable: true },
+      { key: "status", label: "Status", sortable: true },
+      { key: "city", label: "City", sortable: true },
+      { key: "state", label: "State", sortable: true },
+      { key: "kind", label: "Kind", sortable: true },
+      { key: "orientation", label: "Orientation", sortable: true },
+      { key: "started_at", label: "Started At", sortable: true },
+      { key: "last_checked_at", label: "Last Checked", sortable: true },
+      { key: "last_live_at", label: "Last Live", sortable: true },
+      { key: "actions", label: "Actions", sortable: false },
+    ].freeze
+
+    helper_method :stream_table_columns
+
     before_action :set_stream, only: %i[show edit update destroy toggle_pin]
 
     def index
+      @stream_table_preferences = stream_table_preferences
+      @hidden_columns = sanitize_hidden_columns(@stream_table_preferences["hidden_columns"])
+      @column_order = sanitize_column_order(@stream_table_preferences["column_order"])
+      @sort_column = resolved_sort_column(@stream_table_preferences)
+      @sort_direction = resolved_sort_direction(@stream_table_preferences)
+
+      persist_sort_preferences if persist_sort_preferences?
+
       @pagy, @streams = pagy(
         Stream.includes(:streamer)
               .filtered(filter_params)
-              .ordered,
+              .sorted(@sort_column, @sort_direction),
         items: 20,
       )
 
@@ -100,6 +127,22 @@ module Admin
       end
     end
 
+    def update_preferences
+      return head :unauthorized unless current_user
+      return head :bad_request unless params.key?(:hidden_columns) || params.key?(:column_order)
+
+      preferences = stream_table_preferences
+      if params.key?(:hidden_columns)
+        preferences["hidden_columns"] = sanitize_hidden_columns(params[:hidden_columns])
+      end
+      if params.key?(:column_order)
+        preferences["column_order"] = sanitize_column_order(params[:column_order])
+      end
+      current_user.update!(stream_table_preferences: preferences)
+
+      head :ok
+    end
+
     private
 
     def set_stream
@@ -175,6 +218,57 @@ module Admin
 
     def filter_params
       params.permit(:status, :platform, :kind, :orientation, :user_id, :search, :is_pinned, :is_archived)
+    end
+
+    def stream_table_columns
+      STREAM_TABLE_COLUMNS
+    end
+
+    def stream_table_column_keys
+      @stream_table_column_keys ||= STREAM_TABLE_COLUMNS.map { |column| column[:key] }
+    end
+
+    def stream_table_preferences
+      return {} unless current_user
+
+      (current_user.stream_table_preferences || {}).deep_dup
+    end
+
+    def sanitize_hidden_columns(columns)
+      Array(columns).map(&:to_s) & stream_table_column_keys
+    end
+
+    def sanitize_column_order(columns)
+      ordered = Array(columns).map(&:to_s) & stream_table_column_keys
+      missing = stream_table_column_keys - ordered
+      ordered + missing
+    end
+
+    def resolved_sort_column(preferences)
+      candidate = params[:sort].presence
+      return candidate if candidate.present? && Stream::SORTABLE_COLUMNS.include?(candidate.to_s)
+
+      stored = preferences.dig("sort", "column")
+      stored if Stream::SORTABLE_COLUMNS.include?(stored.to_s)
+    end
+
+    def resolved_sort_direction(preferences)
+      candidate = params[:direction].presence
+      return "asc" if candidate == "asc"
+      return "desc" if candidate == "desc"
+
+      stored = preferences.dig("sort", "direction")
+      stored == "asc" ? "asc" : "desc"
+    end
+
+    def persist_sort_preferences?
+      params[:sort].present? && @sort_column.present? && current_user.present?
+    end
+
+    def persist_sort_preferences
+      preferences = @stream_table_preferences
+      preferences["sort"] = { "column" => @sort_column, "direction" => @sort_direction }
+      current_user.update!(stream_table_preferences: preferences)
     end
   end
 end

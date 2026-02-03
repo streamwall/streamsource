@@ -1,62 +1,154 @@
-<div data-controller="collaborative-spreadsheet"
+<div data-controller="collaborative-spreadsheet stream-table-preferences"
      data-collaborative-spreadsheet-current-user-id-value="<%= current_admin_user.id.to_s %>"
      data-collaborative-spreadsheet-current-user-name-value="<%= current_admin_user.display_name %>"
      data-collaborative-spreadsheet-current-user-color-value="<%= user_color(current_admin_user) %>"
+     data-stream-table-preferences-hidden-columns-value="<%= @hidden_columns.to_json %>"
+     data-stream-table-preferences-column-order-value="<%= @column_order.to_json %>"
+     data-stream-table-preferences-preferences-url-value="<%= admin_stream_preferences_path %>"
      class="relative">
   
-  <!-- Active Users Presence -->
-  <div class="absolute top-0 right-0 p-4 bg-white rounded-lg shadow-sm border border-gray-200 z-10">
-    <h3 class="text-sm font-medium text-gray-700 mb-2">Active Users</h3>
-    <div data-collaborative-spreadsheet-target="presenceList" class="space-y-1">
-      <!-- Users will be dynamically added here -->
+  <!-- Column Preferences + Active Users -->
+  <div class="flex flex-wrap items-center justify-between gap-3 pb-3">
+    <div class="flex flex-wrap items-center gap-2">
+      <details class="relative">
+        <summary class="cursor-pointer select-none px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50">
+          Columns
+        </summary>
+        <div class="absolute left-0 mt-2 w-56 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg z-20 p-3">
+          <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Show columns</div>
+          <div class="space-y-1">
+            <% stream_table_columns.each do |column| %>
+              <label class="flex items-center gap-2 text-sm text-gray-700">
+                <%= check_box_tag "stream_columns[]",
+                                  column[:key],
+                                  !@hidden_columns.include?(column[:key]),
+                                  class: "h-4 w-4 text-indigo-600 border-gray-300 rounded",
+                                  data: { action: "stream-table-preferences#toggleColumn",
+                                          stream_table_preferences_target: "columnToggle" } %>
+                <span><%= column[:label] %></span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+      </details>
+      <span class="text-xs text-gray-500">Sort by clicking headers. Drag headers to reorder.</span>
+    </div>
+
+    <!-- Active Users Presence -->
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Active Users</span>
+      <span data-collaborative-spreadsheet-target="presenceCount"
+            class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[11px] font-medium text-gray-600 bg-gray-100 rounded-full">
+        0
+      </span>
+      <div data-collaborative-spreadsheet-target="presenceList"
+           class="flex items-center gap-1">
+        <!-- Users will be dynamically added here -->
+      </div>
     </div>
   </div>
   
   <!-- Spreadsheet Table -->
-  <div class="overflow-x-auto bg-white rounded-lg shadow">
+  <div class="overflow-x-auto bg-white rounded-lg shadow"
+       data-stream-table-preferences-target="scrollContainer">
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
         <tr>
-          <th scope="col" class="sticky left-0 z-10 bg-gray-50 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Streamer
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("streamer", @sort_column, @sort_direction) %>"
+              data-column="streamer"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("streamer", "sticky left-0 z-10 bg-gray-50 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Streamer", "streamer", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Title
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("title", @sort_column, @sort_direction) %>"
+              data-column="title"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("title", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Title", "title", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Source
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("source", @sort_column, @sort_direction) %>"
+              data-column="source"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("source", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Source", "source", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Link
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("link", @sort_column, @sort_direction) %>"
+              data-column="link"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("link", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Link", "link", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Platform
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("platform", @sort_column, @sort_direction) %>"
+              data-column="platform"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("platform", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Platform", "platform", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Status
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("status", @sort_column, @sort_direction) %>"
+              data-column="status"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("status", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Status", "status", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            City
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("city", @sort_column, @sort_direction) %>"
+              data-column="city"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("city", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("City", "city", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            State
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("state", @sort_column, @sort_direction) %>"
+              data-column="state"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("state", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("State", "state", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Kind
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("kind", @sort_column, @sort_direction) %>"
+              data-column="kind"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("kind", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Kind", "kind", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Orientation
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("orientation", @sort_column, @sort_direction) %>"
+              data-column="orientation"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("orientation", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Orientation", "orientation", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Started At
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("started_at", @sort_column, @sort_direction) %>"
+              data-column="started_at"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("started_at", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Started At", "started_at", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Last Checked
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("last_checked_at", @sort_column, @sort_direction) %>"
+              data-column="last_checked_at"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("last_checked_at", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Last Checked", "last_checked_at", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Last Live
+          <th scope="col"
+              aria-sort="<%= stream_sort_aria("last_live_at", @sort_column, @sort_direction) %>"
+              data-column="last_live_at"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("last_live_at", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
+            <%= stream_sort_link("Last Live", "last_live_at", current_sort: @sort_column, current_direction: @sort_direction) %>
           </th>
-          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th scope="col"
+              data-column="actions"
+              data-stream-table-preferences-target="column"
+              class="<%= stream_column_class("actions", "px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider", @hidden_columns) %>">
             Actions
           </th>
         </tr>
@@ -65,7 +157,9 @@
         <% @streams.each do |stream| %>
           <tr id="stream_<%= stream.id %>" class="hover:bg-gray-50">
             <!-- Streamer (read-only) -->
-            <td class="sticky left-0 z-10 bg-white px-3 py-4 whitespace-nowrap text-sm">
+            <td class="<%= stream_column_class("streamer", "sticky left-0 z-10 bg-white px-3 py-4 whitespace-nowrap text-sm", @hidden_columns) %>"
+                data-column="streamer"
+                data-stream-table-preferences-target="column">
               <div class="flex items-center">
                 <div>
                   <div class="text-sm font-medium text-gray-900">
@@ -79,7 +173,9 @@
             </td>
             
             <!-- Title -->
-            <td class="px-3 py-4 whitespace-nowrap relative">
+            <td class="<%= stream_column_class("title", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+                data-column="title"
+                data-stream-table-preferences-target="column">
               <div data-collaborative-spreadsheet-target="cell"
                    data-cell-id="stream_<%= stream.id %>_title"
                    data-stream-id="<%= stream.id %>"
@@ -91,7 +187,9 @@
             </td>
             
             <!-- Source -->
-            <td class="px-3 py-4 whitespace-nowrap relative">
+            <td class="<%= stream_column_class("source", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+                data-column="source"
+                data-stream-table-preferences-target="column">
               <div data-collaborative-spreadsheet-target="cell"
                    data-cell-id="stream_<%= stream.id %>_source"
                    data-stream-id="<%= stream.id %>"
@@ -103,7 +201,9 @@
             </td>
             
             <!-- Link -->
-            <td class="px-3 py-4 whitespace-nowrap relative">
+            <td class="<%= stream_column_class("link", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+                data-column="link"
+                data-stream-table-preferences-target="column">
               <div data-collaborative-spreadsheet-target="cell"
                    data-cell-id="stream_<%= stream.id %>_link"
                    data-stream-id="<%= stream.id %>"
@@ -115,7 +215,9 @@
             </td>
             
             <!-- Platform -->
-            <td class="px-3 py-4 whitespace-nowrap relative">
+            <td class="<%= stream_column_class("platform", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+                data-column="platform"
+                data-stream-table-preferences-target="column">
               <div data-collaborative-spreadsheet-target="cell"
                    data-cell-id="stream_<%= stream.id %>_platform"
                    data-stream-id="<%= stream.id %>"
@@ -129,7 +231,9 @@
             </td>
             
             <!-- Status -->
-            <td class="px-3 py-4 whitespace-nowrap relative">
+            <td class="<%= stream_column_class("status", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+                data-column="status"
+                data-stream-table-preferences-target="column">
               <div data-collaborative-spreadsheet-target="cell"
                    data-cell-id="stream_<%= stream.id %>_status"
                    data-stream-id="<%= stream.id %>"
@@ -148,7 +252,9 @@
             </td>
             
             <!-- City -->
-            <td class="px-3 py-4 whitespace-nowrap relative">
+            <td class="<%= stream_column_class("city", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+                data-column="city"
+                data-stream-table-preferences-target="column">
               <div data-collaborative-spreadsheet-target="cell"
                    data-cell-id="stream_<%= stream.id %>_city"
                    data-stream-id="<%= stream.id %>"
@@ -160,7 +266,9 @@
             </td>
             
             <!-- State -->
-            <td class="px-3 py-4 whitespace-nowrap relative">
+            <td class="<%= stream_column_class("state", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+                data-column="state"
+                data-stream-table-preferences-target="column">
               <div data-collaborative-spreadsheet-target="cell"
                    data-cell-id="stream_<%= stream.id %>_state"
                    data-stream-id="<%= stream.id %>"
@@ -172,7 +280,9 @@
             </td>
             
             <!-- Kind -->
-            <td class="px-3 py-4 whitespace-nowrap relative">
+            <td class="<%= stream_column_class("kind", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+                data-column="kind"
+                data-stream-table-preferences-target="column">
               <div data-collaborative-spreadsheet-target="cell"
                    data-cell-id="stream_<%= stream.id %>_kind"
                    data-stream-id="<%= stream.id %>"
@@ -186,7 +296,9 @@
             </td>
             
             <!-- Orientation -->
-            <td class="px-3 py-4 whitespace-nowrap relative">
+            <td class="<%= stream_column_class("orientation", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+                data-column="orientation"
+                data-stream-table-preferences-target="column">
               <div data-collaborative-spreadsheet-target="cell"
                    data-cell-id="stream_<%= stream.id %>_orientation"
                    data-stream-id="<%= stream.id %>"
@@ -200,28 +312,36 @@
             </td>
             
             <!-- Started At (non-editable) -->
-            <td class="px-3 py-4 whitespace-nowrap">
+            <td class="<%= stream_column_class("started_at", "px-3 py-4 whitespace-nowrap", @hidden_columns) %>"
+                data-column="started_at"
+                data-stream-table-preferences-target="column">
               <div class="text-sm text-gray-500 px-2 py-1">
                 <%= stream.started_at&.strftime('%b %d, %Y %I:%M %p') || '-' %>
               </div>
             </td>
             
             <!-- Last Checked (non-editable) -->
-            <td class="px-3 py-4 whitespace-nowrap">
+            <td class="<%= stream_column_class("last_checked_at", "px-3 py-4 whitespace-nowrap", @hidden_columns) %>"
+                data-column="last_checked_at"
+                data-stream-table-preferences-target="column">
               <div id="stream_<%= stream.id %>_last_checked_at" class="text-sm text-gray-500 px-2 py-1">
                 <%= time_ago_in_words_with_nil(stream.last_checked_at) %>
               </div>
             </td>
             
             <!-- Last Live (non-editable) -->
-            <td class="px-3 py-4 whitespace-nowrap">
+            <td class="<%= stream_column_class("last_live_at", "px-3 py-4 whitespace-nowrap", @hidden_columns) %>"
+                data-column="last_live_at"
+                data-stream-table-preferences-target="column">
               <div id="stream_<%= stream.id %>_last_live_at" class="text-sm text-gray-500 px-2 py-1">
                 <%= time_ago_in_words_with_nil(stream.last_live_at) %>
               </div>
             </td>
             
             <!-- Actions -->
-            <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <td class="<%= stream_column_class("actions", "px-3 py-4 whitespace-nowrap text-right text-sm font-medium", @hidden_columns) %>"
+                data-column="actions"
+                data-stream-table-preferences-target="column">
               <div class="flex items-center space-x-2">
                 <% if stream.link.present? %>
                   <%= link_to stream.link, target: '_blank', rel: 'noopener', 

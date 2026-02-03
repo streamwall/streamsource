@@ -7,7 +7,7 @@ import { MessageDisplayManager } from './collaborative_spreadsheet/message_displ
 import { EditTimeoutManager } from './collaborative_spreadsheet/edit_timeout_manager'
 
 export default class extends Controller {
-  static targets = ['cell', 'userIndicator', 'presenceList']
+  static targets = ['cell', 'userIndicator', 'presenceList', 'presenceCount']
   static values = {
     currentUserId: String,
     currentUserName: String,

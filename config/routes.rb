@@ -79,6 +79,7 @@ Rails.application.routes.draw do
     get "streams/new", to: "streams#new", as: "new_stream"
     get "streams/:id/edit", to: "streams#edit", as: "edit_stream"
     patch "streams/:id/toggle_pin", to: "streams#toggle_pin", as: "toggle_pin_stream"
+    patch "streams/preferences", to: "streams#update_preferences", as: "stream_preferences"
     resources :streams, only: %i[index show create update destroy]
 
     # Define users routes with new and edit

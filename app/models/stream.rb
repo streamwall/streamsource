@@ -64,6 +64,23 @@ class Stream < ApplicationRecord
     background: "background",
   }, default: "video", prefix: true
 
+  SORT_COLUMN_MAP = {
+    "streamer" => "streamers.name",
+    "title" => "streams.title",
+    "source" => "streams.source",
+    "link" => "streams.link",
+    "platform" => "streams.platform",
+    "status" => "streams.status",
+    "city" => "streams.city",
+    "state" => "streams.state",
+    "kind" => "streams.kind",
+    "orientation" => "streams.orientation",
+    "started_at" => "streams.started_at",
+    "last_checked_at" => "streams.last_checked_at",
+    "last_live_at" => "streams.last_live_at",
+  }.freeze
+  SORTABLE_COLUMNS = SORT_COLUMN_MAP.keys.freeze
+
   # Callbacks for broadcasting
   after_create_commit lambda {
     broadcast_prepend_later_to "streams", target: "streams", partial: "admin/streams/stream", locals: { stream: self }
@@ -105,6 +122,16 @@ class Stream < ApplicationRecord
   scope :recently_checked, -> { order(last_checked_at: :desc) }
   scope :recently_live, -> { order(last_live_at: :desc) }
   scope :ordered, -> { order(is_pinned: :desc, started_at: :desc) }
+  scope :sorted, lambda { |sort_column, direction|
+    sort_key = sort_column.to_s
+    return ordered unless SORTABLE_COLUMNS.include?(sort_key)
+
+    direction = direction == "asc" ? "asc" : "desc"
+    relation = sort_key == "streamer" ? left_joins(:streamer) : self
+    order_clause = Arel.sql("#{SORT_COLUMN_MAP.fetch(sort_key)} #{direction} NULLS LAST")
+
+    relation.order(order_clause).order(is_pinned: :desc, started_at: :desc)
+  }
 
   # Archival scopes
   scope :archived, -> { where(is_archived: true) }
