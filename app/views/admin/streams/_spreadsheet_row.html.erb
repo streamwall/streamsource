@@ -1,6 +1,8 @@
-<tr id="stream_<%= stream.id %>" class="hover:bg-gray-50">
+<tr id="stream_<%= stream.id %>"
+    class="streams-row block md:table-row bg-white md:bg-transparent border border-gray-200 md:border-0 rounded-lg md:rounded-none shadow-sm md:shadow-none overflow-hidden md:overflow-visible divide-y divide-gray-100 md:divide-y-0 hover:bg-gray-50">
   <!-- Streamer (read-only) -->
-  <td class="<%= stream_column_class("streamer", "px-3 py-4 whitespace-nowrap text-sm", @hidden_columns) %>"
+  <td class="<%= stream_column_class("streamer", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap text-sm before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Streamer"
       data-column="streamer"
       data-stream-table-preferences-target="column">
     <div class="flex items-start gap-3">
@@ -37,7 +39,8 @@
   </td>
 
   <!-- Title -->
-  <td class="<%= stream_column_class("title", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+  <td class="<%= stream_column_class("title", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap relative before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Title"
       data-column="title"
       data-stream-table-preferences-target="column">
     <div data-collaborative-spreadsheet-target="cell"
@@ -51,7 +54,8 @@
   </td>
 
   <!-- Source -->
-  <td class="<%= stream_column_class("source", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+  <td class="<%= stream_column_class("source", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap relative before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Source"
       data-column="source"
       data-stream-table-preferences-target="column">
     <div data-collaborative-spreadsheet-target="cell"
@@ -65,7 +69,8 @@
   </td>
 
   <!-- Link -->
-  <td class="<%= stream_column_class("link", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+  <td class="<%= stream_column_class("link", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap relative before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Link"
       data-column="link"
       data-stream-table-preferences-target="column">
     <div class="flex items-center gap-2">
@@ -74,7 +79,7 @@
            data-stream-id="<%= stream.id %>"
            data-field="link"
            data-original-value="<%= stream.link %>"
-           class="text-sm text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors max-w-xs truncate min-h-[1.5rem] flex-1 min-w-0">
+           class="text-sm text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors md:max-w-xs md:truncate min-h-[1.5rem] flex-1 min-w-0 break-words">
         <%= stream.link %>
       </div>
       <% if stream.link.present? %>
@@ -94,7 +99,8 @@
   </td>
 
   <!-- Platform -->
-  <td class="<%= stream_column_class("platform", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+  <td class="<%= stream_column_class("platform", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap relative before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Platform"
       data-column="platform"
       data-stream-table-preferences-target="column">
     <div data-collaborative-spreadsheet-target="cell"
@@ -110,7 +116,8 @@
   </td>
 
   <!-- Status -->
-  <td class="<%= stream_column_class("status", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+  <td class="<%= stream_column_class("status", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap relative before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Status"
       data-column="status"
       data-stream-table-preferences-target="column">
     <div data-collaborative-spreadsheet-target="cell"
@@ -131,7 +138,8 @@
   </td>
 
   <!-- City -->
-  <td class="<%= stream_column_class("city", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+  <td class="<%= stream_column_class("city", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap relative before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="City"
       data-column="city"
       data-stream-table-preferences-target="column">
     <div data-collaborative-spreadsheet-target="cell"
@@ -145,7 +153,8 @@
   </td>
 
   <!-- State -->
-  <td class="<%= stream_column_class("state", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+  <td class="<%= stream_column_class("state", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap relative before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="State"
       data-column="state"
       data-stream-table-preferences-target="column">
     <div data-collaborative-spreadsheet-target="cell"
@@ -159,7 +168,8 @@
   </td>
 
   <!-- Kind -->
-  <td class="<%= stream_column_class("kind", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+  <td class="<%= stream_column_class("kind", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap relative before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Kind"
       data-column="kind"
       data-stream-table-preferences-target="column">
     <div data-collaborative-spreadsheet-target="cell"
@@ -175,7 +185,8 @@
   </td>
 
   <!-- Orientation -->
-  <td class="<%= stream_column_class("orientation", "px-3 py-4 whitespace-nowrap relative", @hidden_columns) %>"
+  <td class="<%= stream_column_class("orientation", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap relative before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Orientation"
       data-column="orientation"
       data-stream-table-preferences-target="column">
     <div data-collaborative-spreadsheet-target="cell"
@@ -191,7 +202,8 @@
   </td>
 
   <!-- Started At (non-editable) -->
-  <td class="<%= stream_column_class("started_at", "px-3 py-4 whitespace-nowrap", @hidden_columns) %>"
+  <td class="<%= stream_column_class("started_at", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Started At"
       data-column="started_at"
       data-stream-table-preferences-target="column">
     <div class="text-sm text-gray-500 px-2 py-1">
@@ -200,7 +212,8 @@
   </td>
 
   <!-- Last Checked (non-editable) -->
-  <td class="<%= stream_column_class("last_checked_at", "px-3 py-4 whitespace-nowrap", @hidden_columns) %>"
+  <td class="<%= stream_column_class("last_checked_at", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Last Checked"
       data-column="last_checked_at"
       data-stream-table-preferences-target="column">
     <div id="stream_<%= stream.id %>_last_checked_at" class="text-sm text-gray-500 px-2 py-1">
@@ -209,7 +222,8 @@
   </td>
 
   <!-- Last Live (non-editable) -->
-  <td class="<%= stream_column_class("last_live_at", "px-3 py-4 whitespace-nowrap", @hidden_columns) %>"
+  <td class="<%= stream_column_class("last_live_at", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Last Live"
       data-column="last_live_at"
       data-stream-table-preferences-target="column">
     <div id="stream_<%= stream.id %>_last_live_at" class="text-sm text-gray-500 px-2 py-1">
@@ -218,7 +232,8 @@
   </td>
 
   <!-- Actions -->
-  <td class="<%= stream_column_class("actions", "px-3 py-4 whitespace-nowrap text-right text-sm font-medium", @hidden_columns) %>"
+  <td class="<%= stream_column_class("actions", "streams-cell block md:table-cell px-4 py-3 md:px-3 md:py-4 whitespace-normal md:whitespace-nowrap text-left md:text-right text-sm font-medium before:block before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-gray-400 before:mb-1 before:content-[attr(data-label)] md:before:hidden", @hidden_columns) %>"
+      data-label="Actions"
       data-column="actions"
       data-stream-table-preferences-target="column">
     <div class="flex items-center space-x-2">
