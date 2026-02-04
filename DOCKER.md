@@ -21,7 +21,7 @@ Development environment configuration with:
 - PostgreSQL 18 database
 - Redis 8 for caching and sessions (with separate test database)
 - Rails web application with automatic database preparation
-- JavaScript and CSS build watchers (using profiles)
+- JavaScript and CSS build watchers
 - Test service for isolated test runs
 - Health checks for all services
 - Volume mounts for development
@@ -102,11 +102,10 @@ defaults (`.env.production` and `streamsource:latest`).
 - **Dependencies**: Waits for DB and Redis health
 - **Automatic database setup**: Runs migrations on startup
 
-### JavaScript/CSS Watchers (Optional)
+### JavaScript/CSS Watchers
 - **js service**: Watches and rebuilds JavaScript
 - **css service**: Watches and rebuilds CSS
-- **Profile**: `assets` (manual start)
-- **Usage**: `docker compose --profile assets up js css`
+- **Default**: Included in `docker compose up -d`
 
 ## Test Environment
 
@@ -175,9 +174,9 @@ docker compose exec web yarn build
 # Build CSS
 docker compose exec web yarn build:css
 
-# Watch mode (using separate services)
-docker compose --profile assets up js
-docker compose --profile assets up css
+# Watch mode (separate services)
+docker compose up -d js
+docker compose up -d css
 
 # Install new JavaScript packages
 docker compose exec web yarn add <package-name>
@@ -382,9 +381,8 @@ The Dockerfile uses a multi-stage build:
 
 ### Service Profiles
 
-Docker Compose uses profiles to manage optional services:
-- Default profile: web, db, redis
-- `donotstart` profile: js, css (build watchers)
+Docker Compose uses profiles for the test runner only:
+- Default services: web, db, redis, js, css
 - Test profile: Separate test runner
 
 ### Database Initialization
