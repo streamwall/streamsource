@@ -25,6 +25,7 @@ class StreamwallImporter
     puts "Streamwall import from #{@url}"
     puts "User: #{@user.email} (ID: #{@user.id})"
     puts "Mode: #{@mode} | Dry run: #{@dry_run}"
+    puts "Attach streamers to existing streams: #{@create_streamers}"
     puts "Limit: #{@limit || 'none'} | Offset: #{@offset}"
 
     payload = fetch_json
@@ -171,8 +172,11 @@ class StreamwallImporter
       return
     end
 
+    streamer_name = attrs[:streamer_name]
     updates = build_updates(existing, attrs)
-    if updates.empty?
+    should_attach_streamer = @create_streamers && existing.streamer_id.nil?
+
+    if updates.empty? && !should_attach_streamer
       results[:skipped] += 1
       return
     end
@@ -182,8 +186,18 @@ class StreamwallImporter
       return
     end
 
-    existing.update!(updates)
-    results[:updated] += 1
+    existing.assign_attributes(updates) if updates.present?
+    if should_attach_streamer
+      existing.streamer_name = streamer_name
+      existing.assign_streamer_from_source(candidate_name: streamer_name)
+    end
+
+    if existing.changed?
+      existing.save!
+      results[:updated] += 1
+    else
+      results[:skipped] += 1
+    end
   end
 
   def handle_new(attrs, results)
@@ -194,68 +208,9 @@ class StreamwallImporter
 
     streamer_name = attrs.delete(:streamer_name)
     stream = @user.streams.build(attrs)
-    attach_streamer(stream, streamer_name)
+    stream.streamer_name = streamer_name
     stream.save!
     results[:created] += 1
-  end
-
-  def attach_streamer(stream, streamer_name)
-    return unless @create_streamers
-
-    platform = stream.platform
-    source = stream.source
-    candidate_name = streamer_name.presence || source
-
-    streamer = find_streamer_by_platform_source(platform, source)
-    streamer ||= find_streamer_by_name(candidate_name)
-    streamer ||= create_streamer_from_stream(stream, candidate_name)
-
-    return if streamer.nil?
-
-    ensure_streamer_account(streamer, platform, source)
-    stream.streamer = streamer
-  end
-
-  def find_streamer_by_platform_source(platform, source)
-    return nil if platform.blank? || source.blank?
-
-    normalized = source.to_s.strip.downcase
-    account = StreamerAccount
-              .includes(:streamer)
-              .where(platform: platform)
-              .where("LOWER(username) = ?", normalized)
-              .first
-    account&.streamer
-  end
-
-  def find_streamer_by_name(name)
-    return nil if name.blank?
-
-    Streamer.where("LOWER(name) = ?", name.to_s.strip.downcase).first
-  end
-
-  def create_streamer_from_stream(stream, name)
-    return nil if name.blank?
-
-    Streamer.create!(
-      name: name,
-      user: @user,
-      posted_by: stream.posted_by.presence,
-      notes: stream.notes.presence,
-    )
-  end
-
-  def ensure_streamer_account(streamer, platform, source)
-    return if streamer.nil? || platform.blank? || source.blank?
-
-    normalized = source.to_s.strip.downcase
-    existing = streamer.streamer_accounts
-                       .where(platform: platform)
-                       .where("LOWER(username) = ?", normalized)
-                       .first
-    return if existing.present?
-
-    streamer.streamer_accounts.create!(platform: platform, username: source)
   end
 
   def build_updates(existing, attrs)
@@ -514,14 +469,15 @@ end
 
 # rubocop:disable Metrics/BlockLength
 namespace :streams do
-  desc "Import streams from a Streamwall JSON endpoint (URL=... USER_EMAIL=... MODE=upsert|skip DRY_RUN=true)"
+  desc "Import streams from a Streamwall JSON endpoint " \
+       "(URL=... USER_EMAIL=... MODE=upsert|skip DRY_RUN=true CREATE_STREAMERS=true)"
   task import_streamwall: :environment do
     url = ENV["URL"] || ENV["STREAMWALL_URL"] || StreamwallImporter::DEFAULT_URL
     mode = (ENV["MODE"] || "upsert").to_s.downcase
     dry_run = ENV.fetch("DRY_RUN", "false").to_s.downcase == "true"
     limit = ENV["LIMIT"]&.to_i
     offset = ENV["OFFSET"].to_i
-    create_streamers = ENV.fetch("CREATE_STREAMERS", "false").to_s.downcase == "true"
+    create_streamers = ENV.fetch("CREATE_STREAMERS", "true").to_s.downcase == "true"
 
     user = if ENV["USER_ID"].present?
              User.find(ENV["USER_ID"])

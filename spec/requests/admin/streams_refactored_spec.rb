@@ -38,8 +38,8 @@ RSpec.describe "Admin::Streams", type: :request do
     context "with filters" do
       it "filters by status" do
         get admin_streams_path(status: "Live")
-        expect_admin_page_to_include(user_stream.source)
-        expect_admin_page_not_to_include(offline_stream.source)
+        expect_admin_page_to_include("stream_#{user_stream.id}")
+        expect_admin_page_not_to_include("stream_#{offline_stream.id}")
       end
 
       it "filters by platform" do
@@ -47,9 +47,39 @@ RSpec.describe "Admin::Streams", type: :request do
         youtube_stream = create(:stream, platform: "YouTube")
 
         get admin_streams_path(platform: "TikTok")
-        expect_admin_page_to_include(tiktok_stream.source)
-        expect_admin_page_not_to_include(youtube_stream.source)
+        expect_admin_page_to_include("stream_#{tiktok_stream.id}")
+        expect_admin_page_not_to_include("stream_#{youtube_stream.id}")
       end
+    end
+  end
+
+  describe "GET /admin/streams with sort params" do
+    it "persists sort preferences for the current admin" do
+      get admin_streams_path(sort: "title", direction: "asc")
+
+      preferences = admin_user.reload.stream_table_preferences
+      expect(preferences.dig("sort", "column")).to eq("title")
+      expect(preferences.dig("sort", "direction")).to eq("asc")
+    end
+  end
+
+  describe "PATCH /admin/streams/preferences" do
+    it "updates table preferences" do
+      patch admin_stream_preferences_path,
+            params: { hidden_columns: ["streamer"], column_order: ["status"] },
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+
+      preferences = admin_user.reload.stream_table_preferences
+      expect(preferences["hidden_columns"]).to eq(["streamer"])
+      expect(preferences["column_order"].first).to eq("status")
+    end
+
+    it "returns bad request when params are missing" do
+      patch admin_stream_preferences_path
+
+      expect(response).to have_http_status(:bad_request)
     end
   end
 

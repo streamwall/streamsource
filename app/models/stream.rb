@@ -25,6 +25,7 @@
 #  ended_at        :datetime
 #  is_archived     :boolean          default(false)
 #
+# rubocop:disable Metrics/ClassLength
 class Stream < ApplicationRecord
   include StreamLocationHandling
   include StreamStatusTracking
@@ -35,6 +36,7 @@ class Stream < ApplicationRecord
   belongs_to :location, optional: true, inverse_of: :streams
   has_many :timestamp_streams, dependent: :destroy
   has_many :timestamps, through: :timestamp_streams
+  attr_accessor :streamer_name
 
   # Enums
   enum :status, {
@@ -171,8 +173,17 @@ class Stream < ApplicationRecord
   # Callbacks
   before_validation :normalize_link
   before_validation :set_posted_by
+  before_create :assign_streamer_from_source
 
   # Instance methods
+  def assign_streamer_from_source(candidate_name: nil)
+    return if streamer_id.present?
+
+    candidate_name ||= streamer_name
+    streamer = Streamer.resolve_for_stream(self, candidate_name: candidate_name)
+    self.streamer = streamer if streamer.present?
+  end
+
   def pin!
     update!(is_pinned: true)
   end
@@ -213,3 +224,4 @@ class Stream < ApplicationRecord
                                  })
   end
 end
+# rubocop:enable Metrics/ClassLength

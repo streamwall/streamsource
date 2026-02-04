@@ -21,6 +21,53 @@ RSpec.describe Stream, type: :model do
     end
   end
 
+  describe "streamer assignment" do
+    it "creates a streamer and account when none exists" do
+      stream = create(:stream, user: user, streamer: nil, source: "TestStreamer", platform: "tiktok")
+
+      expect(stream.streamer).to have_attributes(name: "TestStreamer", user: user)
+
+      account = stream.streamer.streamer_accounts.find_by(platform: "tiktok")
+      expect(account).to be_present
+      expect(account.username).to eq("teststreamer")
+    end
+
+    it "reuses an existing streamer by platform account match" do
+      streamer = create(:streamer, user: user, name: "Existing")
+      create(:streamer_account, streamer: streamer, platform: "tiktok", username: "sameuser")
+
+      stream = create(:stream, user: user, streamer: nil, source: "SameUser", platform: "tiktok")
+
+      expect(stream.streamer).to eq(streamer)
+    end
+
+    it "reuses an existing streamer by name match" do
+      streamer = create(:streamer, user: user, name: "NameMatch")
+
+      stream = create(:stream, user: user, streamer: nil, source: "NameMatch", platform: "tiktok")
+
+      expect(stream.streamer).to eq(streamer)
+    end
+
+    it "uses streamer_name when provided" do
+      stream = build(:stream, user: user, streamer: nil, source: "sourceuser", platform: "tiktok")
+      stream.streamer_name = "Display Name"
+
+      stream.save!
+
+      expect(stream.streamer).to be_present
+      expect(stream.streamer.name).to eq("Display Name")
+    end
+
+    it "does not assign when stream has no user" do
+      stream = build(:stream, user: nil, streamer: nil, source: "TestStreamer", platform: "tiktok")
+
+      stream.assign_streamer_from_source
+
+      expect(stream.streamer).to be_nil
+    end
+  end
+
   describe ".sorted" do
     it "orders by title when provided" do
       stream_a = create(:stream, title: "Alpha")

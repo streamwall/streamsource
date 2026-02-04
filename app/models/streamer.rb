@@ -21,6 +21,54 @@ class Streamer < ApplicationRecord
   # Validations
   validates :name, presence: true, uniqueness: { case_sensitive: false }
 
+  # Class methods
+  def self.resolve_for_stream(stream, candidate_name: nil)
+    return nil if stream.nil?
+    return nil if stream.user.blank?
+
+    name = candidate_name.presence || stream.source
+    return nil if name.blank?
+
+    streamer = find_by_platform_source(stream.platform, stream.source)
+    streamer ||= lookup_by_normalized_name(name)
+    streamer ||= create_from_stream(stream, name)
+    return nil if streamer.nil?
+
+    streamer.ensure_account(platform: stream.platform, source: stream.source)
+    streamer
+  end
+
+  def self.find_by_platform_source(platform, source)
+    return nil if platform.blank? || source.blank?
+    return nil unless StreamerAccount.platforms.key?(platform)
+
+    normalized = source.to_s.strip.downcase
+    account = StreamerAccount
+              .includes(:streamer)
+              .where(platform: platform)
+              .where("LOWER(username) = ?", normalized)
+              .first
+    account&.streamer
+  end
+
+  def self.lookup_by_normalized_name(name)
+    return nil if name.blank?
+
+    Streamer.where("LOWER(name) = ?", name.to_s.strip.downcase).first
+  end
+
+  def self.create_from_stream(stream, name)
+    return nil if name.blank?
+    return nil if stream.user.blank?
+
+    Streamer.create!(
+      name: name,
+      user: stream.user,
+      posted_by: stream.posted_by.presence || stream.user.email,
+      notes: stream.notes.presence,
+    )
+  end
+
   # Scopes
   scope :with_active_accounts, -> { joins(:streamer_accounts).where(streamer_accounts: { is_active: true }).distinct }
   scope :by_platform, lambda { |platform|
@@ -35,6 +83,20 @@ class Streamer < ApplicationRecord
   before_save :set_posted_by
 
   # Instance methods
+  def ensure_account(platform:, source:)
+    return if platform.blank? || source.blank?
+    return unless StreamerAccount.platforms.key?(platform)
+
+    normalized = source.to_s.strip.downcase
+    existing = streamer_accounts
+               .where(platform: platform)
+               .where("LOWER(username) = ?", normalized)
+               .first
+    return if existing.present?
+
+    streamer_accounts.create!(platform: platform, username: normalized)
+  end
+
   def active_stream
     streams.live.not_archived.order(started_at: :desc).first
   end
