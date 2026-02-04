@@ -1,1 +1,93 @@
 @import "tailwindcss";
+
+@layer components {
+  [data-stream-view-mode="table"] .streams-table {
+    display: table !important;
+  }
+
+  [data-stream-view-mode="table"] .streams-thead {
+    display: table-header-group !important;
+  }
+
+  [data-stream-view-mode="table"] .streams-container {
+    overflow-x: auto !important;
+  }
+
+  [data-stream-view-mode="table"] .streams-card-sort {
+    display: none !important;
+  }
+
+  [data-stream-view-mode="table"] .streams-tbody {
+    display: table-row-group !important;
+  }
+
+  [data-stream-view-mode="table"] .streams-tbody > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0 !important;
+  }
+
+  [data-stream-view-mode="table"] .streams-row {
+    display: table-row !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    background-color: transparent !important;
+  }
+
+  [data-stream-view-mode="table"] .streams-row:hover {
+    background-color: rgb(249 250 251) !important;
+  }
+
+  [data-stream-view-mode="table"] .streams-cell {
+    display: table-cell !important;
+  }
+
+  [data-stream-view-mode="table"] .streams-cell::before {
+    display: none !important;
+  }
+
+  [data-stream-view-mode="card"] .streams-table {
+    display: block !important;
+  }
+
+  [data-stream-view-mode="card"] .streams-thead {
+    display: none !important;
+  }
+
+  [data-stream-view-mode="card"] .streams-container {
+    overflow: visible !important;
+  }
+
+  [data-stream-view-mode="card"] .streams-card-sort {
+    display: flex !important;
+  }
+
+  [data-stream-view-mode="card"] .streams-tbody {
+    display: block !important;
+  }
+
+  [data-stream-view-mode="card"] .streams-tbody > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1rem !important;
+  }
+
+  [data-stream-view-mode="card"] .streams-row {
+    display: block !important;
+    border: 1px solid rgb(229 231 235) !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+    overflow: hidden !important;
+    background-color: white !important;
+  }
+
+  [data-stream-view-mode="card"] .streams-row:hover {
+    background-color: rgb(249 250 251) !important;
+  }
+
+  [data-stream-view-mode="card"] .streams-cell {
+    display: block !important;
+  }
+
+  [data-stream-view-mode="card"] .streams-cell::before {
+    display: block !important;
+  }
+}
