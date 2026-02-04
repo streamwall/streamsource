@@ -191,12 +191,12 @@ make assets-dev  # Compile assets for development
 # Diagnose common problems
 make doctor
 
-# Clean up and rebuild
-make clean
+# Rebuild (keeps build cache)
 make rebuild
 
-# Deep clean (removes everything)
-make clean-all
+# Deep clean (removes containers, volumes, local images, build cache)
+make clean
+make rebuild
 ```
 
 ### Database Problems

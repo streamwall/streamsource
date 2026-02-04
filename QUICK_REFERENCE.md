@@ -25,8 +25,8 @@ docker compose exec web yarn build
 docker compose exec web yarn build:css
 
 # Watch assets (separate services)
-docker compose --profile donotstart up js
-docker compose --profile donotstart up css
+docker compose up -d js
+docker compose up -d css
 
 # Stop all services
 docker compose down

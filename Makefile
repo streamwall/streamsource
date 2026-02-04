@@ -1,7 +1,7 @@
 # StreamSource
 # Usage: make [command]
 
-.PHONY: help up down stop restart shell test migrate seed setup reset logs lint lint-fix lint-ruby lint-js security quality pre-commit pre-commit-install rebuild browse rake yarn
+.PHONY: help up down stop restart shell test migrate seed setup reset logs lint lint-fix lint-ruby lint-js security quality pre-commit pre-commit-install rebuild clean browse rake yarn
 
 STREAMSOURCE_ENV ?= dev
 APP_URL ?= http://localhost:3001/admin
@@ -9,15 +9,13 @@ APP_URL ?= http://localhost:3001/admin
 ifeq ($(STREAMSOURCE_ENV),prod)
 COMPOSE_FILES := -f docker-compose.yml -f docker-compose.prod.yml
 UP_TARGETS := web
-UP_PROFILE :=
 else
 COMPOSE_FILES :=
 UP_TARGETS := web js css
-UP_PROFILE := --profile assets
 endif
 
 COMPOSE := docker compose $(COMPOSE_FILES)
-COMPOSE_UP := $(COMPOSE) $(UP_PROFILE)
+COMPOSE_UP := $(COMPOSE)
 COMPOSE_EXEC_FLAGS ?=
 COMPOSE_EXEC := $(COMPOSE) exec $(COMPOSE_EXEC_FLAGS)
 
@@ -47,6 +45,7 @@ help:
 	@echo "  pre-commit-install - Install pre-commit hooks (commit + pre-push)"
 	@echo "  yarn     - Build JS/CSS assets"
 	@echo "  rebuild  - Clean and rebuild containers"
+	@echo "  clean    - Remove containers, volumes, images, and build cache"
 	@echo "  migrate  - Run migrations"
 	@echo "  seed     - Seed the database"
 	@echo "  setup    - Create, migrate, and seed the database"
@@ -137,8 +136,12 @@ yarn:
 
 rebuild:
 	$(COMPOSE) down --remove-orphans
-	$(COMPOSE) build --no-cache
+	$(COMPOSE) build
 	$(COMPOSE_UP) up -d $(UP_TARGETS)
+
+clean:
+	$(COMPOSE) down --remove-orphans --volumes --rmi local
+	docker builder prune -f
 
 migrate:
 	$(COMPOSE_EXEC) web bin/rails db:migrate
