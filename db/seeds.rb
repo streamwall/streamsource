@@ -63,6 +63,30 @@ if Rails.env.local?
   Rails.logger.debug "========================================\n"
 end
 
+def normalize_seed_platform(value)
+  key = value.to_s.strip.downcase
+  StreamerAccount.platforms.key?(key) ? key : nil
+end
+
+def find_or_create_seed_streamer(stream_data, user)
+  name = stream_data[:streamer_name].presence || stream_data[:source]
+  return nil if name.blank?
+
+  streamer = Streamer.find_or_create_by!(name: name) do |record|
+    record.user = user
+    record.notes = stream_data[:notes]
+    record.posted_by = stream_data[:posted_by]
+  end
+
+  platform = normalize_seed_platform(stream_data[:platform])
+  username = stream_data[:source].to_s.strip
+  if platform.present? && username.present?
+    StreamerAccount.find_or_create_by!(streamer: streamer, platform: platform, username: username)
+  end
+
+  streamer
+end
+
 # Create sample streams
 if Stream.none? && Rails.env.local?
   # Get the admin and editor users
@@ -146,9 +170,11 @@ if Stream.none? && Rails.env.local?
   ]
 
   sample_streams.each do |stream_data|
+    streamer = find_or_create_seed_streamer(stream_data, admin)
     Stream.create!(
       **stream_data,
       user: admin,
+      streamer: streamer,
       last_checked_at: rand(1..24).hours.ago,
       last_live_at: stream_data[:status] == "live" ? rand(1..6).hours.ago : rand(1..30).days.ago,
     )
@@ -200,9 +226,11 @@ if Stream.none? && Rails.env.local?
   ]
 
   editor_streams.each do |stream_data|
+    streamer = find_or_create_seed_streamer(stream_data, editor)
     Stream.create!(
       **stream_data,
       user: editor,
+      streamer: streamer,
       last_checked_at: rand(1..48).hours.ago,
       last_live_at: stream_data[:status] == "live" ? rand(1..12).hours.ago : nil,
     )
@@ -211,7 +239,7 @@ if Stream.none? && Rails.env.local?
   Rails.logger.debug { "Created #{editor_streams.count} sample streams for editor user" }
 
   # Create a stream for the default user
-  Stream.create!(
+  default_stream = {
     source: "user_stream",
     link: "https://www.tiktok.com/@user_stream/live",
     platform: "TikTok",
@@ -223,7 +251,13 @@ if Stream.none? && Rails.env.local?
     posted_by: "user@example.com",
     orientation: "vertical",
     kind: "video",
+  }
+
+  default_streamer = find_or_create_seed_streamer(default_stream, default_user)
+  Stream.create!(
+    **default_stream,
     user: default_user,
+    streamer: default_streamer,
     last_checked_at: 1.week.ago,
   )
 

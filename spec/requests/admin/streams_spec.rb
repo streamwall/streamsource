@@ -29,14 +29,14 @@ RSpec.describe "Admin::Streams", type: :request do
 
       it "filters by status" do
         get admin_streams_path(status: "Live")
-        expect(response.body).to include(live_stream.source)
-        expect(response.body).not_to include(offline_stream.source)
+        expect(response.body).to include("stream_#{live_stream.id}")
+        expect(response.body).not_to include("stream_#{offline_stream.id}")
       end
 
       it "filters by platform" do
         get admin_streams_path(platform: "TikTok")
-        expect(response.body).to include(live_stream.source)
-        expect(response.body).not_to include(offline_stream.source)
+        expect(response.body).to include("stream_#{live_stream.id}")
+        expect(response.body).not_to include("stream_#{offline_stream.id}")
       end
     end
   end

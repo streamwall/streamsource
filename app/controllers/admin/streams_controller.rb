@@ -32,12 +32,11 @@ module Admin
 
       persist_sort_preferences if persist_sort_preferences?
 
-      @pagy, @streams = pagy(
-        Stream.includes(:streamer)
-              .filtered(filter_params)
-              .sorted(@sort_column, @sort_direction),
-        items: 20,
-      )
+      streams_scope = Stream.filtered(filter_params)
+      streams_scope = streams_scope.includes(:streamer) if streams_scope.where.not(streamer_id: nil).exists?
+      streams_scope = streams_scope.sorted(@sort_column, @sort_direction)
+
+      @pagy, @streams = pagy(streams_scope, items: 20)
 
       respond_to do |format|
         format.html

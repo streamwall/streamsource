@@ -119,4 +119,73 @@ RSpec.describe Streamer, type: :model do
       end
     end
   end
+
+  describe ".resolve_for_stream" do
+    let(:user) { create(:user) }
+
+    it "returns nil when stream has no user" do
+      stream = build(:stream, user: nil, source: "TestStreamer", platform: "tiktok")
+
+      expect(described_class.resolve_for_stream(stream)).to be_nil
+    end
+
+    it "returns nil when name is blank" do
+      stream = build(:stream, user: user, source: " ", platform: "tiktok")
+
+      expect(described_class.resolve_for_stream(stream)).to be_nil
+    end
+
+    it "reuses streamer by platform account match" do
+      streamer = create(:streamer, user: user, name: "Existing")
+      create(:streamer_account, streamer: streamer, platform: "tiktok", username: "teststreamer")
+      stream = build(:stream, user: user, source: "TestStreamer", platform: "tiktok")
+
+      expect(described_class.resolve_for_stream(stream)).to eq(streamer)
+    end
+
+    it "reuses streamer by name match" do
+      streamer = create(:streamer, user: user, name: "Name Match")
+      stream = build(:stream, user: user, source: "Name Match", platform: "tiktok")
+
+      expect(described_class.resolve_for_stream(stream)).to eq(streamer)
+    end
+
+    it "creates streamer using candidate name and ensures account" do
+      stream = build(:stream, user: user, source: "SourceUser", platform: "tiktok")
+
+      resolved = described_class.resolve_for_stream(stream, candidate_name: "Display Name")
+
+      expect(resolved).to have_attributes(name: "Display Name", user: user)
+      account = resolved.streamer_accounts.find_by(platform: "tiktok")
+      expect(account).to be_present
+      expect(account.username).to eq("sourceuser")
+    end
+  end
+
+  describe "#ensure_account" do
+    let(:streamer) { create(:streamer) }
+
+    it "creates a normalized account when missing" do
+      expect do
+        streamer.ensure_account(platform: "tiktok", source: "  TestUser  ")
+      end.to change(StreamerAccount, :count).by(1)
+
+      account = streamer.streamer_accounts.find_by(platform: "tiktok")
+      expect(account.username).to eq("testuser")
+    end
+
+    it "does not create duplicate accounts" do
+      create(:streamer_account, streamer: streamer, platform: "tiktok", username: "testuser")
+
+      expect do
+        streamer.ensure_account(platform: "tiktok", source: "TestUser")
+      end.not_to change(StreamerAccount, :count)
+    end
+
+    it "skips unsupported platforms" do
+      expect do
+        streamer.ensure_account(platform: "unknown", source: "TestUser")
+      end.not_to change(StreamerAccount, :count)
+    end
+  end
 end
