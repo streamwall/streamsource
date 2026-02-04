@@ -184,7 +184,7 @@ jobs:
     
     - name: Deploy to DigitalOcean
       id: deploy
-      uses: appleboy/ssh-action@v1.2.2
+      uses: appleboy/ssh-action@v1.2.5
       with:
         host: ${{ secrets.DROPLET_HOST }}
         username: deploy
@@ -232,7 +232,7 @@ jobs:
     
     - name: Rollback on failure
       if: failure() && steps.deploy.conclusion == 'failure'
-      uses: appleboy/ssh-action@v1.2.2
+      uses: appleboy/ssh-action@v1.2.5
       with:
         host: ${{ secrets.DROPLET_HOST }}
         username: deploy
