@@ -38,6 +38,14 @@ module Admin
       end
     end
 
+    def streamer_label_for(streamer_id)
+      return nil if streamer_id.blank?
+
+      streamer_options.each_with_object({}) do |(label, id), memo|
+        memo[id] = label
+      end[streamer_id]
+    end
+
     private
 
     def stream_sort_params(column, direction)
