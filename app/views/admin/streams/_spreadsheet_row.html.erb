@@ -5,9 +5,9 @@
       data-label="Streamer"
       data-column="streamer"
       data-stream-table-preferences-target="column">
-    <div class="flex items-start gap-3">
+    <div class="relative flex items-start gap-3">
       <% streamer_platforms = stream.streamer&.platforms || [] %>
-      <div>
+      <div class="min-w-0">
         <div id="stream_<%= stream.id %>_streamer_name" class="text-sm font-medium text-gray-900">
           <%= stream.streamer&.name || 'Unknown' %>
         </div>
@@ -15,26 +15,56 @@
           <%= streamer_platforms.any? ? streamer_platforms.join(", ") : "N/A" %>
         </div>
       </div>
-      <details class="mt-1 group">
-        <summary class="cursor-pointer select-none text-gray-400 hover:text-gray-600 group-open:text-gray-700 list-none [&::-webkit-details-marker]:hidden [&::marker]:content-['']" title="Reassign streamer">
+      <div class="mt-1 relative isolate z-30" data-controller="reassign-dropdown">
+        <button type="button"
+                class="cursor-pointer select-none text-gray-400 hover:text-gray-600"
+                title="Reassign streamer"
+                aria-expanded="false"
+                data-reassign-dropdown-target="trigger"
+                data-action="reassign-dropdown#toggle">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M16 7h5m0 0v5m0-5l-6 6M8 17H3m0 0v-5m0 5l6-6" />
           </svg>
           <span class="sr-only">Reassign streamer</span>
-        </summary>
-        <div class="mt-2">
-          <%= form_with model: [:admin, stream], class: "flex items-center gap-2" do |form| %>
-            <%= hidden_field_tag :context, "spreadsheet" %>
-            <%= form.select :streamer_id,
-                options_for_select(streamer_options, stream.streamer_id),
-                { include_blank: "Unassigned" },
-                class: "text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500",
-                id: "stream_#{stream.id}_streamer_select" %>
-            <%= form.submit "Save", class: "px-2 py-1 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700" %>
-          <% end %>
+        </button>
+        <div class="mt-2 md:absolute md:left-0 md:top-full md:z-40 pointer-events-auto"
+             data-reassign-dropdown-target="panel"
+             data-action="pointerdown->reassign-dropdown#keepOpen"
+             hidden>
+          <div class="w-64 max-w-xs rounded-md border border-gray-200 bg-white p-2 shadow-lg pointer-events-auto">
+            <%= form_with model: [:admin, stream], class: "flex flex-col gap-2" do |form| %>
+              <%= hidden_field_tag :context, "spreadsheet" %>
+              <% current_streamer_label = streamer_label_for(stream.streamer_id) %>
+              <div data-controller="streamer-autocomplete"
+                   data-streamer-autocomplete-options-value="<%= json_escape(streamer_options.to_json) %>">
+                <%= form.hidden_field :streamer_id,
+                    value: stream.streamer_id,
+                    id: "stream_#{stream.id}_streamer_id",
+                    data: { streamer_autocomplete_target: "hidden" } %>
+                <%= text_field_tag "streamer_search_#{stream.id}",
+                    current_streamer_label,
+                    id: "stream_#{stream.id}_streamer_select",
+                    placeholder: "Search streamer...",
+                    autocomplete: "off",
+                    spellcheck: false,
+                    class: "w-full text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500",
+                    data: {
+                      streamer_autocomplete_target: "input",
+                      action: "input->streamer-autocomplete#filter focus->streamer-autocomplete#show blur->streamer-autocomplete#scheduleClose pointerdown->reassign-dropdown#keepOpen click->reassign-dropdown#keepOpen"
+                    } %>
+                <div class="mt-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-sm"
+                     data-streamer-autocomplete-target="list"
+                     data-action="mousedown->streamer-autocomplete#choose pointerdown->reassign-dropdown#keepOpen click->reassign-dropdown#keepOpen"
+                     hidden></div>
+              </div>
+              <div class="flex justify-end">
+                <%= form.submit "Save", class: "px-2 py-1 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700" %>
+              </div>
+            <% end %>
+          </div>
         </div>
-      </details>
+      </div>
     </div>
   </td>
 

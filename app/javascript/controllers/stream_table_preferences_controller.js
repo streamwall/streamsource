@@ -76,6 +76,10 @@ export default class extends Controller {
       return true
     }
 
+    if (this.element.querySelector('[data-controller~="reassign-dropdown"] [data-reassign-dropdown-target="panel"]:not([hidden])')) {
+      return true
+    }
+
     const currentUserId = this.element.getAttribute('data-collaborative-spreadsheet-current-user-id-value')
     if (currentUserId) {
       const lockedByCurrentUser = this.element.querySelector(

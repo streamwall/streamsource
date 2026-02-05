@@ -156,6 +156,7 @@ export class CellRenderer {
     const nameElement = document.getElementById(`stream_${streamId}_streamer_name`)
     const platformElement = document.getElementById(`stream_${streamId}_streamer_platform`)
     const selectElement = document.getElementById(`stream_${streamId}_streamer_select`)
+    const hiddenElement = document.getElementById(`stream_${streamId}_streamer_id`)
 
     if (!nameElement || !platformElement) {
       console.warn(`Streamer elements not found for stream ${streamId}`)
@@ -169,7 +170,28 @@ export class CellRenderer {
     platformElement.textContent = platformText
 
     if (selectElement) {
-      selectElement.value = streamerId || ''
+      let label = streamerName || ''
+      if (selectElement.closest('[data-controller~="streamer-autocomplete"]') && streamerId) {
+        const container = selectElement.closest('[data-controller~="streamer-autocomplete"]')
+        const optionsJson = container?.dataset?.streamerAutocompleteOptionsValue
+        if (optionsJson) {
+          try {
+            const options = JSON.parse(optionsJson)
+            const match = options.find(([, id]) => String(id) === String(streamerId))
+            if (match) label = match[0]
+          } catch (error) {
+            console.warn('Failed to parse streamer options JSON', error)
+          }
+        }
+      } else if (streamerName && streamerPlatform) {
+        label = `${streamerName} (${streamerPlatform})`
+      }
+
+      selectElement.value = streamerId ? label : ''
+    }
+
+    if (hiddenElement) {
+      hiddenElement.value = streamerId || ''
     }
 
     const elements = [nameElement, platformElement]
