@@ -33,10 +33,10 @@ module Admin
       persist_sort_preferences if persist_sort_preferences?
 
       streams_scope = Stream.filtered(filter_params)
-      streams_scope = streams_scope.includes(:streamer) if streams_scope.where.not(streamer_id: nil).exists?
       streams_scope = streams_scope.sorted(@sort_column, @sort_direction)
 
       @pagy, @streams = pagy(streams_scope, items: 20)
+      @streams = @streams.preload(:streamer) if @streams.where.not(streamer_id: nil).exists?
 
       respond_to do |format|
         format.html
