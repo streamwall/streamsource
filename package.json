@@ -20,6 +20,6 @@
     "@tailwindcss/cli": "^4.1.18",
     "eslint": "^9.39.2",
     "globals": "^17.0.0",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.2.1"
   }
 }
